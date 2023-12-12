@@ -14,9 +14,10 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "2.0.2",
     "@nomicfoundation/hardhat-ethers": "3.0.5",
-    "@nomicfoundation/hardhat-verify": "2.0.1",
     "@nomicfoundation/hardhat-network-helpers": "1.0.9",
+    "@nomicfoundation/hardhat-verify": "2.0.1",
     "chai": "4.3.10",
+    "clones-with-immutable-args": "1.1.0",
     "dotenv": "16.3.1",
     "eslint": "8.53.0",
     "eslint-config-standard": "17.1.0",
