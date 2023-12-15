@@ -3,12 +3,12 @@ require('@nomicfoundation/hardhat-ethers');
 require('@nomicfoundation/hardhat-verify');
 require('dotenv').config();
 require('hardhat-dependency-compiler');
-require('hardhat-deploy');
+// require('hardhat-deploy');
 require('hardhat-gas-reporter');
-require('hardhat-tracer');
+// require('hardhat-tracer');
 require('solidity-coverage');
 
-const { Networks, getNetwork } = require('@1inch/solidity-utils/dist/src/networks');
+const { Networks, getNetwork } = require('@1inch/solidity-utils/hardhat-setup');
 
 const { networks, etherscan } = new Networks();
 
@@ -39,6 +39,9 @@ module.exports = {
         enableAllOpcodes: true,
     },
     dependencyCompiler: {
-        paths: [],
+        paths: [
+            '@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol',
+            '@1inch/solidity-utils/contracts/mocks/TokenMock.sol',
+        ],
     },
 };

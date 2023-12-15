@@ -10,24 +10,40 @@ interface IEscrowFactory {
         uint256 publicUnlock;
     }
 
-    struct Conditions {
+    struct InteractionParams {
+        address maker;
+        address taker;
+        uint256 srcChainId;
+        address srcToken;
+        uint256 srcAmount;
+        uint256 dstAmount;
+    }
+
+    struct ExtraDataParams {
+        uint256 hashlock;
+        uint256 dstChainId;
+        address dstToken;
+        Timelocks srcTimelocks;
+        Timelocks dstTimelocks;
+    }
+
+    struct SrcEscrowImmutables {
+        uint256 deployedAt;
+        InteractionParams interactionParams;
+        ExtraDataParams extraDataParams;
+    }
+
+    struct DstEscrowImmutables {
+        uint256 deployedAt;
+        uint256 hashlock;
+        address maker;
         uint256 chainId;
         address token;
         uint256 amount;
+        uint256 safetyDeposit;
         Timelocks timelocks;
     }
 
-    struct SrcEscrowParams {
-        uint256 hashlock;
-        Conditions srcConditions;
-        Conditions dstConditions;
-    }
-
-    struct DstEscrowParams {
-        uint256 hashlock;
-        Conditions conditions;
-    }
-
-    // TODO: remove this?
-    event EscrowCreated(address escrow);
+    error InsufficientEscrowBalance();
+    error OnlyLimitOrderProtocol();
 }

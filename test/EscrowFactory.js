@@ -1,67 +1,119 @@
 const hre = require('hardhat');
 const { ethers } = hre;
-const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
+const { loadFixture, time } = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = require('chai');
+const { ether } = require('@1inch/solidity-utils');
+const { buildOrder, buildOrderData } = require('@1inch/limit-order-protocol-contract/test/helpers/orderUtils');
 
-const { buildSrcEscrowParams, buildDstEscrowParams } = require('./helpers/escrowParams');
+const { buldDynamicData, buildDstEscrowImmutables } = require('./helpers/escrowUtils');
 
 describe('EscrowFactory', async function () {
-    async function initContracts () {
+    async function deployContracts () {
+        const [deployer, alice, bob, charlie] = await ethers.getSigners();
+        const accounts = { deployer, alice, bob, charlie };
+        const limitOrderProtocol = deployer;
+
+        const TokenMock = await ethers.getContractFactory('TokenMock');
+        const dai = await TokenMock.deploy('DAI', 'DAI');
+        await dai.waitForDeployment();
+        const TokenCustomDecimalsMock = await ethers.getContractFactory('TokenCustomDecimalsMock');
+        const usdc = await TokenCustomDecimalsMock.deploy('USDC', 'USDC', ether('1000'), 6);
+        await usdc.waitForDeployment();
+        const tokens = { dai, usdc };
+
         const EscrowRegistry = await ethers.getContractFactory('EscrowRegistry');
         const escrowRegistry = await EscrowRegistry.deploy();
         await escrowRegistry.waitForDeployment();
 
         const EscrowFactory = await ethers.getContractFactory('EscrowFactory');
-        const escrowFactory = await EscrowFactory.deploy(escrowRegistry.target);
+        const escrowFactory = await EscrowFactory.deploy(escrowRegistry, limitOrderProtocol);
         await escrowFactory.waitForDeployment();
+        const contracts = { escrowRegistry, escrowFactory, limitOrderProtocol };
 
-        return { escrowFactory, escrowRegistry };
+        const chainId = (await ethers.provider.getNetwork()).chainId;
+
+        return { accounts, contracts, tokens, chainId };
+    }
+    async function initContracts () {
+        const { accounts, contracts, tokens, chainId } = await deployContracts();
+
+        await tokens.dai.mint(accounts.deployer, ether('1000'));
+
+        await tokens.dai.approve(contracts.escrowFactory, ether('1'));
+        await tokens.usdc.approve(contracts.escrowFactory, ether('1'));
+
+        return { accounts, contracts, tokens, chainId };
     }
 
     it('should deploy clones for maker', async function () {
-        const { escrowFactory } = await loadFixture(initContracts);
+        const { accounts, contracts, tokens, chainId } = await loadFixture(initContracts);
 
         for (let i = 0; i < 3; i++) {
             const srcAmount = Math.floor(Math.random() * 100) + 1;
             const dstAmount = Math.floor(Math.random() * 100) + 1;
-            const { escrowParams, hashlock } = buildSrcEscrowParams({
-                srcAmount,
-                dstAmount,
-                srcToken: ethers.ZeroAddress,
-                dstToken: ethers.ZeroAddress,
-                srcChainId: 1,
-                dstChainId: 2,
+            const order = buildOrder({
+                makerAsset: tokens.usdc.target,
+                takerAsset: tokens.dai.target,
+                makingAmount: srcAmount,
+                takingAmount: dstAmount,
+                maker: await accounts.alice.getAddress(),
+            });
+            const data = buildOrderData(chainId, await contracts.limitOrderProtocol.getAddress(), order);
+            const orderHash = ethers.TypedDataEncoder.hash(data.domain, data.types, data.value);
+
+            const { data: extraData, hashlock } = buldDynamicData({
+                chainId,
+                token: tokens.dai.target,
             });
 
-            const tx = await escrowFactory.createEscrow(escrowParams);
-            const receipt = await tx.wait();
-            const events = await escrowFactory.queryFilter('EscrowCreated', receipt.blockNumber, receipt.blockNumber);
-            const srcClone = await ethers.getContractAt('EscrowRegistry', events[0].args[0]);
-            const returnedSrcEscrowParams = await srcClone.srcEscrowParams();
-            expect(returnedSrcEscrowParams.hashlock).to.equal(hashlock);
-            expect(returnedSrcEscrowParams.srcConditions.amount).to.equal(srcAmount);
-            expect(returnedSrcEscrowParams.dstConditions.amount).to.equal(dstAmount);
+            const srcClone = await ethers.getContractAt('EscrowRegistry', await contracts.escrowFactory.addressOfEscrow(orderHash));
+            await tokens.usdc.transfer(srcClone, srcAmount);
+
+            await contracts.escrowFactory.postInteraction(
+                order,
+                '0x', // extension
+                orderHash,
+                accounts.deployer, // taker
+                srcAmount, // makingAmount
+                dstAmount, // takingAmount
+                0, // remainingMakingAmount
+                extraData,
+            );
+            const returnedSrcEscrowImmutables = await srcClone.srcEscrowImmutables();
+            expect(returnedSrcEscrowImmutables.extraDataParams.hashlock).to.equal(hashlock);
+            expect(returnedSrcEscrowImmutables.interactionParams.srcAmount).to.equal(srcAmount);
+            expect(returnedSrcEscrowImmutables.extraDataParams.dstToken).to.equal(tokens.dai.target);
         }
     });
 
     it('should deploy clones for taker', async function () {
-        const { escrowFactory } = await loadFixture(initContracts);
+        const { accounts, contracts, tokens, chainId } = await loadFixture(initContracts);
 
         for (let i = 0; i < 3; i++) {
             const amount = Math.floor(Math.random() * 100) + 1;
-            const { escrowParams, hashlock } = buildDstEscrowParams({
+            const safetyDeposit = Math.floor(amount * 0.1);
+            const { data, escrowImmutables, hashlock } = buildDstEscrowImmutables({
+                maker: await accounts.alice.getAddress(),
+                chainId,
+                token: tokens.dai.target,
                 amount,
-                token: ethers.ZeroAddress,
-                chainId: 2,
+                safetyDeposit,
             });
 
-            const tx = await escrowFactory.createEscrow(escrowParams);
-            const receipt = await tx.wait();
-            const events = await escrowFactory.queryFilter('EscrowCreated', receipt.blockNumber, receipt.blockNumber);
-            const srcClone = await ethers.getContractAt('EscrowRegistry', events[0].args[0]);
-            const returnedDstEscrowParams = await srcClone.dstEscrowParams();
-            expect(returnedDstEscrowParams.hashlock).to.equal(hashlock);
-            expect(returnedDstEscrowParams.conditions.amount).to.equal(amount);
+            const deployedAt = (await ethers.provider.getBlock('latest')).timestamp + 1;
+            const msgSender = await accounts.deployer.getAddress();
+            const salt = ethers.solidityPackedKeccak256(
+                ['uint256', 'bytes', 'address'],
+                [deployedAt, data, msgSender],
+            );
+            const srcClone = await ethers.getContractAt('EscrowRegistry', await contracts.escrowFactory.addressOfEscrow(salt));
+
+            await time.setNextBlockTimestamp(deployedAt);
+            const tx = contracts.escrowFactory.createEscrow(escrowImmutables);
+            await expect(tx).to.changeTokenBalances(tokens.dai, [accounts.deployer, srcClone], [-(amount + safetyDeposit), (amount + safetyDeposit)]);
+            const returnedDstEscrowImmutables = await srcClone.dstEscrowImmutables();
+            expect(returnedDstEscrowImmutables.hashlock).to.equal(hashlock);
+            expect(returnedDstEscrowImmutables.amount).to.equal(amount);
         }
     });
 });
