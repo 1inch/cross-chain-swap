@@ -22,11 +22,12 @@ function getRandomBytes () {
 function buldDynamicData ({
     chainId,
     token,
+    safetyDeposit,
 }) {
     const hashlock = ethers.keccak256(getRandomBytes());
     const data = abiCoder.encode(
-        ['uint256', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
-        [hashlock, chainId, token, ...Object.values(srcTimelockDurations), ...Object.values(dstTimelockDurations)],
+        ['uint256', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+        [hashlock, chainId, token, safetyDeposit, ...Object.values(srcTimelockDurations), ...Object.values(dstTimelockDurations)],
     );
     return { data, hashlock };
 };
@@ -40,10 +41,10 @@ function buildDstEscrowImmutables ({
 }) {
     const hashlock = ethers.keccak256(getRandomBytes());
     const escrowImmutables = {
-        deployedAt: 0,
+        // deployedAt: 0,
         maker,
         hashlock,
-        chainId,
+        // chainId,
         token,
         amount,
         safetyDeposit,

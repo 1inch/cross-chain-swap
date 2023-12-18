@@ -23,6 +23,7 @@ interface IEscrowFactory {
         uint256 hashlock;
         uint256 dstChainId;
         address dstToken;
+        uint256 safetyDeposit;
         Timelocks srcTimelocks;
         Timelocks dstTimelocks;
     }
@@ -38,6 +39,15 @@ interface IEscrowFactory {
         uint256 hashlock;
         address maker;
         uint256 chainId;
+        address token;
+        uint256 amount;
+        uint256 safetyDeposit;
+        Timelocks timelocks;
+    }
+
+    struct DstEscrowImmutablesCreation {
+        uint256 hashlock;
+        address maker;
         address token;
         uint256 amount;
         uint256 safetyDeposit;

@@ -51,6 +51,7 @@ describe('EscrowFactory', async function () {
         for (let i = 0; i < 3; i++) {
             const srcAmount = Math.floor(Math.random() * 100) + 1;
             const dstAmount = Math.floor(Math.random() * 100) + 1;
+            const safetyDeposit = Math.floor(dstAmount * 0.1);
             const order = buildOrder({
                 makerAsset: tokens.usdc.target,
                 takerAsset: tokens.dai.target,
@@ -64,6 +65,7 @@ describe('EscrowFactory', async function () {
             const { data: extraData, hashlock } = buldDynamicData({
                 chainId,
                 token: tokens.dai.target,
+                safetyDeposit,
             });
 
             const srcClone = await ethers.getContractAt('EscrowRegistry', await contracts.escrowFactory.addressOfEscrow(orderHash));
