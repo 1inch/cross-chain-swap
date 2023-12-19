@@ -55,5 +55,4 @@ interface IEscrowFactory {
     }
 
     error InsufficientEscrowBalance();
-    error OnlyLimitOrderProtocol();
 }

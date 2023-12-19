@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
+// import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
@@ -12,29 +12,26 @@ import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithIm
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { EscrowRegistry } from "./EscrowRegistry.sol";
 
-contract EscrowFactory is IEscrowFactory {
+// TODO: import from the package
+import { BasicSettlementExtension, IOrderMixin } from "./flatten/BasicSettlementExtension.sol";
+
+contract EscrowFactory is IEscrowFactory, BasicSettlementExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using SafeERC20 for IERC20;
 
     address public immutable IMPLEMENTATION;
-    address public immutable LIMIT_ORDER_PROTOCOL;
 
-    /// @dev Modifier to check if the caller is the limit order protocol contract.
-    modifier onlyLimitOrderProtocol {
-        if (msg.sender != address(LIMIT_ORDER_PROTOCOL)) revert OnlyLimitOrderProtocol();
-        _;
-    }
-
-    constructor(address implementation, address limitOrderProtocol) {
+    constructor(address implementation, IOrderMixin limitOrderProtocol, IERC20 token)
+        BasicSettlementExtension(limitOrderProtocol, token)
+    {
         IMPLEMENTATION = implementation;
-        LIMIT_ORDER_PROTOCOL = limitOrderProtocol;
     }
 
     /**
      * @dev Creates a new escrow contract for maker.
      */
-    function postInteraction(
+    function _postInteraction(
         IOrderMixin.Order calldata order,
         bytes calldata /* extension */,
         bytes32 orderHash,
@@ -43,7 +40,24 @@ contract EscrowFactory is IEscrowFactory {
         uint256 takingAmount,
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
-    ) external onlyLimitOrderProtocol {
+    ) internal override {
+        (
+            uint256 resolverFee,
+            address integrator,
+            uint256 integrationFee,
+            bytes calldata dataReturned
+        ) = _parseFeeData(extraData, order.makingAmount, makingAmount, takingAmount);
+
+        bytes calldata extraDataParams = dataReturned[:320];
+        bytes calldata whitelist = dataReturned[320:];
+
+        if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
+
+        _chargeFee(taker, resolverFee);
+        if (integrationFee > 0) {
+            IERC20(order.takerAsset.get()).safeTransferFrom(taker, integrator, integrationFee);
+        }
+
         bytes memory interactionParams = abi.encode(
             order.maker,
             taker,
@@ -55,7 +69,7 @@ contract EscrowFactory is IEscrowFactory {
         bytes memory data = abi.encodePacked(
             block.timestamp, // deployedAt
             interactionParams,
-            extraData
+            extraDataParams
         );
         // Salt is orderHash
         address escrow = ClonesWithImmutableArgs.addressOfClone3(orderHash);
@@ -95,5 +109,9 @@ contract EscrowFactory is IEscrowFactory {
         bytes32 salt
     ) private returns (EscrowRegistry clone) {
         clone = EscrowRegistry(IMPLEMENTATION.clone3(data, salt));
+    }
+
+    function _isWhitelisted(bytes calldata /* whitelist */, address /* resolver */) internal view override returns (bool) {
+        return true;
     }
 }

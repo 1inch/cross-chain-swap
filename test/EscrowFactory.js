@@ -26,7 +26,7 @@ describe('EscrowFactory', async function () {
         await escrowRegistry.waitForDeployment();
 
         const EscrowFactory = await ethers.getContractFactory('EscrowFactory');
-        const escrowFactory = await EscrowFactory.deploy(escrowRegistry, limitOrderProtocol);
+        const escrowFactory = await EscrowFactory.deploy(escrowRegistry, limitOrderProtocol, usdc.target);
         await escrowFactory.waitForDeployment();
         const contracts = { escrowRegistry, escrowFactory, limitOrderProtocol };
 
