@@ -1089,10 +1089,6 @@ contract BasicSettlementExtension is BaseExtension, FeeBankCharger {
         }
     }
 
-    function _isPriorityFeeValid() internal view virtual returns(bool) {
-        return true;
-    }
-
     function _postInteraction(
         IOrderMixin.Order calldata order,
         bytes calldata /* extension */,
@@ -1106,8 +1102,6 @@ contract BasicSettlementExtension is BaseExtension, FeeBankCharger {
         (uint256 resolverFee, address integrator, uint256 integrationFee, bytes calldata dataReturned) = _parseFeeData(extraData, order.makingAmount, makingAmount, takingAmount);
 
         if (!_isWhitelisted(dataReturned, taker)) revert ResolverIsNotWhitelisted();
-
-        if (!_isPriorityFeeValid()) revert InvalidPriorityFee();
 
         _chargeFee(taker, resolverFee);
         if (integrationFee > 0) {
