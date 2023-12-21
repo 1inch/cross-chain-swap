@@ -66,7 +66,7 @@ describe('EscrowFactory', async function () {
         const data = buildOrderData(chainId, await contracts.limitOrderProtocol.getAddress(), order);
         const orderHash = ethers.TypedDataEncoder.hash(data.domain, data.types, data.value);
 
-        const { data: extraData, hashlock } = buldDynamicData({
+        const { data: extraData, hashlock, secret } = buldDynamicData({
             chainId,
             token: tokens.dai.target,
             safetyDeposit,
@@ -86,14 +86,14 @@ describe('EscrowFactory', async function () {
             extraData,
         );
 
-        return { accounts, contracts, tokens, chainId, srcClone, srcAmount, dstAmount, safetyDeposit, hashlock };
+        return { accounts, contracts, tokens, chainId, srcClone, srcAmount, dstAmount, safetyDeposit, hashlock, secret };
     }
 
     async function deployCloneDst () {
         const { accounts, contracts, tokens, chainId } = await loadFixture(initContracts);
         const amount = Math.floor(Math.random() * 100) + 1;
         const safetyDeposit = Math.floor(amount * 0.1);
-        const { data, escrowImmutables } = buildDstEscrowImmutables({
+        const { data, escrowImmutables, secret } = buildDstEscrowImmutables({
             maker: await accounts.alice.getAddress(),
             taker: await accounts.deployer.getAddress(),
             chainId,
@@ -112,7 +112,7 @@ describe('EscrowFactory', async function () {
 
         await time.setNextBlockTimestamp(deployedAt);
         const tx = contracts.escrowFactory.createEscrow(escrowImmutables);
-        return { accounts, contracts, tokens, chainId, dstClone, tx, escrowImmutables };
+        return { accounts, contracts, tokens, chainId, dstClone, tx, escrowImmutables, secret };
     }
 
     it('should deploy clones for maker', async function () {
@@ -149,9 +149,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not withdraw tokens on the source chain during finality lock', async function () {
-        const { srcClone } = await deployCloneSrc();
-
-        const secret = buildSecret();
+        const { srcClone, secret } = await deployCloneSrc();
 
         await expect(
             srcClone.withdrawSrc(secret),
@@ -159,7 +157,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not withdraw tokens on the destination chain during finality lock', async function () {
-        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -168,7 +166,6 @@ describe('EscrowFactory', async function () {
                 (escrowImmutables.amount + escrowImmutables.safetyDeposit),
             ],
         );
-        const secret = buildSecret();
 
         await expect(
             dstClone.withdrawDst(secret),
@@ -176,9 +173,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should withdraw tokens on the source chain', async function () {
-        const { accounts, tokens, srcClone, srcAmount } = await deployCloneSrc();
-
-        const secret = buildSecret();
+        const { accounts, tokens, srcClone, srcAmount, secret } = await deployCloneSrc();
 
         const returnedSrcEscrowImmutables = await srcClone.srcEscrowImmutables();
         await time.setNextBlockTimestamp(returnedSrcEscrowImmutables.deployedAt + srcTimelockDurations.finality + 100n);
@@ -187,8 +182,21 @@ describe('EscrowFactory', async function () {
         await expect(tx).to.changeTokenBalances(tokens.usdc, [accounts.deployer, srcClone], [srcAmount, -srcAmount]);
     });
 
+    it('should not withdraw tokens on the source chain with the wrong secret', async function () {
+        const { srcClone } = await deployCloneSrc();
+
+        const secret = buildSecret();
+
+        const returnedSrcEscrowImmutables = await srcClone.srcEscrowImmutables();
+        await time.setNextBlockTimestamp(returnedSrcEscrowImmutables.deployedAt + srcTimelockDurations.finality + 100n);
+
+        await expect(
+            srcClone.withdrawSrc(secret),
+        ).to.be.revertedWithCustomError(srcClone, 'InvalidSecret');
+    });
+
     it('should withdraw tokens on the destination chain by resolver', async function () {
-        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -197,7 +205,6 @@ describe('EscrowFactory', async function () {
                 (escrowImmutables.amount + escrowImmutables.safetyDeposit),
             ],
         );
-        const secret = buildSecret();
 
         const returnedDstEscrowImmutables = await dstClone.dstEscrowImmutables();
         await time.setNextBlockTimestamp(returnedDstEscrowImmutables.deployedAt + dstTimelockDurations.finality + 100n);
@@ -213,7 +220,7 @@ describe('EscrowFactory', async function () {
         );
     });
 
-    it('should not withdraw tokens on the destination chain by non-resolver during non-public unlock period', async function () {
+    it('should not withdraw tokens on the destination chain with the wrong secret', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
@@ -223,7 +230,27 @@ describe('EscrowFactory', async function () {
                 (escrowImmutables.amount + escrowImmutables.safetyDeposit),
             ],
         );
+
         const secret = buildSecret();
+
+        const returnedSrcEscrowImmutables = await dstClone.dstEscrowImmutables();
+        await time.setNextBlockTimestamp(returnedSrcEscrowImmutables.deployedAt + dstTimelockDurations.finality + 100n);
+
+        await expect(
+            dstClone.withdrawDst(secret),
+        ).to.be.revertedWithCustomError(dstClone, 'InvalidSecret');
+    });
+
+    it('should not withdraw tokens on the destination chain by non-resolver during non-public unlock period', async function () {
+        const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
+        await expect(tx).to.changeTokenBalances(
+            tokens.dai,
+            [accounts.deployer, dstClone],
+            [
+                -(escrowImmutables.amount + escrowImmutables.safetyDeposit),
+                (escrowImmutables.amount + escrowImmutables.safetyDeposit),
+            ],
+        );
 
         const returnedDstEscrowImmutables = await dstClone.dstEscrowImmutables();
         await time.setNextBlockTimestamp(returnedDstEscrowImmutables.deployedAt + dstTimelockDurations.finality + 100n);
@@ -233,7 +260,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should withdraw tokens on the destination chain by anyone', async function () {
-        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -242,7 +269,6 @@ describe('EscrowFactory', async function () {
                 (escrowImmutables.amount + escrowImmutables.safetyDeposit),
             ],
         );
-        const secret = buildSecret();
 
         const returnedDstEscrowImmutables = await dstClone.dstEscrowImmutables();
         await time.setNextBlockTimestamp(

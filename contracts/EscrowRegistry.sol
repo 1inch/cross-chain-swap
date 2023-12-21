@@ -23,6 +23,7 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
 
         _checkSecretAndTransfer(
             secret,
+            escrowImmutables.extraDataParams.hashlock,
             escrowImmutables.interactionParams.taker,
             escrowImmutables.interactionParams.srcToken,
             escrowImmutables.interactionParams.srcAmount
@@ -57,6 +58,7 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
         }
         _checkSecretAndTransfer(
             secret,
+            escrowImmutables.hashlock,
             escrowImmutables.maker,
             escrowImmutables.token,
             escrowImmutables.amount
@@ -106,13 +108,12 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
         return data;
     }
 
-    function _isValidSecret(bytes32 /* secret */) internal view returns (bool) {
-        // TODO: Validate secret
-        return true;
+    function _isValidSecret(bytes32 secret, uint256 hashlock) internal pure returns (bool) {
+        return uint256(keccak256(abi.encode(secret))) == hashlock;
     }
 
-    function _checkSecretAndTransfer(bytes32 secret, address recipient, address token, uint256 amount) internal {
-        if (!_isValidSecret(secret)) revert InvalidSecret();
+    function _checkSecretAndTransfer(bytes32 secret, uint256 hashlock, address recipient, address token, uint256 amount) internal {
+        if (!_isValidSecret(secret, hashlock)) revert InvalidSecret();
         IERC20(token).safeTransfer(recipient, amount);
     }
 }
