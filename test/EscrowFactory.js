@@ -86,7 +86,7 @@ describe('EscrowFactory', async function () {
             extraData,
         );
 
-        return { srcClone, srcAmount, dstAmount, safetyDeposit, hashlock };
+        return { accounts, contracts, tokens, chainId, srcClone, srcAmount, dstAmount, safetyDeposit, hashlock };
     }
 
     async function deployCloneDst () {
@@ -112,14 +112,12 @@ describe('EscrowFactory', async function () {
 
         await time.setNextBlockTimestamp(deployedAt);
         const tx = contracts.escrowFactory.createEscrow(escrowImmutables);
-        return { dstClone, tx, escrowImmutables };
+        return { accounts, contracts, tokens, chainId, dstClone, tx, escrowImmutables };
     }
 
     it('should deploy clones for maker', async function () {
-        const { tokens } = await loadFixture(initContracts);
-
         for (let i = 0; i < 3; i++) {
-            const { srcClone, srcAmount, hashlock } = await deployCloneSrc();
+            const { tokens, srcClone, srcAmount, hashlock } = await deployCloneSrc();
             const returnedSrcEscrowImmutables = await srcClone.srcEscrowImmutables();
             expect(returnedSrcEscrowImmutables.extraDataParams.hashlock).to.equal(hashlock);
             expect(returnedSrcEscrowImmutables.interactionParams.srcAmount).to.equal(srcAmount);
@@ -128,10 +126,8 @@ describe('EscrowFactory', async function () {
     });
 
     it('should deploy clones for taker', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-
         for (let i = 0; i < 3; i++) {
-            const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+            const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
             await expect(tx).to.changeTokenBalances(
                 tokens.dai,
                 [accounts.deployer, dstClone],
@@ -147,8 +143,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not deploy clone for taker when it is unsafe', async function () {
-        const { contracts } = await loadFixture(initContracts);
-        const { tx, escrowImmutables } = await deployCloneDst();
+        const { contracts, tx, escrowImmutables } = await deployCloneDst();
         await time.setNextBlockTimestamp(escrowImmutables.srcCancellationTimestamp + 1n);
         await expect(tx).to.be.revertedWithCustomError(contracts.escrowFactory, 'InvalidCreationTime');
     });
@@ -164,8 +159,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not withdraw tokens on the destination chain during finality lock', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -182,8 +176,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should withdraw tokens on the source chain', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { srcClone, srcAmount } = await deployCloneSrc();
+        const { accounts, tokens, srcClone, srcAmount } = await deployCloneSrc();
 
         const secret = buildSecret();
 
@@ -195,8 +188,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should withdraw tokens on the destination chain by resolver', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -222,8 +214,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not withdraw tokens on the destination chain by non-resolver during non-public unlock period', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -242,8 +233,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should withdraw tokens on the destination chain by anyone', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -271,8 +261,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should cancel escrow on the source chain', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { srcClone, srcAmount } = await deployCloneSrc();
+        const { accounts, tokens, srcClone, srcAmount } = await deployCloneSrc();
 
         const returnedSrcEscrowImmutables = await srcClone.srcEscrowImmutables();
         await time.setNextBlockTimestamp(
@@ -284,8 +273,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not cancel escrow on the source chain during unlock period', async function () {
-        const { accounts } = await loadFixture(initContracts);
-        const { srcClone } = await deployCloneSrc();
+        const { accounts, srcClone } = await deployCloneSrc();
 
         const returnedSrcEscrowImmutables = await srcClone.srcEscrowImmutables();
         await time.setNextBlockTimestamp(returnedSrcEscrowImmutables.deployedAt + srcTimelockDurations.finality + 100n);
@@ -296,8 +284,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should cancel escrow on the destination chain', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
@@ -323,8 +310,7 @@ describe('EscrowFactory', async function () {
     });
 
     it('should not cancel escrow on the destination chain during unlock period', async function () {
-        const { accounts, tokens } = await loadFixture(initContracts);
-        const { dstClone, tx, escrowImmutables } = await deployCloneDst();
+        const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
             tokens.dai,
             [accounts.deployer, dstClone],
