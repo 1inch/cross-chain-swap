@@ -4,7 +4,13 @@ pragma solidity 0.8.23;
 
 interface IEscrowFactory {
     // TODO: is it possible to optimise this?
-    struct Timelocks {
+    // Timelocks represent the duration of each period, in seconds
+    struct SrcTimelocks {
+        uint256 finality;
+        uint256 publicUnlock;
+    }
+
+    struct DstTimelocks {
         uint256 finality;
         uint256 unlock;
         uint256 publicUnlock;
@@ -24,8 +30,8 @@ interface IEscrowFactory {
         uint256 dstChainId;
         address dstToken;
         uint256 safetyDeposit;
-        Timelocks srcTimelocks;
-        Timelocks dstTimelocks;
+        SrcTimelocks srcTimelocks;
+        DstTimelocks dstTimelocks;
     }
 
     struct SrcEscrowImmutables {
@@ -38,22 +44,26 @@ interface IEscrowFactory {
         uint256 deployedAt;
         uint256 hashlock;
         address maker;
+        address taker;
         uint256 chainId;
         address token;
         uint256 amount;
         uint256 safetyDeposit;
-        Timelocks timelocks;
+        DstTimelocks timelocks;
     }
 
     struct DstEscrowImmutablesCreation {
         uint256 hashlock;
         address maker;
+        address taker;
         address token;
         uint256 amount;
         uint256 safetyDeposit;
-        Timelocks timelocks;
+        DstTimelocks timelocks;
+        uint256 srcCancellationTimestamp;
     }
 
     error InsufficientEscrowBalance();
+    error InvalidCreationTime();
     error OnlyLimitOrderProtocol();
 }

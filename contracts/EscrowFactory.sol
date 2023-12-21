@@ -67,10 +67,18 @@ contract EscrowFactory is IEscrowFactory {
      * @dev Creates a new escrow contract for taker.
      */
     function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external {
+        if (
+            block.timestamp +
+            dstEscrowImmutables.timelocks.finality +
+            dstEscrowImmutables.timelocks.unlock + 
+            dstEscrowImmutables.timelocks.publicUnlock >
+            dstEscrowImmutables.srcCancellationTimestamp
+        ) revert InvalidCreationTime();
         bytes memory data = abi.encode(
             block.timestamp, // deployedAt
             dstEscrowImmutables.hashlock,
             dstEscrowImmutables.maker,
+            dstEscrowImmutables.taker,
             block.chainid,
             dstEscrowImmutables.token,
             dstEscrowImmutables.amount,
