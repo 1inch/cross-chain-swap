@@ -8,13 +8,13 @@ import { Clone } from "clones-with-immutable-args/Clone.sol";
 import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { IEscrowRegistry } from "./interfaces/IEscrowRegistry.sol";
+import { IEscrow } from "./interfaces/IEscrow.sol";
 
-contract EscrowRegistry is Clone, IEscrowRegistry {
+contract Escrow is Clone, IEscrow {
     using SafeERC20 for IERC20;
 
     function withdrawSrc(bytes32 secret) external {
-        IEscrowFactory.SrcEscrowImmutables memory escrowImmutables = srcEscrowImmutables();
+        SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         uint256 finalityTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
         if (
             block.timestamp < finalityTimestamp ||
@@ -31,12 +31,11 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
     }
 
     function cancelSrc() external {
-        IEscrowFactory.SrcEscrowImmutables memory escrowImmutables = srcEscrowImmutables();
+        SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         uint256 finalityTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        if (
-            block.timestamp < finalityTimestamp ||
-            block.timestamp < finalityTimestamp + escrowImmutables.extraDataParams.srcTimelocks.publicUnlock
-        ) revert InvalidCancellationTime();
+        if (block.timestamp < finalityTimestamp + escrowImmutables.extraDataParams.srcTimelocks.publicUnlock) {
+            revert InvalidCancellationTime();
+        }
 
         IERC20(escrowImmutables.interactionParams.srcToken).safeTransfer(
             escrowImmutables.interactionParams.maker,
@@ -45,7 +44,7 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
     }
 
     function withdrawDst(bytes32 secret) external {
-        IEscrowFactory.DstEscrowImmutables memory escrowImmutables = dstEscrowImmutables();
+        DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         uint256 finalityTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
         uint256 unlockTimestamp = finalityTimestamp + escrowImmutables.timelocks.unlock;
         if (
@@ -70,12 +69,11 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
     }
 
     function cancelDst() external {
-        IEscrowFactory.DstEscrowImmutables memory escrowImmutables = dstEscrowImmutables();
+        DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         uint256 finalityTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
-        if (
-            block.timestamp < finalityTimestamp ||
-            block.timestamp < finalityTimestamp + escrowImmutables.timelocks.unlock + escrowImmutables.timelocks.publicUnlock
-        ) revert InvalidCancellationTime();
+        if (block.timestamp < finalityTimestamp + escrowImmutables.timelocks.unlock + escrowImmutables.timelocks.publicUnlock) {
+            revert InvalidCancellationTime();
+        }
 
         IERC20(escrowImmutables.token).safeTransfer(
             escrowImmutables.taker,
@@ -88,23 +86,19 @@ contract EscrowRegistry is Clone, IEscrowRegistry {
         );
     }
 
-    function srcEscrowImmutables() public pure returns (IEscrowFactory.SrcEscrowImmutables memory) {
-        IEscrowFactory.SrcEscrowImmutables calldata data;
+    function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata) {
+        SrcEscrowImmutables calldata data;
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
-        assembly {
-            data := offset
-        }
+        assembly { data := offset }
         return data;
     }
 
-    function dstEscrowImmutables() public pure returns (IEscrowFactory.DstEscrowImmutables memory) {
-        IEscrowFactory.DstEscrowImmutables calldata data;
+    function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata) {
+        DstEscrowImmutables calldata data;
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
-        assembly {
-            data := offset
-        }
+        assembly { data := offset }
         return data;
     }
 

@@ -27,8 +27,8 @@ describe('EscrowFactory', async function () {
         await usdc.waitForDeployment();
         const tokens = { dai, usdc };
 
-        const EscrowRegistry = await ethers.getContractFactory('EscrowRegistry');
-        const escrowRegistry = await EscrowRegistry.deploy();
+        const Escrow = await ethers.getContractFactory('Escrow');
+        const escrowRegistry = await Escrow.deploy();
         await escrowRegistry.waitForDeployment();
 
         const EscrowFactory = await ethers.getContractFactory('EscrowFactory');
@@ -72,7 +72,7 @@ describe('EscrowFactory', async function () {
             safetyDeposit,
         });
 
-        const srcClone = await ethers.getContractAt('EscrowRegistry', await contracts.escrowFactory.addressOfEscrow(orderHash));
+        const srcClone = await ethers.getContractAt('Escrow', await contracts.escrowFactory.addressOfEscrow(orderHash));
         await tokens.usdc.transfer(srcClone, srcAmount);
 
         await contracts.escrowFactory.postInteraction(
@@ -108,7 +108,7 @@ describe('EscrowFactory', async function () {
             ['uint256', 'bytes', 'address'],
             [deployedAt, data, msgSender],
         );
-        const dstClone = await ethers.getContractAt('EscrowRegistry', await contracts.escrowFactory.addressOfEscrow(salt));
+        const dstClone = await ethers.getContractAt('Escrow', await contracts.escrowFactory.addressOfEscrow(salt));
 
         await time.setNextBlockTimestamp(deployedAt);
         const tx = contracts.escrowFactory.createEscrow(escrowImmutables);
