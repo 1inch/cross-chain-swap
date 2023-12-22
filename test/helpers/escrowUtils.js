@@ -27,7 +27,7 @@ function buldDynamicData ({
     safetyDeposit,
 }) {
     const hashlock = ethers.keccak256(getRandomBytes());
-    const data = '0x00' +  trim0x(abiCoder.encode(
+    const data = '0x00' + trim0x(abiCoder.encode(
         ['uint256', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
         [hashlock, chainId, token, safetyDeposit, ...Object.values(srcTimelockDurations), ...Object.values(dstTimelockDurations)],
     ));
