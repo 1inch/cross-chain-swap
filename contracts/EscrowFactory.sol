@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 // import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import { IOrderMixin, SimpleSettlementExtension } from "@1inch/limit-order-settlement/contracts/SimpleSettlementExtension.sol";
 import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
 import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
@@ -12,18 +13,15 @@ import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithIm
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { EscrowRegistry } from "./EscrowRegistry.sol";
 
-// TODO: import from the package
-import { BasicSettlementExtension, IOrderMixin } from "./flatten/BasicSettlementExtension.sol";
-
-contract EscrowFactory is IEscrowFactory, BasicSettlementExtension {
+contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using SafeERC20 for IERC20;
 
     address public immutable IMPLEMENTATION;
 
-    constructor(address implementation, IOrderMixin limitOrderProtocol, IERC20 token)
-        BasicSettlementExtension(limitOrderProtocol, token)
+    constructor(address implementation, address limitOrderProtocol, IERC20 token)
+        SimpleSettlementExtension(limitOrderProtocol, token)
     {
         IMPLEMENTATION = implementation;
     }
