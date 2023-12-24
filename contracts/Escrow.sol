@@ -7,7 +7,6 @@ import { Clone } from "clones-with-immutable-args/Clone.sol";
 
 import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 
-import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 
 contract Escrow is Clone, IEscrow {
