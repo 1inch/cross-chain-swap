@@ -19,17 +19,22 @@ function getRandomBytes () {
     return ethers.toUtf8Bytes((Math.floor(Math.random() * 1000) + 1).toString());
 }
 
+function buildSecret () {
+    return '0x' + trim0x(ethers.hexlify(getRandomBytes())).padStart(64, '0');
+}
+
 function buldDynamicData ({
     chainId,
     token,
     safetyDeposit,
 }) {
-    const hashlock = ethers.keccak256(getRandomBytes());
+    const secret = buildSecret();
+    const hashlock = ethers.keccak256(secret);
     const data = abiCoder.encode(
         ['uint256', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
         [hashlock, chainId, token, safetyDeposit, ...Object.values(srcTimelockDurations), ...Object.values(dstTimelockDurations)],
     );
-    return { data, hashlock };
+    return { data, hashlock, secret };
 };
 
 function buildDstEscrowImmutables ({
@@ -40,7 +45,8 @@ function buildDstEscrowImmutables ({
     amount,
     safetyDeposit,
 }) {
-    const hashlock = ethers.keccak256(getRandomBytes());
+    const secret = buildSecret();
+    const hashlock = ethers.keccak256(secret);
     const srcCancellationTimestamp = BigInt(Math.floor(Date.now() / 1000)) + srcTimelockDurations.finality + srcTimelockDurations.publicUnlock;
     const escrowImmutables = {
         hashlock,
@@ -58,11 +64,7 @@ function buildDstEscrowImmutables ({
         [hashlock, maker, taker, chainId, token, amount, safetyDeposit, ...Object.values(dstTimelockDurations)],
     );
 
-    return { data, escrowImmutables, hashlock };
-}
-
-function buildSecret () {
-    return '0x' + trim0x(ethers.hexlify(getRandomBytes())).padStart(64, '0');
+    return { data, escrowImmutables, hashlock, secret };
 }
 
 module.exports = {
