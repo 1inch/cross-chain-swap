@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.23;
 
+import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IOrderMixin, SimpleSettlementExtension } from "@1inch/limit-order-settlement/contracts/SimpleSettlementExtension.sol";
@@ -10,7 +11,7 @@ import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.s
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { EscrowRegistry } from "./EscrowRegistry.sol";
+import { Escrow } from "./Escrow.sol";
 
 contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using AddressLib for Address;
@@ -78,10 +79,18 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      * @dev Creates a new escrow contract for taker.
      */
     function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external {
+        if (
+            block.timestamp +
+            dstEscrowImmutables.timelocks.finality +
+            dstEscrowImmutables.timelocks.unlock +
+            dstEscrowImmutables.timelocks.publicUnlock >
+            dstEscrowImmutables.srcCancellationTimestamp
+        ) revert InvalidCreationTime();
         bytes memory data = abi.encode(
             block.timestamp, // deployedAt
             dstEscrowImmutables.hashlock,
             dstEscrowImmutables.maker,
+            dstEscrowImmutables.taker,
             block.chainid,
             dstEscrowImmutables.token,
             dstEscrowImmutables.amount,
@@ -91,7 +100,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             dstEscrowImmutables.timelocks.publicUnlock
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
-        EscrowRegistry escrow = _createEscrow(data, salt);
+        Escrow escrow = _createEscrow(data, salt);
         IERC20(dstEscrowImmutables.token).safeTransferFrom(
             msg.sender, address(escrow), dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
         );
