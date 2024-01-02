@@ -48,6 +48,8 @@
     "lint:js:fix": "eslint . --fix",
     "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
     "lint:sol:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" --fix",
+    "lint:foundry": "solhint --max-warnings 0 \"test/**/*.sol\"",
+    "lint:foundry:fix": "solhint --max-warnings 0 \"test/**/*.sol\" --fix",
     "test": "hardhat test --parallel",
     "test:ci": "hardhat test"
   }

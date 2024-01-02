@@ -10,7 +10,6 @@ import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.s
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { Escrow } from "./Escrow.sol";
 
 contract EscrowFactory is IEscrowFactory {
     using AddressLib for Address;
@@ -67,6 +66,7 @@ contract EscrowFactory is IEscrowFactory {
      * @dev Creates a new escrow contract for taker.
      */
     function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external {
+        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
             block.timestamp +
             dstEscrowImmutables.timelocks.finality +
@@ -88,9 +88,9 @@ contract EscrowFactory is IEscrowFactory {
             dstEscrowImmutables.timelocks.publicUnlock
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
-        Escrow escrow = _createEscrow(data, salt);
+        address escrow = _createEscrow(data, salt);
         IERC20(dstEscrowImmutables.token).safeTransferFrom(
-            msg.sender, address(escrow), dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
+            msg.sender, escrow, dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
         );
     }
 
@@ -101,7 +101,9 @@ contract EscrowFactory is IEscrowFactory {
     function _createEscrow(
         bytes memory data,
         bytes32 salt
-    ) private returns (Escrow clone) {
-        clone = Escrow(IMPLEMENTATION.clone3(data, salt));
+    ) private returns (address clone) {
+        clone = address(
+            uint160(IMPLEMENTATION.clone3(data, salt)) & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+        );
     }
 }

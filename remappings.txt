@@ -1,0 +1,11 @@
+@1inch/=node_modules/@1inch/
+@chainlink/=node_modules/@chainlink/
+@eth-optimism/=node_modules/@eth-optimism/
+@openzeppelin/=node_modules/@openzeppelin/
+clones-with-immutable-args/=node_modules/clones-with-immutable-args/
+ds-test/=lib/forge-std/lib/ds-test/src/
+eth-gas-reporter/=node_modules/eth-gas-reporter/
+forge-std/=lib/forge-std/src/
+hardhat-deploy/=node_modules/hardhat-deploy/
+hardhat/=node_modules/hardhat/
+solidity-utils/=node_modules/@1inch/solidity-utils/

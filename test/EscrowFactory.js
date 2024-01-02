@@ -125,6 +125,7 @@ describe('EscrowFactory', async function () {
         }
     });
 
+    // Migrated
     it('should deploy clones for taker', async function () {
         for (let i = 0; i < 3; i++) {
             const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
@@ -142,6 +143,7 @@ describe('EscrowFactory', async function () {
         }
     });
 
+    // Migrated
     it('should not deploy clone for taker when it is unsafe', async function () {
         const { contracts, tx, escrowImmutables } = await deployCloneDst();
         await time.setNextBlockTimestamp(escrowImmutables.srcCancellationTimestamp + 1n);
@@ -156,6 +158,7 @@ describe('EscrowFactory', async function () {
         ).to.be.revertedWithCustomError(srcClone, 'InvalidWithdrawalTime');
     });
 
+    // Migrated
     it('should not withdraw tokens on the destination chain during finality lock', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
@@ -195,6 +198,7 @@ describe('EscrowFactory', async function () {
         ).to.be.revertedWithCustomError(srcClone, 'InvalidSecret');
     });
 
+    // Migrated
     it('should withdraw tokens on the destination chain by resolver', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
@@ -220,6 +224,7 @@ describe('EscrowFactory', async function () {
         );
     });
 
+    // Migrated
     it('should not withdraw tokens on the destination chain with the wrong secret', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
