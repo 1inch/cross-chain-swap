@@ -46,8 +46,8 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             bytes calldata dataReturned
         ) = _parseFeeData(extraData, order.makingAmount, makingAmount, takingAmount);
 
-        bytes calldata extraDataParams = dataReturned[:320];
-        bytes calldata whitelist = dataReturned[320:];
+        bytes calldata extraDataParams = dataReturned[:288];
+        bytes calldata whitelist = dataReturned[288:];
 
         if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
 
@@ -113,8 +113,8 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     function _createEscrow(
         bytes memory data,
         bytes32 salt
-    ) private returns (EscrowRegistry clone) {
-        clone = EscrowRegistry(IMPLEMENTATION.clone3(data, salt));
+    ) private returns (Escrow clone) {
+        clone = Escrow(IMPLEMENTATION.clone3(data, salt));
     }
 
     function _isWhitelisted(bytes calldata /* whitelist */, address /* resolver */) internal view override returns (bool) {

@@ -18,5 +18,4 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error OnlyLimitOrderProtocol();
 }
