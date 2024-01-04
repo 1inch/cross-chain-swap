@@ -250,6 +250,7 @@ describe('EscrowFactory', async function () {
         ).to.be.revertedWithCustomError(dstClone, 'InvalidSecret');
     });
 
+    // Migrated
     it('should not withdraw tokens on the destination chain by non-resolver during non-public unlock period', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
@@ -268,6 +269,7 @@ describe('EscrowFactory', async function () {
         ).to.be.revertedWithCustomError(dstClone, 'InvalidCaller');
     });
 
+    // Migrated
     it('should withdraw tokens on the destination chain by anyone', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables, secret } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(

@@ -157,5 +157,70 @@ contract EscrowTest is BaseSetup {
         dstClone.withdrawDst(WRONG_SECRET);
     }
 
+    // During non-public unlock period
+    function test_NoWithdrawalByNonResolvertDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+
+        // deploy escrow
+        vm.prank(bob);
+        escrowFactory.createEscrow(immutables);
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 100);
+        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        dstClone.withdrawDst(SECRET);
+    }
+
+    // During public unlock period
+    function test_WithdrawByAnyonetDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+
+        // deploy escrow
+        vm.prank(bob);
+        escrowFactory.createEscrow(immutables);
+
+        uint256 balanceAlice = dai.balanceOf(alice);
+        uint256 balanceThis = dai.balanceOf(address(this));
+        uint256 balanceEscrow = dai.balanceOf(address(dstClone));
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 100);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(dai.balanceOf(alice), balanceAlice + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(address(this)), balanceThis + SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
+    }
+
+    // During public unlock period
+    function test_WithdrawByResolverPublicDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+
+        // deploy escrow
+        vm.startPrank(bob);
+        escrowFactory.createEscrow(immutables);
+
+        uint256 balanceAlice = dai.balanceOf(alice);
+        uint256 balanceBob = dai.balanceOf(bob);
+        uint256 balanceEscrow = dai.balanceOf(address(dstClone));
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 100);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(dai.balanceOf(alice), balanceAlice + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(bob), balanceBob + SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
+    }
+
     /* solhint-enable func-name-mixedcase */
 }
