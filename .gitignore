@@ -12,3 +12,6 @@ build
 # foundry
 cache_forge
 out
+
+# coverage
+combined_coverage

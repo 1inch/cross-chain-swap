@@ -4,20 +4,49 @@ pragma solidity 0.8.23;
 import { Escrow, IEscrow } from "../../contracts/Escrow.sol";
 import { IEscrowFactory } from "../../contracts/EscrowFactory.sol";
 
-import { BaseSetup } from "../utils/BaseSetup.sol";
+import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowTest is BaseSetup {
+    // solhint-disable-next-line private-vars-leading-underscore
+    bytes32 internal constant WRONG_SECRET = keccak256(abi.encodePacked("wrong secret"));
+
     function setUp() public virtual override {
         BaseSetup.setUp();
     }
 
     /* solhint-disable func-name-mixedcase */
+    function test_NoWithdrawalDuringFinalityLockSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // withdraw
+        vm.expectRevert(IEscrow.InvalidWithdrawalTime.selector);
+        srcClone.withdrawSrc(SECRET);
+    }
 
     function test_NoWithdrawalDuringFinalityLockDst() public {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT);
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
 
         // deploy escrow
         vm.startPrank(bob);
@@ -28,11 +57,44 @@ contract EscrowTest is BaseSetup {
         dstClone.withdrawDst(SECRET);
     }
 
+    function test_WithdrawSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceBob = usdc.balanceOf(bob);
+        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        srcClone.withdrawSrc(SECRET);
+
+        assertEq(usdc.balanceOf(bob), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+    }
+
     function test_WithdrawByResolverDst() public {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT);
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
 
         // deploy escrow
         vm.startPrank(bob);
@@ -51,13 +113,39 @@ contract EscrowTest is BaseSetup {
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
     }
 
-    function test_NoWithdrawalWithWrongSecretDst() public {
-        bytes32 wrongSecret = keccak256(abi.encodePacked("wrong secret"));
+    function test_NoWithdrawalWithWrongSecretSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
 
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.expectRevert(IEscrow.InvalidSecret.selector);
+        srcClone.withdrawSrc(WRONG_SECRET);
+    }
+
+    function test_NoWithdrawalWithWrongSecretDst() public {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT);
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
 
         // deploy escrow
         vm.startPrank(bob);
@@ -66,7 +154,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
         vm.expectRevert(IEscrow.InvalidSecret.selector);
-        dstClone.withdrawDst(wrongSecret);
+        dstClone.withdrawDst(WRONG_SECRET);
     }
 
     /* solhint-enable func-name-mixedcase */

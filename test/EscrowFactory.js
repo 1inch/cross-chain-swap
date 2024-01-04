@@ -115,6 +115,7 @@ describe('EscrowFactory', async function () {
         return { accounts, contracts, tokens, chainId, dstClone, tx, escrowImmutables, secret };
     }
 
+    // Migrated
     it('should deploy clones for maker', async function () {
         for (let i = 0; i < 3; i++) {
             const { tokens, srcClone, srcAmount, hashlock } = await deployCloneSrc();
@@ -150,6 +151,7 @@ describe('EscrowFactory', async function () {
         await expect(tx).to.be.revertedWithCustomError(contracts.escrowFactory, 'InvalidCreationTime');
     });
 
+    // Migrated
     it('should not withdraw tokens on the source chain during finality lock', async function () {
         const { srcClone, secret } = await deployCloneSrc();
 
@@ -175,6 +177,7 @@ describe('EscrowFactory', async function () {
         ).to.be.revertedWithCustomError(dstClone, 'InvalidWithdrawalTime');
     });
 
+    // Migrated
     it('should withdraw tokens on the source chain', async function () {
         const { accounts, tokens, srcClone, srcAmount, secret } = await deployCloneSrc();
 
@@ -185,6 +188,7 @@ describe('EscrowFactory', async function () {
         await expect(tx).to.changeTokenBalances(tokens.usdc, [accounts.deployer, srcClone], [srcAmount, -srcAmount]);
     });
 
+    // Migrated
     it('should not withdraw tokens on the source chain with the wrong secret', async function () {
         const { srcClone } = await deployCloneSrc();
 
