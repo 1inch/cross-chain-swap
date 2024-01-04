@@ -62,7 +62,7 @@ jobs:
         run: forge build --sizes
 
       - name: Run tests
-        run: forge test -vvv
+        run: forge test -vvv --gas-report
 
       - name: Run linter for tests
         run: yarn lint:foundry
