@@ -92,3 +92,6 @@ jobs:
       - name: Run coverage
         run: forge coverage --report lcov --ir-minimum
       - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
