@@ -222,5 +222,121 @@ contract EscrowTest is BaseSetup {
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
     }
 
+    function test_CancelSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceAlice = usdc.balanceOf(alice);
+        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+
+        // cancel
+        vm.warp(block.timestamp + srcTimelocks.finality + srcTimelocks.publicUnlock + 100);
+        srcClone.cancelSrc();
+
+        assertEq(usdc.balanceOf(alice), balanceAlice + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+    }
+
+    function test_NoCancelDuringUnlockSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // cancel
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        srcClone.cancelSrc();
+    }
+
+    function test_CancelDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+
+        // deploy escrow
+        vm.prank(bob);
+        escrowFactory.createEscrow(immutables);
+
+        uint256 balanceThis = dai.balanceOf(address(this));
+        uint256 balanceBob = dai.balanceOf(bob);
+        uint256 balanceEscrow = dai.balanceOf(address(dstClone));
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + dstTimelocks.publicUnlock + 100);
+        dstClone.cancelDst();
+
+        assertEq(dai.balanceOf(address(this)), balanceThis + SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(bob), balanceBob + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
+    }
+
+    function test_NoCancelDuringResolverUnlockDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+
+        // deploy escrow
+        vm.prank(bob);
+        escrowFactory.createEscrow(immutables);
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.finality + 100);
+        vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        dstClone.cancelDst();
+    }
+
+    function test_NoCancelDuringPublicUnlockDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+
+        // deploy escrow
+        vm.prank(bob);
+        escrowFactory.createEscrow(immutables);
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 100);
+        vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        dstClone.cancelDst();
+    }
+
     /* solhint-enable func-name-mixedcase */
 }

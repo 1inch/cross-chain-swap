@@ -297,6 +297,7 @@ describe('EscrowFactory', async function () {
         );
     });
 
+    // Migrated
     it('should cancel escrow on the source chain', async function () {
         const { accounts, tokens, srcClone, srcAmount } = await deployCloneSrc();
 
@@ -309,6 +310,7 @@ describe('EscrowFactory', async function () {
         await expect(tx).to.changeTokenBalances(tokens.usdc, [accounts.alice, srcClone], [srcAmount, -srcAmount]);
     });
 
+    // Migrated
     it('should not cancel escrow on the source chain during unlock period', async function () {
         const { accounts, srcClone } = await deployCloneSrc();
 
@@ -320,6 +322,7 @@ describe('EscrowFactory', async function () {
         ).to.be.revertedWithCustomError(srcClone, 'InvalidCancellationTime');
     });
 
+    // Migrated
     it('should cancel escrow on the destination chain', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(
@@ -346,6 +349,7 @@ describe('EscrowFactory', async function () {
         );
     });
 
+    // Migrated
     it('should not cancel escrow on the destination chain during unlock period', async function () {
         const { accounts, tokens, dstClone, tx, escrowImmutables } = await deployCloneDst();
         await expect(tx).to.changeTokenBalances(

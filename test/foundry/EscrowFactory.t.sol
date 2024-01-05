@@ -60,6 +60,33 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.amount, amount);
     }
 
+    function testFuzz_NoInsufficientBalanceDeploymentForMaker(
+        bytes32 secret,
+        uint56 srcAmount,
+        uint56 dstAmount
+    ) public {
+        vm.assume(srcAmount > 0);
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* Escrow srcClone */
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount);
+
+        vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob, // taker
+            srcAmount, // makingAmount
+            dstAmount, // takingAmount
+            0, // remainingMakingAmount
+            extraData
+        );
+
+    }
+
     function test_NoUnsafeDeploymentForTaker() public {
 
         (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
