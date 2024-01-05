@@ -3,17 +3,20 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 
-import { IOrderMixin } from "lop/contracts/interfaces/IOrderMixin.sol";
-import { MakerTraits } from "lop/contracts/libraries/MakerTraitsLib.sol";
-import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
-import { ECDSA } from "solidity-utils/contracts/libraries/ECDSA.sol";
-import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
-import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
+import { IWETH, LimitOrderProtocol } from "lop/LimitOrderProtocol.sol";
+import { IOrderMixin } from "lop/interfaces/IOrderMixin.sol";
+import { MakerTraits } from "lop/libraries/MakerTraitsLib.sol";
+import { TakerTraits } from "lop/libraries/TakerTraitsLib.sol";
+import { WrappedTokenMock } from "lop/mocks/WrappedTokenMock.sol";
+import { Address } from "solidity-utils/libraries/AddressLib.sol";
+import { ECDSA } from "solidity-utils/libraries/ECDSA.sol";
+import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
+import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { Escrow, IEscrow } from "../../contracts/Escrow.sol";
 import { EscrowFactory, IEscrowFactory } from "../../contracts/EscrowFactory.sol";
 
-import { Utils } from "./Utils.sol";
+import { Utils, VmSafe } from "./Utils.sol";
 
 contract BaseSetup is Test {
     struct MakerTraitsParams {
@@ -65,15 +68,16 @@ contract BaseSetup is Test {
 
 
     Utils internal utils;
-    address payable[] internal users;
+    VmSafe.Wallet[] internal users;
 
-    address internal alice;
-    address internal bob;
+    VmSafe.Wallet internal alice;
+    VmSafe.Wallet internal bob;
 
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
+    WrappedTokenMock internal weth;
 
-    address internal limitOrderProtocol;
+    LimitOrderProtocol internal limitOrderProtocol;
     EscrowFactory internal escrowFactory;
     Escrow internal escrow;
 
@@ -104,20 +108,22 @@ contract BaseSetup is Test {
         users = utils.createUsers(2);
 
         alice = users[0];
-        vm.label(alice, "Alice");
+        vm.label(alice.addr, "Alice");
         bob = users[1];
-        vm.label(bob, "Bob");
+        vm.label(bob.addr, "Bob");
 
         _deployTokens();
-        dai.mint(bob, 1000 ether);
-        usdc.mint(alice, 1000 ether);
+        dai.mint(bob.addr, 1000 ether);
+        usdc.mint(alice.addr, 1000 ether);
 
         _deployContracts();
 
-        vm.prank(bob);
+        vm.startPrank(bob.addr);
         dai.approve(address(escrowFactory), 1000 ether);
-        vm.prank(alice);
-        usdc.approve(address(escrowFactory), 1000 ether);
+        dai.approve(address(limitOrderProtocol), 1000 ether);
+        vm.stopPrank();
+        vm.prank(alice.addr);
+        usdc.approve(address(limitOrderProtocol), 1000 ether);
     }
 
     function _deployTokens() internal {
@@ -125,13 +131,15 @@ contract BaseSetup is Test {
         vm.label(address(dai), "DAI");
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
         vm.label(address(usdc), "USDC");
+        weth = new WrappedTokenMock("WETH", "WETH");
     }
 
     function _deployContracts() internal {
-        limitOrderProtocol = address(this);
+        limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
+
         escrow = new Escrow();
         vm.label(address(escrow), "Escrow");
-        escrowFactory = new EscrowFactory(address(escrow), limitOrderProtocol);
+        escrowFactory = new EscrowFactory(address(escrow), address(limitOrderProtocol));
         vm.label(address(escrowFactory), "EscrowFactory");
     }
 
@@ -169,18 +177,18 @@ contract BaseSetup is Test {
     ) {
         uint256 safetyDeposit = dstAmount * 10 / 100;
         order = _buildOrder(
-            alice,
-            bob,
+            alice.addr,
+            bob.addr,
             address(usdc),
             address(dai),
             srcAmount,
             dstAmount,
             MakerTraits.wrap(0),
-            InteractionParams("", "", "", "", abi.encodePacked(alice), abi.encodePacked(bob), "", ""),
+            InteractionParams("", "", "", "", abi.encodePacked(alice.addr), abi.encodePacked(bob.addr), "", ""),
             ""
         );
 
-        orderHash = _hash(order, _buildDomainSeparatorLOP());
+        orderHash = limitOrderProtocol.hashOrder(order);
 
         extraData = _buidDynamicData(
             secret,
@@ -206,7 +214,7 @@ contract BaseSetup is Test {
             IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables,
             bytes memory data
         ) = _buildDstEscrowImmutables(secret, amount, maker, taker, token);
-        address msgSender = bob;
+        address msgSender = bob.addr;
         uint256 deployedAt = block.timestamp;
         bytes32 salt = keccak256(abi.encodePacked(deployedAt, data, msgSender));
         Escrow dstClone = Escrow(escrowFactory.addressOfEscrow(salt));
@@ -238,8 +246,8 @@ contract BaseSetup is Test {
         );
         data = abi.encode(
             hashlock,
-            alice,
-            bob,
+            alice.addr,
+            bob.addr,
             block.chainid,
             address(dai),
             amount,
@@ -355,26 +363,8 @@ contract BaseSetup is Test {
         return order;
     }
 
-    /**
-      * @notice Calculates the hash of an order.
-      * @param order The order to be hashed.
-      * @param domainSeparator The domain separator to be used for the EIP-712 hashing.
-      * @return result The keccak256 hash of the order data.
-      */
-    function _hash(IOrderMixin.Order memory order, bytes32 domainSeparator) internal pure returns(bytes32 result) {
-        bytes32 typehash = _LIMIT_ORDER_TYPEHASH;
-        assembly ("memory-safe") { // solhint-disable-line no-inline-assembly
-            let ptr := mload(0x40)
-
-            // keccak256(abi.encode(_LIMIT_ORDER_TYPEHASH, order));
-            mstore(ptr, typehash)
-            calldatacopy(add(ptr, 0x20), order, _ORDER_STRUCT_SIZE)
-            result := keccak256(ptr, _DATA_HASH_SIZE)
-        }
-        result = ECDSA.toTypedDataHash(domainSeparator, result);
-    }
-
-    function _buildDomainSeparatorLOP() internal view returns(bytes32) {
-        return keccak256(abi.encode(TYPE_HASH, HASHED_NAME_LOP, HASHED_VERSION_LOP, block.chainid, limitOrderProtocol));
+    function _buildTakerTraits() internal pure returns(TakerTraits) {
+        // TODO: build taker traits
+        return TakerTraits.wrap(1 << 255);
     }
 }

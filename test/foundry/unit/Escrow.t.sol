@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Escrow, IEscrow } from "../../contracts/Escrow.sol";
-import { IEscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { Escrow, IEscrow } from "contracts/Escrow.sol";
+import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 
-import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { BaseSetup, IOrderMixin } from "../../utils/BaseSetup.sol";
 
 contract EscrowTest is BaseSetup {
     // solhint-disable-next-line private-vars-leading-underscore
@@ -26,11 +26,12 @@ contract EscrowTest is BaseSetup {
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
@@ -46,10 +47,10 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.startPrank(bob);
+        vm.startPrank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
         // withdraw
@@ -68,25 +69,26 @@ contract EscrowTest is BaseSetup {
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
             extraData
         );
 
-        uint256 balanceBob = usdc.balanceOf(bob);
+        uint256 balanceBob = usdc.balanceOf(bob.addr);
         uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.finality + 100);
         srcClone.withdrawSrc(SECRET);
 
-        assertEq(usdc.balanceOf(bob), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
@@ -94,22 +96,22 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.startPrank(bob);
+        vm.startPrank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
-        uint256 balanceAlice = dai.balanceOf(alice);
-        uint256 balanceBob = dai.balanceOf(bob);
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
+        uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 10);
         dstClone.withdrawDst(SECRET);
 
-        assertEq(dai.balanceOf(alice), balanceAlice + TAKING_AMOUNT);
-        assertEq(dai.balanceOf(bob), balanceBob + SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(bob.addr), balanceBob + SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
     }
 
@@ -124,11 +126,12 @@ contract EscrowTest is BaseSetup {
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
@@ -145,10 +148,10 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.startPrank(bob);
+        vm.startPrank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
         // withdraw
@@ -162,10 +165,10 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
         // withdraw
@@ -179,13 +182,13 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
-        uint256 balanceAlice = dai.balanceOf(alice);
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceThis = dai.balanceOf(address(this));
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
 
@@ -193,7 +196,7 @@ contract EscrowTest is BaseSetup {
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 100);
         dstClone.withdrawDst(SECRET);
 
-        assertEq(dai.balanceOf(alice), balanceAlice + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
         assertEq(dai.balanceOf(address(this)), balanceThis + SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
     }
@@ -203,22 +206,22 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.startPrank(bob);
+        vm.startPrank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
-        uint256 balanceAlice = dai.balanceOf(alice);
-        uint256 balanceBob = dai.balanceOf(bob);
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
+        uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 100);
         dstClone.withdrawDst(SECRET);
 
-        assertEq(dai.balanceOf(alice), balanceAlice + TAKING_AMOUNT);
-        assertEq(dai.balanceOf(bob), balanceBob + SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(bob.addr), balanceBob + SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
     }
 
@@ -233,25 +236,26 @@ contract EscrowTest is BaseSetup {
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
             extraData
         );
 
-        uint256 balanceAlice = usdc.balanceOf(alice);
+        uint256 balanceAlice = usdc.balanceOf(alice.addr);
         uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.finality + srcTimelocks.publicUnlock + 100);
         srcClone.cancelSrc();
 
-        assertEq(usdc.balanceOf(alice), balanceAlice + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(alice.addr), balanceAlice + MAKING_AMOUNT);
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
@@ -266,11 +270,12 @@ contract EscrowTest is BaseSetup {
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
@@ -287,14 +292,14 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
         uint256 balanceThis = dai.balanceOf(address(this));
-        uint256 balanceBob = dai.balanceOf(bob);
+        uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
 
         // cancel
@@ -302,7 +307,7 @@ contract EscrowTest is BaseSetup {
         dstClone.cancelDst();
 
         assertEq(dai.balanceOf(address(this)), balanceThis + SAFETY_DEPOSIT);
-        assertEq(dai.balanceOf(bob), balanceBob + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(bob.addr), balanceBob + TAKING_AMOUNT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - (TAKING_AMOUNT + SAFETY_DEPOSIT));
     }
 
@@ -310,10 +315,10 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
         // cancel
@@ -326,10 +331,10 @@ contract EscrowTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
         // cancel

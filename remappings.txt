@@ -8,5 +8,5 @@ eth-gas-reporter/=node_modules/eth-gas-reporter/
 forge-std/=lib/forge-std/src/
 hardhat-deploy/=node_modules/hardhat-deploy/
 hardhat/=node_modules/hardhat/
-solidity-utils/=node_modules/@1inch/solidity-utils/
-lop/=node_modules/@1inch/limit-order-protocol-contract/
+solidity-utils/=node_modules/@1inch/solidity-utils/contracts/
+lop/=node_modules/@1inch/limit-order-protocol-contract/contracts/

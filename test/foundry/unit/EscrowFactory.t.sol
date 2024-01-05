@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Escrow, IEscrow } from "../../contracts/Escrow.sol";
-import { IEscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { Escrow, IEscrow } from "contracts/Escrow.sol";
+import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 
-import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { BaseSetup, IOrderMixin } from "../../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
     function setUp() public virtual override {
@@ -23,11 +23,12 @@ contract EscrowFactoryTest is BaseSetup {
 
         usdc.transfer(address(srcClone), srcAmount);
 
+        vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             srcAmount, // makingAmount
             dstAmount, // takingAmount
             0, // remainingMakingAmount
@@ -44,15 +45,15 @@ contract EscrowFactoryTest is BaseSetup {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
-        ) = _prepareDataDst(secret, amount, alice, bob, address(dai));
-        uint256 balanceBob = dai.balanceOf(bob);
+        ) = _prepareDataDst(secret, amount, alice.addr, bob.addr, address(dai));
+        uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         escrowFactory.createEscrow(immutables);
 
-        assertEq(dai.balanceOf(bob), balanceBob - (amount + immutables.safetyDeposit));
+        assertEq(dai.balanceOf(bob.addr), balanceBob - (amount + immutables.safetyDeposit));
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount + immutables.safetyDeposit);
 
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
@@ -73,12 +74,13 @@ contract EscrowFactoryTest is BaseSetup {
             /* Escrow srcClone */
         ) = _prepareDataSrc(secret, srcAmount, dstAmount);
 
+        vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
         escrowFactory.postInteraction(
             order,
             "", // extension
             orderHash,
-            bob, // taker
+            bob.addr, // taker
             srcAmount, // makingAmount
             dstAmount, // takingAmount
             0, // remainingMakingAmount
@@ -89,12 +91,12 @@ contract EscrowFactoryTest is BaseSetup {
 
     function test_NoUnsafeDeploymentForTaker() public {
 
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice, bob, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         vm.warp(immutables.srcCancellationTimestamp + 1);
 
         // deploy escrow
-        vm.prank(bob);
+        vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
         escrowFactory.createEscrow(immutables);
     }

@@ -2,13 +2,14 @@
 pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
+import { VmSafe } from "forge-std/Vm.sol";
 
 contract Utils is Test {
     // solhint-disable private-vars-leading-underscore
     bytes32 internal nextUser = keccak256(abi.encodePacked("user address"));
 
-    function getNextUserAddress() external returns (address payable) {
-        address payable user = payable(address(uint160(uint256(nextUser))));
+    function getNextUserAddress() external returns (VmSafe.Wallet memory) {
+        VmSafe.Wallet memory user = vm.createWallet(uint256(nextUser));
         nextUser = keccak256(abi.encodePacked(nextUser));
         return user;
     }
@@ -16,12 +17,12 @@ contract Utils is Test {
     // create users with 100 ETH balance each
     function createUsers(uint256 userNum)
         external
-        returns (address payable[] memory)
+        returns (VmSafe.Wallet[] memory)
     {
-        address payable[] memory users = new address payable[](userNum);
+        VmSafe.Wallet[] memory users = new VmSafe.Wallet[](userNum);
         for (uint256 i = 0; i < userNum; i++) {
-            address payable user = this.getNextUserAddress();
-            vm.deal(user, 100 ether);
+            VmSafe.Wallet memory user = this.getNextUserAddress();
+            vm.deal(user.addr, 100 ether);
             users[i] = user;
         }
 
