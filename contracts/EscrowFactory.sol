@@ -102,8 +102,6 @@ contract EscrowFactory is IEscrowFactory {
         bytes memory data,
         bytes32 salt
     ) private returns (address clone) {
-        clone = address(
-            uint160(IMPLEMENTATION.clone3(data, salt)) & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
-        );
+        clone = address(uint160(IMPLEMENTATION.clone3(data, salt)));
     }
 }
