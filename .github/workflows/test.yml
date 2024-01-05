@@ -69,3 +69,26 @@ jobs:
 
       # - name: Run snapshot
       #   run: forge snapshot
+
+  foundry_coverage:
+    name: Foundry coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'yarn'
+      - run: yarn
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Run coverage
+        run: forge coverage --report lcov --ir-minimum
+      - uses: codecov/codecov-action@v3
