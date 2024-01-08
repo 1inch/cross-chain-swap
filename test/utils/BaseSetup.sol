@@ -3,13 +3,12 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 
-import { IWETH, LimitOrderProtocol } from "lop/LimitOrderProtocol.sol";
-import { IOrderMixin } from "lop/interfaces/IOrderMixin.sol";
-import { MakerTraits } from "lop/libraries/MakerTraitsLib.sol";
-import { TakerTraits } from "lop/libraries/TakerTraitsLib.sol";
-import { WrappedTokenMock } from "lop/mocks/WrappedTokenMock.sol";
+import { IWETH, LimitOrderProtocol } from "limit-order-protocol/LimitOrderProtocol.sol";
+import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
+import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/libraries/MakerTraitsLib.sol";
+import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
+import { WrappedTokenMock } from "limit-order-protocol/mocks/WrappedTokenMock.sol";
 import { Address } from "solidity-utils/libraries/AddressLib.sol";
-import { ECDSA } from "solidity-utils/libraries/ECDSA.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
@@ -19,6 +18,19 @@ import { EscrowFactory, IEscrowFactory } from "../../contracts/EscrowFactory.sol
 import { Utils, VmSafe } from "./Utils.sol";
 
 contract BaseSetup is Test {
+    using MakerTraitsLib for MakerTraits;
+
+    struct InteractionParams {
+        bytes makerAssetSuffix;
+        bytes takerAssetSuffix;
+        bytes makingAmountData;
+        bytes takingAmountData;
+        bytes predicate;
+        bytes permit;
+        bytes preInteraction;
+        bytes postInteraction;
+    }
+
     struct MakerTraitsParams {
         address allowedSender;
         bool shouldCheckEpoch;
@@ -40,6 +52,14 @@ contract BaseSetup is Test {
     uint256 internal constant _HAS_EXTENSION_FLAG = 1 << 249;
     uint256 internal constant _USE_PERMIT2_FLAG = 1 << 248;
     uint256 internal constant _UNWRAP_WETH_FLAG = 1 << 247;
+    // Taker traits flags
+    uint256 private constant _MAKER_AMOUNT_FLAG_TT = 1 << 255;
+    uint256 private constant _UNWRAP_WETH_FLAG_TT = 1 << 254;
+    uint256 private constant _SKIP_ORDER_PERMIT_FLAG = 1 << 253;
+    uint256 private constant _USE_PERMIT2_FLAG_TT = 1 << 252;
+    uint256 private constant _ARGS_HAS_TARGET = 1 << 251;
+    uint256 private constant _ARGS_EXTENSION_LENGTH_OFFSET = 224;
+    uint256 private constant _ARGS_INTERACTION_LENGTH_OFFSET = 200;
 
     /* solhint-disable private-vars-leading-underscore */
     bytes32 internal constant SECRET = keccak256(abi.encodePacked("secret"));
@@ -153,10 +173,23 @@ contract BaseSetup is Test {
         IOrderMixin.Order memory order,
         bytes32 orderHash,
         bytes memory extraData,
+        bytes memory extension,
         Escrow srcClone
     ) {
         uint256 safetyDeposit = dstAmount * 10 / 100;
-        order = _buildOrder(
+        extraData = _buidDynamicData(
+            secret,
+            block.chainid,
+            address(dai),
+            safetyDeposit
+        );
+
+        bytes memory postInteractionData = abi.encodePacked(
+            escrowFactory,
+            extraData
+        );
+
+        (order, extension) = _buildOrder(
             alice.addr,
             bob.addr,
             address(usdc),
@@ -164,18 +197,11 @@ contract BaseSetup is Test {
             srcAmount,
             dstAmount,
             MakerTraits.wrap(0),
-            InteractionParams("", "", "", "", abi.encodePacked(alice.addr), abi.encodePacked(bob.addr), "", ""),
+            InteractionParams("", "", "", "", "", "", "", postInteractionData),
             ""
         );
 
         orderHash = limitOrderProtocol.hashOrder(order);
-
-        extraData = _buidDynamicData(
-            secret,
-            block.chainid,
-            address(dai),
-            safetyDeposit
-        );
 
         srcClone = Escrow(escrowFactory.addressOfEscrow(orderHash));
     }
@@ -253,17 +279,6 @@ contract BaseSetup is Test {
         );
     }
 
-    struct InteractionParams {
-        bytes makerAssetSuffix;
-        bytes takerAssetSuffix;
-        bytes makingAmountData;
-        bytes takingAmountData;
-        bytes predicate;
-        bytes permit;
-        bytes preInteraction;
-        bytes postInteraction;
-    }
-
     function _buildOrder(
         address maker,
         address receiver,
@@ -274,7 +289,7 @@ contract BaseSetup is Test {
         MakerTraits makerTraits,
         InteractionParams memory interactions,
         bytes memory customData
-    ) internal view returns(IOrderMixin.Order memory) {
+    ) internal view returns(IOrderMixin.Order memory, bytes memory) {
         bytes[8] memory allInteractions = [
             interactions.makerAssetSuffix,
             interactions.takerAssetSuffix,
@@ -296,6 +311,7 @@ contract BaseSetup is Test {
             interactions.postInteraction,
             customData
         );
+
         bytes32 offsets = 0;
         uint256 sum = 0;
         for (uint256 i = 0; i < allInteractions.length; i++) {
@@ -319,15 +335,15 @@ contract BaseSetup is Test {
         uint256 salt = 1;
         if (extension.length > 0) {
             salt = uint256(keccak256(extension)) & ((1 << 160) - 1);
-            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | (1 << _HAS_EXTENSION_FLAG));
+            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | _HAS_EXTENSION_FLAG);
         }
 
         if (interactions.preInteraction.length > 0) {
-            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | (1 << _PRE_INTERACTION_CALL_FLAG));
+            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | _PRE_INTERACTION_CALL_FLAG);
         }
 
         if (interactions.postInteraction.length > 0) {
-            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | (1 << _POST_INTERACTION_CALL_FLAG));
+            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | _POST_INTERACTION_CALL_FLAG);
         }
 
         IOrderMixin.Order memory order = IOrderMixin.Order({
@@ -340,11 +356,36 @@ contract BaseSetup is Test {
             takingAmount: takingAmount,
             makerTraits: makerTraits
         });
-        return order;
+        return (order, extension);
     }
 
-    function _buildTakerTraits() internal pure returns(TakerTraits) {
-        // TODO: build taker traits
-        return TakerTraits.wrap(1 << 255);
+    function _buildTakerTraits(
+        bool makingAmount,
+        bool unwrapWeth,
+        bool skipMakerPermit,
+        bool usePermit2,
+        address target,
+        bytes memory extension,
+        bytes memory interaction,
+        uint256 threshold
+    ) internal view returns(TakerTraits, bytes memory) {
+        TakerTraits traits = TakerTraits.wrap(
+            threshold | (
+                (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0) |
+                (unwrapWeth ? _UNWRAP_WETH_FLAG_TT : 0) |
+                (skipMakerPermit ? _SKIP_ORDER_PERMIT_FLAG : 0) |
+                (usePermit2 ? _USE_PERMIT2_FLAG_TT : 0) |
+                (target != address(0) ? _ARGS_HAS_TARGET : 0) |
+                (extension.length << _ARGS_EXTENSION_LENGTH_OFFSET) |
+                (interaction.length << _ARGS_INTERACTION_LENGTH_OFFSET)
+            )
+        );
+        bytes memory targetBytes = target != address(0) ? abi.encodePacked(target): abi.encodePacked("");
+        bytes memory args = abi.encodePacked(
+            targetBytes,
+            extension,
+            interaction
+        );
+        return (traits, args);
     }
 }

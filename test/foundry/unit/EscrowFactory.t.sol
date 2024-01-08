@@ -18,6 +18,7 @@ contract EscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount);
 
@@ -71,6 +72,7 @@ contract EscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             /* Escrow srcClone */
         ) = _prepareDataSrc(secret, srcAmount, dstAmount);
 

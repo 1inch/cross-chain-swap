@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { Escrow, IEscrow } from "contracts/Escrow.sol";
 
-import { BaseSetup, IOrderMixin, LimitOrderProtocol, TakerTraits } from "../../utils/BaseSetup.sol";
+import { BaseSetup, IOrderMixin, TakerTraits } from "../../utils/BaseSetup.sol";
 
 contract IntegrationEscrowFactoryTest is BaseSetup {
     function setUp() public virtual override {
@@ -19,17 +19,23 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             /* bytes memory extraData */,
+            bytes memory extension,
             Escrow srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount);
-
-        // TODO: build args
-        bytes memory args = "";
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        // TODO: build taker traits
-        TakerTraits takerTraits = _buildTakerTraits();
+        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            address(srcClone), // target
+            extension, // extension
+            "", // interaction
+            0 // threshold
+        );
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
@@ -41,12 +47,45 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             args
         );
 
-        // TODO: This call reverts because the escrow is not deployed.
-        // To fix this, correct args must be built and passed to fillOrderArgs.
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        // assertEq(returnedImmutables.extraDataParams.hashlock, uint256(keccak256(abi.encodePacked(secret))));
-        // assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
-        // assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
+        assertEq(returnedImmutables.extraDataParams.hashlock, uint256(keccak256(abi.encodePacked(secret))));
+        assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
+        assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
+    }
+
+    function test_NoInsufficientBalanceDeploymentForMakerInt() public {
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            /* bytes memory extraData */,
+            bytes memory extension,
+            /* Escrow srcClone */
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            address(0), // target
+            extension, // extension
+            "", // interaction
+            0 // threshold
+        );
+
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
+        limitOrderProtocol.fillOrderArgs(
+            order,
+            r,
+            vs,
+            MAKING_AMOUNT, // amount
+            takerTraits,
+            args
+        );
     }
 
     /* solhint-enable func-name-mixedcase */

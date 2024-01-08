@@ -21,6 +21,7 @@ contract EscrowTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
 
@@ -64,6 +65,7 @@ contract EscrowTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
 
@@ -121,6 +123,7 @@ contract EscrowTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
 
@@ -231,6 +234,7 @@ contract EscrowTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
 
@@ -265,6 +269,7 @@ contract EscrowTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
 
