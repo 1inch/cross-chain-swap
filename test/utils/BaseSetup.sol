@@ -47,26 +47,6 @@ contract BaseSetup is Test {
     uint256 internal constant TAKING_AMOUNT = 0.5 ether;
     uint256 internal constant SAFETY_DEPOSIT = 0.05 ether;
 
-    bytes32 internal constant HASHED_NAME_LOP = keccak256("1inch Limit Order Protocol");
-    bytes32 internal constant HASHED_VERSION_LOP = keccak256("4");
-    bytes32 internal constant TYPE_HASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 internal constant _LIMIT_ORDER_TYPEHASH = keccak256(
-        "Order("
-            "uint256 salt,"
-            "address maker,"
-            "address receiver,"
-            "address makerAsset,"
-            "address takerAsset,"
-            "uint256 makingAmount,"
-            "uint256 takingAmount,"
-            "uint256 makerTraits"
-        ")"
-    );
-    uint256 internal constant _ORDER_STRUCT_SIZE = 0x100;
-    uint256 internal constant _DATA_HASH_SIZE = 0x120;
-
-
     Utils internal utils;
     VmSafe.Wallet[] internal users;
 
