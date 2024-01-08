@@ -3,7 +3,7 @@ require('@nomicfoundation/hardhat-ethers');
 require('@nomicfoundation/hardhat-verify');
 require('dotenv').config();
 require('hardhat-dependency-compiler');
-// require('hardhat-deploy');
+require('hardhat-deploy');
 require('hardhat-gas-reporter');
 // require('hardhat-tracer');
 require('solidity-coverage');
