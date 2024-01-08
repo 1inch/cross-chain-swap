@@ -38,7 +38,10 @@ jobs:
       - run: yarn
       - run: yarn coverage
       - uses: codecov/codecov-action@v3
-  
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+
   foundry:
     name: Foundry project
     runs-on: ubuntu-latest
