@@ -347,6 +347,4 @@ contract BaseSetup is Test {
         // TODO: build taker traits
         return TakerTraits.wrap(1 << 255);
     }
-
-    function test() public {}
 }

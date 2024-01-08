@@ -34,6 +34,4 @@ contract Utils is Test {
         uint256 targetBlock = block.number + numBlocks;
         vm.roll(targetBlock);
     }
-
-    function test() public {}
 }
