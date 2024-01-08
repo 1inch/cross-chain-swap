@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IOrderMixin, SimpleSettlementExtension } from "@1inch/limit-order-settlement/contracts/SimpleSettlementExtension.sol";
+import { ExtensionBase } from "@1inch/limit-order-settlement/contracts/ExtensionBase.sol";
 import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
 import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
@@ -13,16 +13,14 @@ import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithIm
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { Escrow } from "./Escrow.sol";
 
-contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
+contract EscrowFactory is IEscrowFactory, ExtensionBase {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using SafeERC20 for IERC20;
 
     address public immutable IMPLEMENTATION;
 
-    constructor(address implementation, address limitOrderProtocol, IERC20 token)
-        SimpleSettlementExtension(limitOrderProtocol, token)
-    {
+    constructor(address implementation, address limitOrderProtocol) ExtensionBase(limitOrderProtocol) {
         IMPLEMENTATION = implementation;
     }
 
@@ -39,23 +37,6 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) internal override {
-        (
-            uint256 resolverFee,
-            address integrator,
-            uint256 integrationFee,
-            bytes calldata dataReturned
-        ) = _parseFeeData(extraData, order.makingAmount, makingAmount, takingAmount);
-
-        bytes calldata extraDataParams = dataReturned[:288];
-        bytes calldata whitelist = dataReturned[288:];
-
-        if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
-
-        _chargeFee(taker, resolverFee);
-        if (integrationFee > 0) {
-            IERC20(order.takerAsset.get()).safeTransferFrom(taker, integrator, integrationFee);
-        }
-
         bytes memory interactionParams = abi.encode(
             order.maker,
             taker,
@@ -67,7 +48,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         bytes memory data = abi.encodePacked(
             block.timestamp, // deployedAt
             interactionParams,
-            extraDataParams
+            extraData
         );
         // Salt is orderHash
         address escrow = ClonesWithImmutableArgs.addressOfClone3(orderHash);
@@ -115,9 +96,5 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         bytes32 salt
     ) private returns (Escrow clone) {
         clone = Escrow(IMPLEMENTATION.clone3(data, salt));
-    }
-
-    function _isWhitelisted(bytes calldata /* whitelist */, address /* resolver */) internal view override returns (bool) {
-        return true;
     }
 }

@@ -30,10 +30,10 @@ function buldDynamicData ({
 }) {
     const secret = buildSecret();
     const hashlock = ethers.keccak256(secret);
-    const data = '0x00' + trim0x(abiCoder.encode(
+    const data = abiCoder.encode(
         ['uint256', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
         [hashlock, chainId, token, safetyDeposit, ...Object.values(srcTimelockDurations), ...Object.values(dstTimelockDurations)],
-    ));
+    );
     return { data, hashlock, secret };
 };
 
