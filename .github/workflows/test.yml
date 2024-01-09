@@ -17,85 +17,38 @@ jobs:
       - run: yarn lint
 
   test:
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
-      - run: yarn test:ci
-
-  coverage:
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
-      - run: yarn coverage
-      - uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-
-  foundry:
     name: Foundry project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Install dependencies
-        run: forge install
 
       - name: Check contract sizes
         run: forge build --sizes
 
       - name: Run tests
-        run: forge test -vvv --gas-report
-
-      - name: Run linter for tests
-        run: yarn lint:foundry
+        run: yarn test
 
       # - name: Run snapshot
       #   run: forge snapshot
 
-  foundry_coverage:
+  coverage:
     name: Foundry coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Install dependencies
-        run: forge install
-
       - name: Run coverage
-        run: forge coverage --report lcov --ir-minimum
+        run: yarn coverage
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
