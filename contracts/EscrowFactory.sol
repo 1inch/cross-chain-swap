@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.23;
 
-import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-import { ExtensionBase } from "@1inch/limit-order-settlement/contracts/ExtensionBase.sol";
-import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
-import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
+import { ExtensionBase } from "limit-order-settlement/ExtensionBase.sol";
+import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
+import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
