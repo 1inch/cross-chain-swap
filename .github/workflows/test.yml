@@ -17,7 +17,6 @@ jobs:
       - run: yarn lint
 
   test:
-    name: Foundry project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -37,7 +36,6 @@ jobs:
       #   run: forge snapshot
 
   coverage:
-    name: Foundry coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
