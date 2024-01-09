@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 
-import { BaseSetup, IOrderMixin } from "../../utils/BaseSetup.sol";
+import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowTest is BaseSetup {
     // solhint-disable-next-line private-vars-leading-underscore

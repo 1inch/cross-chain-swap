@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 
-import { BaseSetup, IOrderMixin, TakerTraits } from "../../utils/BaseSetup.sol";
+import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
 contract IntegrationEscrowFactoryTest is BaseSetup {
     function setUp() public virtual override {

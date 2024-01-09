@@ -368,7 +368,7 @@ contract BaseSetup is Test {
         bytes memory extension,
         bytes memory interaction,
         uint256 threshold
-    ) internal view returns(TakerTraits, bytes memory) {
+    ) internal pure returns(TakerTraits, bytes memory) {
         TakerTraits traits = TakerTraits.wrap(
             threshold | (
                 (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0) |
