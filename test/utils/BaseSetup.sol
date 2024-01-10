@@ -168,7 +168,8 @@ contract BaseSetup is Test {
     function _prepareDataSrc(
         bytes32 secret,
         uint256 srcAmount,
-        uint256 dstAmount
+        uint256 dstAmount,
+        bool fakeOrder
     ) internal view returns(
         IOrderMixin.Order memory order,
         bytes32 orderHash,
@@ -189,18 +190,30 @@ contract BaseSetup is Test {
             extraData
         );
 
-        (order, extension) = _buildOrder(
-            alice.addr,
-            bob.addr,
-            address(usdc),
-            address(dai),
-            srcAmount,
-            dstAmount,
-            MakerTraits.wrap(0),
-            InteractionParams("", "", "", "", "", "", "", postInteractionData),
-            ""
-        );
-
+        if (fakeOrder) {
+            order = IOrderMixin.Order({
+                salt: 0,
+                maker: Address.wrap(uint160(alice.addr)),
+                receiver: Address.wrap(uint160(bob.addr)),
+                makerAsset: Address.wrap(uint160(address(usdc))),
+                takerAsset: Address.wrap(uint160(address(dai))),
+                makingAmount: srcAmount,
+                takingAmount: dstAmount,
+                makerTraits: MakerTraits.wrap(0)
+            });
+        } else {
+            (order, extension) = _buildOrder(
+                alice.addr,
+                bob.addr,
+                address(usdc),
+                address(dai),
+                srcAmount,
+                dstAmount,
+                MakerTraits.wrap(0),
+                InteractionParams("", "", "", "", "", "", "", postInteractionData),
+                ""
+            );
+        }
         orderHash = limitOrderProtocol.hashOrder(order);
 
         srcClone = Escrow(escrowFactory.addressOfEscrow(orderHash));
