@@ -18,12 +18,8 @@
     "coverage": "mkdir -p coverage && forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:html": "bash scripts/coverage.sh",
     "doc": "forge doc --build --out documentation",
-    "lint": "yarn run lint:sol && yarn run lint:test",
-    "lint:fix": "yarn run lint:sol:fix && yarn run lint:test:fix",
-    "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
-    "lint:sol:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" --fix",
-    "lint:test": "solhint --max-warnings 0 \"test/**/*.sol\"",
-    "lint:test:fix": "solhint --max-warnings 0 \"test/**/*.sol\" --fix",
+    "lint": "solhint --max-warnings 0 \"**/*.sol\"",
+    "lint:fix": "solhint --max-warnings 0 \"**/*.sol\" --fix",
     "test": "forge test -vvv"
   }
 }
