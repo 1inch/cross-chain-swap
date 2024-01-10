@@ -20,7 +20,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount);
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
 
         usdc.transfer(address(srcClone), srcAmount);
 
@@ -74,7 +74,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             /* Escrow srcClone */
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount);
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);

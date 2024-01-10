@@ -23,7 +23,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
@@ -67,7 +67,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
@@ -125,7 +125,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
@@ -236,7 +236,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
@@ -271,7 +271,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 

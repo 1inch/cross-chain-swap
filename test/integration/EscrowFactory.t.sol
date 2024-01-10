@@ -21,7 +21,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             Escrow srcClone
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount);
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
@@ -60,7 +60,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             /* Escrow srcClone */
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
