@@ -316,7 +316,7 @@ contract BaseSetup is Test {
         uint256 sum = 0;
         for (uint256 i = 0; i < allInteractions.length; i++) {
             if (allInteractions[i].length > 0) {
-                sum += allInteractions[i].length - 1;
+                sum += allInteractions[i].length;
             }
             offsets |= bytes32(sum << (i * 32));
         }
