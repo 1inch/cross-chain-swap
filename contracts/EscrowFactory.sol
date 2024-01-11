@@ -10,6 +10,7 @@ import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
+import { IEscrow } from "./interfaces/IEscrow.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 
 contract EscrowFactory is IEscrowFactory, ExtensionBase {
@@ -51,14 +52,19 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
         );
         // Salt is orderHash
         address escrow = ClonesWithImmutableArgs.addressOfClone3(orderHash);
-        if (IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount) revert InsufficientEscrowBalance();
+        uint256 safetyDeposit = abi.decode(extraData, (IEscrow.ExtraDataParams)).srcSafetyDeposit;
+        if (
+            escrow.balance < safetyDeposit ||
+            IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount
+        ) revert InsufficientEscrowBalance();
         _createEscrow(data, orderHash);
     }
 
     /**
      * @dev Creates a new escrow contract for taker.
      */
-    function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external {
+    function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable {
+        if (msg.value < dstEscrowImmutables.safetyDeposit) revert InsufficientEscrowBalance();
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
             block.timestamp +
@@ -81,14 +87,19 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
             dstEscrowImmutables.timelocks.publicUnlock
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
-        address escrow = _createEscrow(data, salt);
+
+        address escrow = addressOfEscrow(salt);
+        (bool success, ) = escrow.call{value: dstEscrowImmutables.safetyDeposit}("");
+        if (!success) revert IEscrow.NativeTokenSendingFailure();
+
+        _createEscrow(data, salt);
         IERC20(dstEscrowImmutables.token).safeTransferFrom(
-            msg.sender, escrow, dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
+            msg.sender, escrow, dstEscrowImmutables.amount
         );
     }
 
-    function addressOfEscrow(bytes32 salt) external view returns (address) {
-        return ClonesWithImmutableArgs.addressOfClone3(salt);
+    function addressOfEscrow(bytes32 salt) public view returns (address) {
+        return address(uint160(ClonesWithImmutableArgs.addressOfClone3(salt)));
     }
 
     function _createEscrow(

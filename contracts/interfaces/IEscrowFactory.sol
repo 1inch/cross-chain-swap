@@ -6,7 +6,7 @@ import { IEscrow } from "./IEscrow.sol";
 
 interface IEscrowFactory {
     struct DstEscrowImmutablesCreation {
-        uint256 hashlock;
+        bytes32 hashlock;
         address maker;
         address taker;
         address token;

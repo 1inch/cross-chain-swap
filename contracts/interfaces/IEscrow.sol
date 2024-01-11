@@ -4,12 +4,24 @@ pragma solidity ^0.8.0;
 
 interface IEscrow {
     // TODO: is it possible to optimise this?
-    // Timelocks represent the duration of each period, in seconds
+    /**
+     * Timelocks for the source chain.
+     * finality: The duration of the chain finality period.
+     * publicUnlock: The duration of the period when anyone with a secret can withdraw tokens for the taker.
+     * cancel: The duration of the period when escrow can only be cancelled by the taker.
+     */
     struct SrcTimelocks {
         uint256 finality;
         uint256 publicUnlock;
+        uint256 cancel;
     }
 
+    /**
+     * Timelocks for the destination chain.
+     * finality: The duration of the chain finality period.
+     * unlock: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
+     * publicUnlock publicUnlock: The duration of the period when anyone with a secret can withdraw tokens for the maker.
+     */
     struct DstTimelocks {
         uint256 finality;
         uint256 unlock;
@@ -25,10 +37,11 @@ interface IEscrow {
     }
 
     struct ExtraDataParams {
-        uint256 hashlock;
+        bytes32 hashlock;
         uint256 dstChainId;
         address dstToken;
-        uint256 safetyDeposit;
+        uint256 srcSafetyDeposit;
+        uint256 dstSafetyDeposit;
         SrcTimelocks srcTimelocks;
         DstTimelocks dstTimelocks;
     }
@@ -41,7 +54,7 @@ interface IEscrow {
 
     struct DstEscrowImmutables {
         uint256 deployedAt;
-        uint256 hashlock;
+        bytes32 hashlock;
         address maker;
         address taker;
         uint256 chainId;
@@ -55,4 +68,5 @@ interface IEscrow {
     error InvalidCancellationTime();
     error InvalidSecret();
     error InvalidWithdrawalTime();
+    error NativeTokenSendingFailure();
 }

@@ -65,7 +65,8 @@ contract BaseSetup is Test {
     bytes32 internal constant SECRET = keccak256(abi.encodePacked("secret"));
     uint256 internal constant MAKING_AMOUNT = 0.3 ether;
     uint256 internal constant TAKING_AMOUNT = 0.5 ether;
-    uint256 internal constant SAFETY_DEPOSIT = 0.05 ether;
+    uint256 internal constant SRC_SAFETY_DEPOSIT = 0.03 ether;
+    uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
 
     Utils internal utils;
     VmSafe.Wallet[] internal users;
@@ -83,7 +84,8 @@ contract BaseSetup is Test {
 
     IEscrow.SrcTimelocks internal srcTimelocks = IEscrow.SrcTimelocks({
         finality: 120,
-        publicUnlock: 900
+        publicUnlock: 900,
+        cancel: 110
     });
     IEscrow.DstTimelocks internal dstTimelocks = IEscrow.DstTimelocks({
         finality: 300,
@@ -102,6 +104,8 @@ contract BaseSetup is Test {
         series: 0
     });
     /* solhint-enable private-vars-leading-underscore */
+
+    receive() external payable {}
 
     function setUp() public virtual {
         utils = new Utils();
@@ -147,17 +151,20 @@ contract BaseSetup is Test {
         bytes32 secret,
         uint256 chainId,
         address token,
-        uint256 safetyDeposit
+        uint256 srcSafetyDeposit,
+        uint256 dstSafetyDeposit
     ) internal view returns (bytes memory) {
-        uint256 hashlock = uint256(keccak256(abi.encodePacked(secret)));
+        bytes32 hashlock = keccak256(abi.encodePacked(secret));
         return (
             abi.encode(
                 hashlock,
                 chainId,
                 token,
-                safetyDeposit,
+                srcSafetyDeposit,
+                dstSafetyDeposit,
                 srcTimelocks.finality,
                 srcTimelocks.publicUnlock,
+                srcTimelocks.cancel,
                 dstTimelocks.finality,
                 dstTimelocks.unlock,
                 dstTimelocks.publicUnlock
@@ -177,12 +184,14 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
-        uint256 safetyDeposit = dstAmount * 10 / 100;
+        uint256 srcSafetyDeposit = srcAmount * 10 / 100;
+        uint256 dstSafetyDeposit = dstAmount * 10 / 100;
         extraData = _buidDynamicData(
             secret,
             block.chainid,
             address(dai),
-            safetyDeposit
+            srcSafetyDeposit,
+            dstSafetyDeposit
         );
 
         bytes memory postInteractionData = abi.encodePacked(
@@ -250,7 +259,7 @@ contract BaseSetup is Test {
         IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
         bytes memory data
     ) {
-        uint256 hashlock = uint256(keccak256(abi.encodePacked(secret)));
+        bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.publicUnlock;
         immutables = IEscrowFactory.DstEscrowImmutablesCreation(

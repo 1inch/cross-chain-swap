@@ -22,6 +22,8 @@ contract EscrowFactoryTest is BaseSetup {
             Escrow srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
 
+        (bool success, ) = address(srcClone).call{value: uint64(srcAmount) * 10 / 100}("");
+        assertEq(success, true);
         usdc.transfer(address(srcClone), srcAmount);
 
         vm.prank(address(limitOrderProtocol));
@@ -37,7 +39,7 @@ contract EscrowFactoryTest is BaseSetup {
         );
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        assertEq(returnedImmutables.extraDataParams.hashlock, uint256(keccak256(abi.encodePacked(secret))));
+        assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
         assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
     }
@@ -47,18 +49,23 @@ contract EscrowFactoryTest is BaseSetup {
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
         ) = _prepareDataDst(secret, amount, alice.addr, bob.addr, address(dai));
+        uint256 balanceBobNative = bob.addr.balance;
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
+        uint256 balanceEscrowNative = address(dstClone).balance;
 
+        uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow(immutables);
+        escrowFactory.createEscrow{value: safetyDeposit}(immutables);
 
-        assertEq(dai.balanceOf(bob.addr), balanceBob - (amount + immutables.safetyDeposit));
-        assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount + immutables.safetyDeposit);
+        assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);
+        assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
+        assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount);
+        assertEq(address(dstClone).balance, balanceEscrowNative + safetyDeposit);
 
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
-        assertEq(returnedImmutables.hashlock, uint256(keccak256(abi.encodePacked(secret))));
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.amount, amount);
     }
 
@@ -100,7 +107,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
-        escrowFactory.createEscrow(immutables);
+        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
     /* solhint-enable func-name-mixedcase */
