@@ -14,6 +14,7 @@ contract EscrowFactoryTest is BaseSetup {
     /* solhint-disable func-name-mixedcase */
 
     function testFuzz_DeployCloneForMaker(bytes32 secret, uint56 srcAmount, uint56 dstAmount) public {
+        vm.assume(srcAmount > 0 && dstAmount > 0);
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,

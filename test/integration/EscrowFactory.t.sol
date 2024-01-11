@@ -40,6 +40,8 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         (bool success,) = address(srcClone).call{value: uint64(srcAmount) * 10 / 100}("");
         assertEq(success, true);
 
+        uint256 resolverCredit = feeBank.availableCredit(bob.addr);
+
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
             order,
@@ -49,6 +51,8 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             takerTraits,
             args
         );
+
+        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
         assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
