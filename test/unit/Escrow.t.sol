@@ -242,6 +242,56 @@ contract EscrowTest is BaseSetup {
         assertEq(address(dstClone).balance, balanceEscrowNative - DST_SAFETY_DEPOSIT);
     }
 
+    function test_NoFailedNativeTokenTransferWithdrawalSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.prank(address(escrowFactory));
+        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        srcClone.withdrawSrc(SECRET);
+    }
+
+    function test_NoFailedNativeTokenTransferWithdrawalDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 10);
+        vm.prank(address(escrowFactory));
+        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        dstClone.withdrawDst(SECRET);
+    }
+
     function test_CancelResolverSrc() public {
         // deploy escrow
         (
@@ -440,6 +490,56 @@ contract EscrowTest is BaseSetup {
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + 100);
         vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        dstClone.cancelDst();
+    }
+
+    function test_NoFailedNativeTokenTransferCancelSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // cancel
+        vm.warp(block.timestamp + srcTimelocks.finality + srcTimelocks.publicUnlock + srcTimelocks.cancel + 100);
+        vm.prank(address(escrowFactory));
+        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        srcClone.cancelSrc();
+    }
+
+    function test_NoFailedNativeTokenTransferCancelDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + dstTimelocks.publicUnlock + 100);
+        vm.prank(address(escrowFactory));
+        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
         dstClone.cancelDst();
     }
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettlementExtension.sol";
+
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 
@@ -70,19 +72,14 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.amount, amount);
     }
 
-    function testFuzz_NoInsufficientBalanceDeploymentForMaker(
-        bytes32 secret,
-        uint56 srcAmount,
-        uint56 dstAmount
-    ) public {
-        vm.assume(srcAmount > 0);
+    function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
             /* Escrow srcClone */
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
@@ -91,8 +88,62 @@ contract EscrowFactoryTest is BaseSetup {
             "", // extension
             orderHash,
             bob.addr, // taker
-            srcAmount, // makingAmount
-            dstAmount, // takingAmount
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+    }
+
+    function test_NoInsufficientBalanceDeploymentForMaker() public {
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        (bool success, ) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+
+        vm.prank(address(limitOrderProtocol));
+        vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+    }
+
+    // Only whitelisted resolver can deploy escrow
+    function test_NoDeploymentForNotResolver() public {
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        (bool success, ) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        vm.expectRevert(SimpleSettlementExtension.ResolverIsNotWhitelisted.selector);
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            alice.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
             0, // remainingMakingAmount
             extraData
         );
@@ -100,7 +151,6 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-
         (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
 
         vm.warp(immutables.srcCancellationTimestamp + 1);
@@ -108,6 +158,34 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
+        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+    }
+
+    function test_NoInsufficientBalanceDeploymentForTaker() public {
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
+        escrowFactory.createEscrow(immutables);
+    }
+
+    // If the escrow address reverts on native token transfer, the escrow should not be deployed
+    function test_NoFailedNativeTokenTransferDeploymentForTaker() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(SECRET)));
+
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
         escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
