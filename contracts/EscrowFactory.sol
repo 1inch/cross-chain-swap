@@ -18,7 +18,6 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using ClonesWithImmutableArgs for address;
     using SafeERC20 for IERC20;
 
-    uint256 private constant _ORDER_FEE_BASE_POINTS = 1e15;
     address public immutable IMPLEMENTATION;
 
     constructor(address implementation, address limitOrderProtocol, IERC20 token)
@@ -39,7 +38,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) internal override {
-        uint256 resolverFee = uint256(uint32(bytes4(extraData[:4]))) * _ORDER_FEE_BASE_POINTS * makingAmount / order.makingAmount;
+        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
         extraData = extraData[4:];
 
         bytes calldata extraDataParams = extraData[:352];
