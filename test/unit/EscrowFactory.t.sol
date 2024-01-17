@@ -170,24 +170,5 @@ contract EscrowFactoryTest is BaseSetup {
         escrowFactory.createEscrow(immutables);
     }
 
-    // If the escrow address reverts on native token transfer, the escrow should not be deployed
-    function test_NoFailedNativeTokenTransferDeploymentForTaker() public {
-        (
-            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
-            Escrow dstClone
-        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
-
-        // deploy escrow
-        vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
-
-        IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
-        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(SECRET)));
-
-        vm.prank(bob.addr);
-        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
-    }
-
     /* solhint-enable func-name-mixedcase */
 }

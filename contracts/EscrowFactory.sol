@@ -60,13 +60,12 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             extraDataParams
         );
         // Salt is orderHash
-        address escrow = ClonesWithImmutableArgs.addressOfClone3(orderHash);
+        address escrow = _createEscrow(data, orderHash, 0);
         uint256 safetyDeposit = abi.decode(extraDataParams, (IEscrow.ExtraDataParams)).srcSafetyDeposit;
         if (
             escrow.balance < safetyDeposit ||
             IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount
         ) revert InsufficientEscrowBalance();
-        _createEscrow(data, orderHash);
 
         _chargeFee(taker, resolverFee);
     }
@@ -99,11 +98,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
 
-        address escrow = addressOfEscrow(salt);
-        (bool success, ) = escrow.call{value: dstEscrowImmutables.safetyDeposit}("");
-        if (!success) revert IEscrow.NativeTokenSendingFailure();
-
-        _createEscrow(data, salt);
+        address escrow = _createEscrow(data, salt, msg.value);
         IERC20(dstEscrowImmutables.token).safeTransferFrom(
             msg.sender, escrow, dstEscrowImmutables.amount
         );
@@ -115,8 +110,9 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
 
     function _createEscrow(
         bytes memory data,
-        bytes32 salt
+        bytes32 salt,
+        uint256 value
     ) private returns (address clone) {
-        clone = address(uint160(IMPLEMENTATION.clone3(data, salt)));
+        clone = address(uint160(IMPLEMENTATION.clone3(data, salt, value)));
     }
 }
