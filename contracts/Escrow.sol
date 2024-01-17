@@ -85,20 +85,16 @@ contract Escrow is Clone, IEscrow {
         );
     }
 
-    function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata) {
-        SrcEscrowImmutables calldata data;
+    function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata data) {
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
-        assembly { data := offset }
-        return data;
+        assembly ("memory-safe") { data := offset }
     }
 
-    function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata) {
-        DstEscrowImmutables calldata data;
+    function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata data) {
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
-        assembly { data := offset }
-        return data;
+        assembly ("memory-safe") { data := offset }
     }
 
     function _isValidSecret(bytes32 secret, uint256 hashlock) internal pure returns (bool) {
