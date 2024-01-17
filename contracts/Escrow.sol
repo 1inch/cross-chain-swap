@@ -157,6 +157,7 @@ contract Escrow is Clone, IEscrow {
      * @dev The secret is valid if its hash matches the hashlock.
      * @param secret Provided secret to verify.
      * @param hashlock Hashlock to compare with.
+     * @return True if the secret is valid, false otherwise.
      */
     function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
         return keccak256(abi.encode(secret)) == hashlock;
