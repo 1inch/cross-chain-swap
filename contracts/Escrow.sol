@@ -25,11 +25,13 @@ contract Escrow is Clone, IEscrow {
      */
     function withdrawSrc(bytes32 secret) external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
+        if (msg.sender != escrowImmutables.interactionParams.taker) revert InvalidCaller();
+
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
         // Check that it's public unlock period.
         if (
             block.timestamp < finalisedTimestamp ||
-            block.timestamp >= finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.publicUnlock
+            block.timestamp >= finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.unlock
         ) revert InvalidWithdrawalTime();
 
         _checkSecretAndTransfer(
@@ -51,7 +53,7 @@ contract Escrow is Clone, IEscrow {
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        uint256 cancellationTimestamp = finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.publicUnlock;
+        uint256 cancellationTimestamp = finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.unlock;
         // Check that it's cancellation period.
         if (block.timestamp < cancellationTimestamp) {
             revert InvalidCancellationTime();
@@ -109,6 +111,8 @@ contract Escrow is Clone, IEscrow {
      */
     function cancelDst() external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
+        if (msg.sender != escrowImmutables.taker) revert InvalidCaller();
+
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
         // Check that it's a cancellation period.
         if (

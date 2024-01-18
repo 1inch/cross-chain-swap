@@ -7,12 +7,12 @@ interface IEscrow {
     /**
      * Timelocks for the source chain.
      * finality: The duration of the chain finality period.
-     * publicUnlock: The duration of the period when anyone with a secret can withdraw tokens for the taker.
+     * unlock: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
      * cancel: The duration of the period when escrow can only be cancelled by the taker.
      */
     struct SrcTimelocks {
         uint256 finality;
-        uint256 publicUnlock;
+        uint256 unlock;
         uint256 cancel;
     }
 
@@ -82,9 +82,9 @@ interface IEscrow {
 
     /**
      * @notice Withdraws funds to the taker on the source chain.
-     * @dev Withdrawal can only be made during the public unlock period and with secret
+     * @dev Withdrawal can only be made by the taker during the unlock period and with secret
      * with hash matches the hashlock.
-     * The safety deposit is sent to the caller.
+     * The safety deposit is sent to the caller (taker).
      * @param secret The secret that unlocks the escrow.
      */
     function withdrawSrc(bytes32 secret) external;
@@ -108,8 +108,8 @@ interface IEscrow {
 
     /**
      * @notice Cancels the escrow on the destination chain and returns tokens to the taker.
-     * @dev The escrow can only be cancelled during the cancel period.
-     * The safety deposit is sent to the caller.
+     * @dev The escrow can only be cancelled by the taker during the cancel period.
+     * The safety deposit is sent to the caller (taker).
      */
     function cancelDst() external;
 

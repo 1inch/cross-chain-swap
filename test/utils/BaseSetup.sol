@@ -88,7 +88,7 @@ contract BaseSetup is Test {
 
     IEscrow.SrcTimelocks internal srcTimelocks = IEscrow.SrcTimelocks({
         finality: 120,
-        publicUnlock: 900,
+        unlock: 900,
         cancel: 110
     });
     IEscrow.DstTimelocks internal dstTimelocks = IEscrow.DstTimelocks({
@@ -175,7 +175,7 @@ contract BaseSetup is Test {
                 srcSafetyDeposit,
                 dstSafetyDeposit,
                 srcTimelocks.finality,
-                srcTimelocks.publicUnlock,
+                srcTimelocks.unlock,
                 srcTimelocks.cancel,
                 dstTimelocks.finality,
                 dstTimelocks.unlock,
@@ -286,7 +286,7 @@ contract BaseSetup is Test {
     ) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
-        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.publicUnlock;
+        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.unlock;
         immutables = IEscrowFactory.DstEscrowImmutablesCreation(
             hashlock,
             maker,
