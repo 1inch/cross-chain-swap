@@ -1,0 +1,11 @@
+@1inch/limit-order-protocol-contract/=lib/limit-order-protocol/
+@1inch/solidity-utils/=lib/solidity-utils/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+clones-with-immutable-args/=lib/clones-with-immutable-args/src
+ds-test/=lib/clones-with-immutable-args/lib/ds-test/src/
+erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/
+forge-std/=lib/forge-std/src/
+limit-order-protocol/=lib/limit-order-protocol/contracts/
+limit-order-settlement/=lib/limit-order-settlement/contracts/
+openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+solidity-utils/=lib/solidity-utils/contracts/

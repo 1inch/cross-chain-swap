@@ -2,16 +2,15 @@
 
 pragma solidity 0.8.23;
 
-import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-import { ExtensionBase } from "@1inch/limit-order-settlement/contracts/ExtensionBase.sol";
-import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
-import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
+import { ExtensionBase } from "limit-order-settlement/ExtensionBase.sol";
+import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
+import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { Escrow } from "./Escrow.sol";
 
 contract EscrowFactory is IEscrowFactory, ExtensionBase {
     using AddressLib for Address;
@@ -60,6 +59,7 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
      * @dev Creates a new escrow contract for taker.
      */
     function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external {
+        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
             block.timestamp +
             dstEscrowImmutables.timelocks.finality +
@@ -81,9 +81,9 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
             dstEscrowImmutables.timelocks.publicUnlock
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
-        Escrow escrow = _createEscrow(data, salt);
+        address escrow = _createEscrow(data, salt);
         IERC20(dstEscrowImmutables.token).safeTransferFrom(
-            msg.sender, address(escrow), dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
+            msg.sender, escrow, dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
         );
     }
 
@@ -94,7 +94,7 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
     function _createEscrow(
         bytes memory data,
         bytes32 salt
-    ) private returns (Escrow clone) {
-        clone = Escrow(IMPLEMENTATION.clone3(data, salt));
+    ) private returns (address clone) {
+        clone = address(uint160(IMPLEMENTATION.clone3(data, salt)));
     }
 }

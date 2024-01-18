@@ -20,24 +20,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
         with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
-      - run: yarn test:ci
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Check contract sizes
+        run: forge build --sizes
+
+      - name: Run tests
+        run: yarn test
+
+      # - name: Run snapshot
+      #   run: forge snapshot
 
   coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
         with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
-      - run: yarn coverage
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run coverage
+        run: yarn coverage
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
