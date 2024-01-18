@@ -15,6 +15,38 @@ contract EscrowTest is BaseSetup {
     }
 
     /* solhint-disable func-name-mixedcase */
+    // Only resolver can withdraw
+    function test_NoWithdrawalByAnyone() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // withdraw
+        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        srcClone.withdrawSrc(SECRET);
+    }
+
     function test_NoWithdrawalDuringFinalityLockSrc() public {
         // deploy escrow
         (
@@ -463,6 +495,23 @@ contract EscrowTest is BaseSetup {
         assertEq(dai.balanceOf(bob.addr), balanceBob + TAKING_AMOUNT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - TAKING_AMOUNT);
         assertEq(address(dstClone).balance, balanceEscrowNative - DST_SAFETY_DEPOSIT);
+    }
+
+    // Only resolver can cancel
+    function test_NoCancelByAnyoneDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.unlock + dstTimelocks.publicUnlock + 100);
+        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        dstClone.cancelDst();
     }
 
     function test_NoCancelDuringResolverUnlockDst() public {
