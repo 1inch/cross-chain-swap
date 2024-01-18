@@ -7,25 +7,25 @@ interface IEscrow {
     /**
      * Timelocks for the source chain.
      * finality: The duration of the chain finality period.
-     * unlock: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
+     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
      * cancel: The duration of the period when escrow can only be cancelled by the taker.
      */
     struct SrcTimelocks {
         uint256 finality;
-        uint256 unlock;
+        uint256 withdrawal;
         uint256 cancel;
     }
 
     /**
      * Timelocks for the destination chain.
      * finality: The duration of the chain finality period.
-     * unlock: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
-     * publicUnlock publicUnlock: The duration of the period when anyone with a secret can withdraw tokens for the maker.
+     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
+     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
      */
     struct DstTimelocks {
         uint256 finality;
-        uint256 unlock;
-        uint256 publicUnlock;
+        uint256 withdrawal;
+        uint256 publicWithdrawal;
     }
 
     // Data for the immutables from the order post interacton.
@@ -82,7 +82,7 @@ interface IEscrow {
 
     /**
      * @notice Withdraws funds to the taker on the source chain.
-     * @dev Withdrawal can only be made by the taker during the unlock period and with secret
+     * @dev Withdrawal can only be made by the taker during the withdrawal period and with secret
      * with hash matches the hashlock.
      * The safety deposit is sent to the caller (taker).
      * @param secret The secret that unlocks the escrow.
@@ -99,8 +99,8 @@ interface IEscrow {
 
     /**
      * @notice Withdraws funds to the maker on the destination chain.
-     * @dev Withdrawal can only be made by taker during the private unlock period or by anyone
-     * during the public unlock period. In both cases, a secret with hash matching the hashlock must be provided.
+     * @dev Withdrawal can only be made by taker during the private withdrawal period or by anyone
+     * during the public withdrawal period. In both cases, a secret with hash matching the hashlock must be provided.
      * The safety deposit is sent to the caller.
      * @param secret The secret that unlocks the escrow.
      */

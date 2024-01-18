@@ -22,16 +22,18 @@ contract Escrow is Clone, IEscrow {
 
     /**
      * @notice See {IEscrow-withdrawSrc}.
+     * @dev The function works on the time interval highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancel --/-- public cancel ----
      */
     function withdrawSrc(bytes32 secret) external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         if (msg.sender != escrowImmutables.interactionParams.taker) revert InvalidCaller();
 
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        // Check that it's public unlock period.
+        // Check that it's public withdrawal period.
         if (
             block.timestamp < finalisedTimestamp ||
-            block.timestamp >= finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.unlock
+            block.timestamp >= finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.withdrawal
         ) revert InvalidWithdrawalTime();
 
         _checkSecretAndTransfer(
@@ -49,11 +51,13 @@ contract Escrow is Clone, IEscrow {
 
     /**
      * @notice See {IEscrow-cancelSrc}.
+     * @dev The function works on the time intervals highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCEL --/-- PUBLIC CANCEL ----
      */
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        uint256 cancellationTimestamp = finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.unlock;
+        uint256 cancellationTimestamp = finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.withdrawal;
         // Check that it's cancellation period.
         if (block.timestamp < cancellationTimestamp) {
             revert InvalidCancellationTime();
@@ -79,18 +83,20 @@ contract Escrow is Clone, IEscrow {
 
     /**
      * @notice See {IEscrow-withdrawDst}.
+     * @dev The function works on the time intervals highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancel ----
      */
     function withdrawDst(bytes32 secret) external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
-        uint256 publicUnlockTimestamp = finalisedTimestamp + escrowImmutables.timelocks.unlock;
-        // Check that it's an unlock period.
+        uint256 publicUnlockTimestamp = finalisedTimestamp + escrowImmutables.timelocks.withdrawal;
+        // Check that it's an withdrawal period.
         if (
             block.timestamp < finalisedTimestamp ||
-            block.timestamp >= publicUnlockTimestamp + escrowImmutables.timelocks.publicUnlock
+            block.timestamp >= publicUnlockTimestamp + escrowImmutables.timelocks.publicWithdrawal
         ) revert InvalidWithdrawalTime();
 
-        // Check that the caller is a taker if it's the private unlock period.
+        // Check that the caller is a taker if it's the private withdrawal period.
         if (block.timestamp < publicUnlockTimestamp && msg.sender != escrowImmutables.taker) revert InvalidCaller();
 
         _checkSecretAndTransfer(
@@ -108,6 +114,8 @@ contract Escrow is Clone, IEscrow {
 
     /**
      * @notice See {IEscrow-cancelDst}.
+     * @dev The function works on the time interval highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCEL ----
      */
     function cancelDst() external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
@@ -117,7 +125,7 @@ contract Escrow is Clone, IEscrow {
         // Check that it's a cancellation period.
         if (
             block.timestamp <
-            finalisedTimestamp + escrowImmutables.timelocks.unlock + escrowImmutables.timelocks.publicUnlock
+            finalisedTimestamp + escrowImmutables.timelocks.withdrawal + escrowImmutables.timelocks.publicWithdrawal
         ) {
             revert InvalidCancellationTime();
         }

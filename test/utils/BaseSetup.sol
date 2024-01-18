@@ -88,13 +88,13 @@ contract BaseSetup is Test {
 
     IEscrow.SrcTimelocks internal srcTimelocks = IEscrow.SrcTimelocks({
         finality: 120,
-        unlock: 900,
+        withdrawal: 900,
         cancel: 110
     });
     IEscrow.DstTimelocks internal dstTimelocks = IEscrow.DstTimelocks({
         finality: 300,
-        unlock: 240,
-        publicUnlock: 360
+        withdrawal: 240,
+        publicWithdrawal: 360
     });
     MakerTraitsParams internal makerTraitsParams = MakerTraitsParams({
         allowedSender: address(0),
@@ -175,11 +175,11 @@ contract BaseSetup is Test {
                 srcSafetyDeposit,
                 dstSafetyDeposit,
                 srcTimelocks.finality,
-                srcTimelocks.unlock,
+                srcTimelocks.withdrawal,
                 srcTimelocks.cancel,
                 dstTimelocks.finality,
-                dstTimelocks.unlock,
-                dstTimelocks.publicUnlock
+                dstTimelocks.withdrawal,
+                dstTimelocks.publicWithdrawal
             )
         );
     }
@@ -286,7 +286,7 @@ contract BaseSetup is Test {
     ) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
-        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.unlock;
+        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
         immutables = IEscrowFactory.DstEscrowImmutablesCreation(
             hashlock,
             maker,
@@ -306,8 +306,8 @@ contract BaseSetup is Test {
             amount,
             safetyDeposit,
             dstTimelocks.finality,
-            dstTimelocks.unlock,
-            dstTimelocks.publicUnlock
+            dstTimelocks.withdrawal,
+            dstTimelocks.publicWithdrawal
         );
     }
 
