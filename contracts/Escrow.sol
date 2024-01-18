@@ -131,25 +131,21 @@ contract Escrow is Clone, IEscrow {
     /**
      * @notice See {IEscrow-srcEscrowImmutables}.
      */
-    function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata) {
-        SrcEscrowImmutables calldata data;
-        // Get the offset of the immutable args in calldata.
+    function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata data) {
+         // Get the offset of the immutable args in calldata.
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
-        assembly { data := offset }
-        return data;
+        assembly ("memory-safe") { data := offset }
     }
 
     /**
      * @notice See {IEscrow-dstEscrowImmutables}.
      */
-    function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata) {
-        DstEscrowImmutables calldata data;
-        // Get the offset of the immutable args in calldata.
+    function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata data) {
+       // Get the offset of the immutable args in calldata.
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
-        assembly { data := offset }
-        return data;
+        assembly ("memory-safe") { data := offset }
     }
 
     /**
