@@ -47,13 +47,8 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) internal override {
-        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
-        extraData = extraData[4:];
-
-        bytes calldata extraDataParams = extraData[:352];
-
         {
-            bytes calldata whitelist = extraData[352:];
+            bytes calldata whitelist = extraData[356:];
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
@@ -66,6 +61,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             makingAmount, // srcAmount
             takingAmount // dstAmount
         );
+        bytes calldata extraDataParams = extraData[4:356];
         bytes memory data = abi.encodePacked(
             block.timestamp, // deployedAt
             interactionParams,
@@ -80,6 +76,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount
         ) revert InsufficientEscrowBalance();
 
+        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
         _chargeFee(taker, resolverFee);
     }
 
