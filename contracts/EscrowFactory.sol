@@ -13,7 +13,6 @@ import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithIm
 import { IEscrow } from "./interfaces/IEscrow.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 
-
 /**
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
@@ -52,9 +51,11 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         extraData = extraData[4:];
 
         bytes calldata extraDataParams = extraData[:352];
-        bytes calldata whitelist = extraData[352:];
 
-        if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
+        {
+            bytes calldata whitelist = extraData[352:];
+            if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
+        }
 
         // Prepare immutables for the escrow contract.
         bytes memory interactionParams = abi.encode(
