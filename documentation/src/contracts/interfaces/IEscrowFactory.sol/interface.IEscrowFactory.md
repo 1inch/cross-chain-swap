@@ -1,5 +1,5 @@
 # IEscrowFactory
-[Git Source](https://github.com/byshape/cross-chain-swap/blob/e26c23ac0516aa14fa1ee0839087565b952fb4f1/contracts/interfaces/IEscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/f45e33f855d5dd79428a1ba540d9f8df14bbb794/contracts/interfaces/IEscrowFactory.sol)
 
 
 ## Functions

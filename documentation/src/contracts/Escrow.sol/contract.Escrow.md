@@ -1,5 +1,5 @@
 # Escrow
-[Git Source](https://github.com/byshape/cross-chain-swap/blob/e26c23ac0516aa14fa1ee0839087565b952fb4f1/contracts/Escrow.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/f45e33f855d5dd79428a1ba540d9f8df14bbb794/contracts/Escrow.sol)
 
 **Inherits:**
 Clone, [IEscrow](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md)
@@ -55,7 +55,7 @@ See [IEscrow-srcEscrowImmutables](/contracts/interfaces/IEscrow.sol/interface.IE
 
 
 ```solidity
-function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata);
+function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata data);
 ```
 
 ### dstEscrowImmutables
@@ -64,7 +64,7 @@ See [IEscrow-dstEscrowImmutables](/contracts/interfaces/IEscrow.sol/interface.IE
 
 
 ```solidity
-function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata);
+function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata data);
 ```
 
 ### _isValidSecret
