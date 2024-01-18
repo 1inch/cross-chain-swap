@@ -27,19 +27,31 @@ contract Escrow is Clone, IEscrow {
             escrowImmutables.interactionParams.srcToken,
             escrowImmutables.interactionParams.srcAmount
         );
+        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.srcSafetyDeposit}("");
+        if (!success) revert NativeTokenSendingFailure();
     }
 
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         uint256 finalityTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        if (block.timestamp < finalityTimestamp + escrowImmutables.extraDataParams.srcTimelocks.publicUnlock) {
+        uint256 cancellationTimestamp = finalityTimestamp + escrowImmutables.extraDataParams.srcTimelocks.publicUnlock;
+        if (block.timestamp < cancellationTimestamp) {
             revert InvalidCancellationTime();
+        }
+
+        if (
+            block.timestamp < cancellationTimestamp + escrowImmutables.extraDataParams.srcTimelocks.cancel &&
+            msg.sender != escrowImmutables.interactionParams.taker
+        ) {
+            revert InvalidCaller();
         }
 
         IERC20(escrowImmutables.interactionParams.srcToken).safeTransfer(
             escrowImmutables.interactionParams.maker,
             escrowImmutables.interactionParams.srcAmount
         );
+        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.srcSafetyDeposit}("");
+        if (!success) revert NativeTokenSendingFailure();
     }
 
     function withdrawDst(bytes32 secret) external {
@@ -51,9 +63,8 @@ contract Escrow is Clone, IEscrow {
             block.timestamp > unlockTimestamp + escrowImmutables.timelocks.publicUnlock
         ) revert InvalidWithdrawalTime();
 
-        if (block.timestamp < unlockTimestamp) {
-            if (msg.sender != escrowImmutables.taker) revert InvalidCaller();
-        }
+        if (block.timestamp < unlockTimestamp && msg.sender != escrowImmutables.taker) revert InvalidCaller();
+
         _checkSecretAndTransfer(
             secret,
             escrowImmutables.hashlock,
@@ -61,10 +72,8 @@ contract Escrow is Clone, IEscrow {
             escrowImmutables.token,
             escrowImmutables.amount
         );
-        IERC20(escrowImmutables.token).safeTransfer(
-            msg.sender,
-            escrowImmutables.safetyDeposit
-        );
+        (bool success, ) = msg.sender.call{value: escrowImmutables.safetyDeposit}("");
+        if (!success) revert NativeTokenSendingFailure();
     }
 
     function cancelDst() external {
@@ -79,10 +88,8 @@ contract Escrow is Clone, IEscrow {
             escrowImmutables.amount
         );
 
-        IERC20(escrowImmutables.token).safeTransfer(
-            msg.sender,
-            escrowImmutables.safetyDeposit
-        );
+        (bool success, ) = msg.sender.call{value: escrowImmutables.safetyDeposit}("");
+        if (!success) revert NativeTokenSendingFailure();
     }
 
     function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata data) {
@@ -97,11 +104,11 @@ contract Escrow is Clone, IEscrow {
         assembly ("memory-safe") { data := offset }
     }
 
-    function _isValidSecret(bytes32 secret, uint256 hashlock) internal pure returns (bool) {
-        return uint256(keccak256(abi.encode(secret))) == hashlock;
+    function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
+        return keccak256(abi.encode(secret)) == hashlock;
     }
 
-    function _checkSecretAndTransfer(bytes32 secret, uint256 hashlock, address recipient, address token, uint256 amount) internal {
+    function _checkSecretAndTransfer(bytes32 secret, bytes32 hashlock, address recipient, address token, uint256 amount) internal {
         if (!_isValidSecret(secret, hashlock)) revert InvalidSecret();
         IERC20(token).safeTransfer(recipient, amount);
     }

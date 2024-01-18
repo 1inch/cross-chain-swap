@@ -5,21 +5,23 @@ pragma solidity 0.8.23;
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-import { ExtensionBase } from "limit-order-settlement/ExtensionBase.sol";
+import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettlementExtension.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
+import { IEscrow } from "./interfaces/IEscrow.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 
-contract EscrowFactory is IEscrowFactory, ExtensionBase {
+contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using SafeERC20 for IERC20;
 
     address public immutable IMPLEMENTATION;
 
-    constructor(address implementation, address limitOrderProtocol) ExtensionBase(limitOrderProtocol) {
+    constructor(address implementation, address limitOrderProtocol, IERC20 token)
+        SimpleSettlementExtension(limitOrderProtocol, token) {
         IMPLEMENTATION = implementation;
     }
 
@@ -36,6 +38,14 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) internal override {
+        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
+        extraData = extraData[4:];
+
+        bytes calldata extraDataParams = extraData[:352];
+        bytes calldata whitelist = extraData[352:];
+        
+        if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
+
         bytes memory interactionParams = abi.encode(
             order.maker,
             taker,
@@ -47,18 +57,24 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
         bytes memory data = abi.encodePacked(
             block.timestamp, // deployedAt
             interactionParams,
-            extraData
+            extraDataParams
         );
         // Salt is orderHash
-        address escrow = ClonesWithImmutableArgs.addressOfClone3(orderHash);
-        if (IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount) revert InsufficientEscrowBalance();
-        _createEscrow(data, orderHash);
+        address escrow = _createEscrow(data, orderHash, 0);
+        uint256 safetyDeposit = abi.decode(extraDataParams, (IEscrow.ExtraDataParams)).srcSafetyDeposit;
+        if (
+            escrow.balance < safetyDeposit ||
+            IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount
+        ) revert InsufficientEscrowBalance();
+
+        _chargeFee(taker, resolverFee);
     }
 
     /**
      * @dev Creates a new escrow contract for taker.
      */
-    function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external {
+    function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable {
+        if (msg.value < dstEscrowImmutables.safetyDeposit) revert InsufficientEscrowBalance();
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
             block.timestamp +
@@ -81,20 +97,22 @@ contract EscrowFactory is IEscrowFactory, ExtensionBase {
             dstEscrowImmutables.timelocks.publicUnlock
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
-        address escrow = _createEscrow(data, salt);
+
+        address escrow = _createEscrow(data, salt, msg.value);
         IERC20(dstEscrowImmutables.token).safeTransferFrom(
-            msg.sender, escrow, dstEscrowImmutables.amount + dstEscrowImmutables.safetyDeposit
+            msg.sender, escrow, dstEscrowImmutables.amount
         );
     }
 
-    function addressOfEscrow(bytes32 salt) external view returns (address) {
-        return ClonesWithImmutableArgs.addressOfClone3(salt);
+    function addressOfEscrow(bytes32 salt) public view returns (address) {
+        return address(uint160(ClonesWithImmutableArgs.addressOfClone3(salt)));
     }
 
     function _createEscrow(
         bytes memory data,
-        bytes32 salt
+        bytes32 salt,
+        uint256 value
     ) private returns (address clone) {
-        clone = address(uint160(IMPLEMENTATION.clone3(data, salt)));
+        clone = address(uint160(IMPLEMENTATION.clone3(data, salt, value)));
     }
 }

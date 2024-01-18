@@ -8,6 +8,7 @@ import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/libraries/MakerTraitsLib.sol";
 import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
 import { WrappedTokenMock } from "limit-order-protocol/mocks/WrappedTokenMock.sol";
+import { IFeeBank } from "limit-order-settlement/interfaces/IFeeBank.sol";
 import { Address } from "solidity-utils/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
@@ -65,7 +66,9 @@ contract BaseSetup is Test {
     bytes32 internal constant SECRET = keccak256(abi.encodePacked("secret"));
     uint256 internal constant MAKING_AMOUNT = 0.3 ether;
     uint256 internal constant TAKING_AMOUNT = 0.5 ether;
-    uint256 internal constant SAFETY_DEPOSIT = 0.05 ether;
+    uint256 internal constant SRC_SAFETY_DEPOSIT = 0.03 ether;
+    uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
+    uint32 internal constant RESOLVER_FEE = 100;
 
     Utils internal utils;
     VmSafe.Wallet[] internal users;
@@ -76,14 +79,17 @@ contract BaseSetup is Test {
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
     WrappedTokenMock internal weth;
+    TokenMock internal inch;
 
     LimitOrderProtocol internal limitOrderProtocol;
     EscrowFactory internal escrowFactory;
     Escrow internal escrow;
+    IFeeBank internal feeBank;
 
     IEscrow.SrcTimelocks internal srcTimelocks = IEscrow.SrcTimelocks({
         finality: 120,
-        publicUnlock: 900
+        publicUnlock: 900,
+        cancel: 110
     });
     IEscrow.DstTimelocks internal dstTimelocks = IEscrow.DstTimelocks({
         finality: 300,
@@ -103,6 +109,8 @@ contract BaseSetup is Test {
     });
     /* solhint-enable private-vars-leading-underscore */
 
+    receive() external payable {}
+
     function setUp() public virtual {
         utils = new Utils();
         users = utils.createUsers(2);
@@ -115,12 +123,15 @@ contract BaseSetup is Test {
         _deployTokens();
         dai.mint(bob.addr, 1000 ether);
         usdc.mint(alice.addr, 1000 ether);
+        inch.mint(bob.addr, 1000 ether);
 
         _deployContracts();
 
         vm.startPrank(bob.addr);
         dai.approve(address(escrowFactory), 1000 ether);
         dai.approve(address(limitOrderProtocol), 1000 ether);
+        inch.approve(address(feeBank), 1000 ether);
+        feeBank.deposit(10 ether);
         vm.stopPrank();
         vm.prank(alice.addr);
         usdc.approve(address(limitOrderProtocol), 1000 ether);
@@ -132,6 +143,9 @@ contract BaseSetup is Test {
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
         vm.label(address(usdc), "USDC");
         weth = new WrappedTokenMock("WETH", "WETH");
+        vm.label(address(weth), "WETH");
+        inch = new TokenMock("1INCH", "1INCH");
+        vm.label(address(inch), "1INCH");
     }
 
     function _deployContracts() internal {
@@ -139,25 +153,30 @@ contract BaseSetup is Test {
 
         escrow = new Escrow();
         vm.label(address(escrow), "Escrow");
-        escrowFactory = new EscrowFactory(address(escrow), address(limitOrderProtocol));
+        escrowFactory = new EscrowFactory(address(escrow), address(limitOrderProtocol), inch);
         vm.label(address(escrowFactory), "EscrowFactory");
+        feeBank = IFeeBank(escrowFactory.FEE_BANK());
+        vm.label(address(feeBank), "FeeBank");
     }
 
     function _buidDynamicData(
         bytes32 secret,
         uint256 chainId,
         address token,
-        uint256 safetyDeposit
+        uint256 srcSafetyDeposit,
+        uint256 dstSafetyDeposit
     ) internal view returns (bytes memory) {
-        uint256 hashlock = uint256(keccak256(abi.encodePacked(secret)));
+        bytes32 hashlock = keccak256(abi.encodePacked(secret));
         return (
             abi.encode(
                 hashlock,
                 chainId,
                 token,
-                safetyDeposit,
+                srcSafetyDeposit,
+                dstSafetyDeposit,
                 srcTimelocks.finality,
                 srcTimelocks.publicUnlock,
+                srcTimelocks.cancel,
                 dstTimelocks.finality,
                 dstTimelocks.unlock,
                 dstTimelocks.publicUnlock
@@ -177,17 +196,27 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
-        uint256 safetyDeposit = dstAmount * 10 / 100;
+        uint256 srcSafetyDeposit = srcAmount * 10 / 100;
+        uint256 dstSafetyDeposit = dstAmount * 10 / 100;
         extraData = _buidDynamicData(
             secret,
             block.chainid,
             address(dai),
-            safetyDeposit
+            srcSafetyDeposit,
+            dstSafetyDeposit
+        );
+
+        bytes memory whitelist = abi.encodePacked(
+            uint32(block.timestamp), // auction start time
+            uint80(uint160(bob.addr)), // resolver address
+            uint16(0) // time delta
         );
 
         bytes memory postInteractionData = abi.encodePacked(
-            escrowFactory,
-            extraData
+            address(escrowFactory),
+            RESOLVER_FEE,
+            extraData,
+            whitelist
         );
 
         if (fakeOrder) {
@@ -217,6 +246,11 @@ contract BaseSetup is Test {
         orderHash = limitOrderProtocol.hashOrder(order);
 
         srcClone = Escrow(escrowFactory.addressOfEscrow(orderHash));
+        extraData = abi.encodePacked(
+            RESOLVER_FEE,
+            extraData,
+            whitelist
+        );
     }
 
     function _prepareDataDst(
@@ -250,7 +284,7 @@ contract BaseSetup is Test {
         IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
         bytes memory data
     ) {
-        uint256 hashlock = uint256(keccak256(abi.encodePacked(secret)));
+        bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.publicUnlock;
         immutables = IEscrowFactory.DstEscrowImmutablesCreation(

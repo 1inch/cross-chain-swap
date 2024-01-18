@@ -37,6 +37,11 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             0 // threshold
         );
 
+        (bool success,) = address(srcClone).call{value: uint64(srcAmount) * 10 / 100}("");
+        assertEq(success, true);
+
+        uint256 resolverCredit = feeBank.availableCredit(bob.addr);
+
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
             order,
@@ -47,8 +52,10 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             args
         );
 
+        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        assertEq(returnedImmutables.extraDataParams.hashlock, uint256(keccak256(abi.encodePacked(secret))));
+        assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
         assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
     }
@@ -59,7 +66,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            /* Escrow srcClone */
+            Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
@@ -75,6 +82,9 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             "", // interaction
             0 // threshold
         );
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
 
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
