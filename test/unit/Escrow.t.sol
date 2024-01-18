@@ -407,7 +407,7 @@ contract EscrowTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
-    function test_NoCancelDuringUnlockSrc() public {
+    function test_NoCancelDuringWithdrawalSrc() public {
         // deploy escrow
         (
             IOrderMixin.Order memory order,
@@ -514,7 +514,7 @@ contract EscrowTest is BaseSetup {
         dstClone.cancelDst();
     }
 
-    function test_NoCancelDuringResolverUnlockDst() public {
+    function test_NoCancelDuringResolverWithdrawalDst() public {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone
@@ -530,7 +530,7 @@ contract EscrowTest is BaseSetup {
         dstClone.cancelDst();
     }
 
-    function test_NoCancelDuringPublicUnlockDst() public {
+    function test_NoCancelDuringPublicWithdrawalDst() public {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
             Escrow dstClone

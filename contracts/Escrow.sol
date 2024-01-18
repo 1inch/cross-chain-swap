@@ -89,15 +89,15 @@ contract Escrow is Clone, IEscrow {
     function withdrawDst(bytes32 secret) external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
-        uint256 publicUnlockTimestamp = finalisedTimestamp + escrowImmutables.timelocks.withdrawal;
+        uint256 publicWithdrawalTimestamp = finalisedTimestamp + escrowImmutables.timelocks.withdrawal;
         // Check that it's an withdrawal period.
         if (
             block.timestamp < finalisedTimestamp ||
-            block.timestamp >= publicUnlockTimestamp + escrowImmutables.timelocks.publicWithdrawal
+            block.timestamp >= publicWithdrawalTimestamp + escrowImmutables.timelocks.publicWithdrawal
         ) revert InvalidWithdrawalTime();
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < publicUnlockTimestamp && msg.sender != escrowImmutables.taker) revert InvalidCaller();
+        if (block.timestamp < publicWithdrawalTimestamp && msg.sender != escrowImmutables.taker) revert InvalidCaller();
 
         _checkSecretAndTransfer(
             secret,
