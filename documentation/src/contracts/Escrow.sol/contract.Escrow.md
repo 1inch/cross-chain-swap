@@ -1,5 +1,5 @@
 # Escrow
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/f45e33f855d5dd79428a1ba540d9f8df14bbb794/contracts/Escrow.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/40ee0298e9d149b252571265df4978f25f912e2a/contracts/Escrow.sol)
 
 **Inherits:**
 Clone, [IEscrow](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md)
@@ -17,6 +17,9 @@ Withdrawal and cancellation functions for the source and destination chains are 
 
 See [IEscrow-withdrawSrc](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md#withdrawsrc).
 
+*The function works on the time interval highlighted with capital letters:
+---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancel --/-- public cancel ----*
+
 
 ```solidity
 function withdrawSrc(bytes32 secret) external;
@@ -25,6 +28,9 @@ function withdrawSrc(bytes32 secret) external;
 ### cancelSrc
 
 See [IEscrow-cancelSrc](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md#cancelsrc).
+
+*The function works on the time intervals highlighted with capital letters:
+---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCEL --/-- PUBLIC CANCEL ----*
 
 
 ```solidity
@@ -35,6 +41,9 @@ function cancelSrc() external;
 
 See [IEscrow-withdrawDst](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md#withdrawdst).
 
+*The function works on the time intervals highlighted with capital letters:
+---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancel ----*
+
 
 ```solidity
 function withdrawDst(bytes32 secret) external;
@@ -43,6 +52,9 @@ function withdrawDst(bytes32 secret) external;
 ### cancelDst
 
 See [IEscrow-cancelDst](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md#canceldst).
+
+*The function works on the time interval highlighted with capital letters:
+---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCEL ----*
 
 
 ```solidity

@@ -2,32 +2,10 @@
 
 pragma solidity ^0.8.0;
 
+import { Timelocks } from "../libraries/TimelocksLib.sol";
+
 interface IEscrow {
     // TODO: is it possible to optimise this?
-    /**
-     * Timelocks for the source chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
-     * cancel: The duration of the period when escrow can only be cancelled by the taker.
-     */
-    struct SrcTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 cancel;
-    }
-
-    /**
-     * Timelocks for the destination chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
-     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
-     */
-    struct DstTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 publicWithdrawal;
-    }
-
     // Data for the immutables from the order post interacton.
     struct InteractionParams {
         address maker;
@@ -46,8 +24,7 @@ interface IEscrow {
         address dstToken;
         uint256 srcSafetyDeposit;
         uint256 dstSafetyDeposit;
-        SrcTimelocks srcTimelocks;
-        DstTimelocks dstTimelocks;
+        Timelocks timelocks;
     }
 
     // Data for the source chain order immutables.
@@ -71,7 +48,7 @@ interface IEscrow {
         address token;
         uint256 amount;
         uint256 safetyDeposit;
-        DstTimelocks timelocks;
+        Timelocks timelocks;
     }
 
     error InvalidCaller();

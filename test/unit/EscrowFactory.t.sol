@@ -5,10 +5,13 @@ import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettleme
 
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
+    using TimelocksLib for Timelocks;
+
     function setUp() public virtual override {
         BaseSetup.setUp();
     }
@@ -45,6 +48,12 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
         assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
+        assertEq(returnedImmutables.extraDataParams.timelocks.getSrcFinalityDuration(), srcTimelocks.finality);
+        assertEq(returnedImmutables.extraDataParams.timelocks.getSrcWithdrawalDuration(), srcTimelocks.withdrawal);
+        assertEq(returnedImmutables.extraDataParams.timelocks.getSrcCancellationDuration(), srcTimelocks.cancel);
+        assertEq(returnedImmutables.extraDataParams.timelocks.getDstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.extraDataParams.timelocks.getDstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.extraDataParams.timelocks.getDstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
@@ -70,6 +79,9 @@ contract EscrowFactoryTest is BaseSetup {
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.amount, amount);
+        assertEq(returnedImmutables.timelocks.getDstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.getDstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.getDstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {

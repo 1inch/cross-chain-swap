@@ -13,13 +13,39 @@ import { Address } from "solidity-utils/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
-import { Escrow, IEscrow } from "../../contracts/Escrow.sol";
-import { EscrowFactory, IEscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { Escrow } from "contracts/Escrow.sol";
+import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
 
 contract BaseSetup is Test {
     using MakerTraitsLib for MakerTraits;
+    using TimelocksLib for Timelocks;
+
+    /**
+     * Timelocks for the source chain.
+     * finality: The duration of the chain finality period.
+     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
+     * cancel: The duration of the period when escrow can only be cancelled by the taker.
+     */
+    struct SrcTimelocks {
+        uint256 finality;
+        uint256 withdrawal;
+        uint256 cancel;
+    }
+
+    /**
+     * Timelocks for the destination chain.
+     * finality: The duration of the chain finality period.
+     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
+     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
+     */
+    struct DstTimelocks {
+        uint256 finality;
+        uint256 withdrawal;
+        uint256 publicWithdrawal;
+    }
 
     struct InteractionParams {
         bytes makerAssetSuffix;
@@ -70,7 +96,6 @@ contract BaseSetup is Test {
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
 
-    Utils internal utils;
     VmSafe.Wallet[] internal users;
 
     VmSafe.Wallet internal alice;
@@ -86,33 +111,25 @@ contract BaseSetup is Test {
     Escrow internal escrow;
     IFeeBank internal feeBank;
 
-    IEscrow.SrcTimelocks internal srcTimelocks = IEscrow.SrcTimelocks({
+    Timelocks internal timelocks;
+    Timelocks internal timelocksDst;
+
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({
         finality: 120,
         withdrawal: 900,
         cancel: 110
     });
-    IEscrow.DstTimelocks internal dstTimelocks = IEscrow.DstTimelocks({
+    DstTimelocks internal dstTimelocks = DstTimelocks({
         finality: 300,
         withdrawal: 240,
         publicWithdrawal: 360
-    });
-    MakerTraitsParams internal makerTraitsParams = MakerTraitsParams({
-        allowedSender: address(0),
-        shouldCheckEpoch: false,
-        allowPartialFill: true,
-        allowMultipleFills: true,
-        usePermit2: false,
-        unwrapWeth: false,
-        expiry: 0,
-        nonce: 0,
-        series: 0
     });
     /* solhint-enable private-vars-leading-underscore */
 
     receive() external payable {}
 
     function setUp() public virtual {
-        utils = new Utils();
+        Utils utils = new Utils();
         users = utils.createUsers(2);
 
         alice = users[0];
@@ -124,6 +141,8 @@ contract BaseSetup is Test {
         dai.mint(bob.addr, 1000 ether);
         usdc.mint(alice.addr, 1000 ether);
         inch.mint(bob.addr, 1000 ether);
+
+        _setTimelocks();
 
         _deployContracts();
 
@@ -146,6 +165,17 @@ contract BaseSetup is Test {
         vm.label(address(weth), "WETH");
         inch = new TokenMock("1INCH", "1INCH");
         vm.label(address(inch), "1INCH");
+    }
+
+    function _setTimelocks() internal {
+        timelocksDst = timelocksDst
+            .setDstFinalityDuration(dstTimelocks.finality)
+            .setDstWithdrawalDuration(dstTimelocks.withdrawal)
+            .setDstPubWithdrawalDuration(dstTimelocks.publicWithdrawal);
+        timelocks = timelocksDst
+            .setSrcFinalityDuration(srcTimelocks.finality)
+            .setSrcWithdrawalDuration(srcTimelocks.withdrawal)
+            .setSrcCancellationDuration(srcTimelocks.cancel);
     }
 
     function _deployContracts() internal {
@@ -174,12 +204,7 @@ contract BaseSetup is Test {
                 token,
                 srcSafetyDeposit,
                 dstSafetyDeposit,
-                srcTimelocks.finality,
-                srcTimelocks.withdrawal,
-                srcTimelocks.cancel,
-                dstTimelocks.finality,
-                dstTimelocks.withdrawal,
-                dstTimelocks.publicWithdrawal
+                timelocks
             )
         );
     }
@@ -294,7 +319,7 @@ contract BaseSetup is Test {
             token,
             amount,
             safetyDeposit,
-            dstTimelocks,
+            timelocksDst,
             srcCancellationTimestamp
         );
         data = abi.encode(
@@ -305,9 +330,7 @@ contract BaseSetup is Test {
             address(dai),
             amount,
             safetyDeposit,
-            dstTimelocks.finality,
-            dstTimelocks.withdrawal,
-            dstTimelocks.publicWithdrawal
+            timelocksDst
         );
     }
 
@@ -336,7 +359,18 @@ contract BaseSetup is Test {
         MakerTraits makerTraits,
         InteractionParams memory interactions,
         bytes memory customData
-    ) internal view returns(IOrderMixin.Order memory, bytes memory) {
+    ) internal pure returns(IOrderMixin.Order memory, bytes memory) {
+        MakerTraitsParams memory makerTraitsParams = MakerTraitsParams({
+            allowedSender: address(0),
+            shouldCheckEpoch: false,
+            allowPartialFill: true,
+            allowMultipleFills: true,
+            usePermit2: false,
+            unwrapWeth: false,
+            expiry: 0,
+            nonce: 0,
+            series: 0
+        });
         bytes[8] memory allInteractions = [
             interactions.makerAssetSuffix,
             interactions.takerAssetSuffix,

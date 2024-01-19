@@ -1,5 +1,5 @@
 # IEscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/f45e33f855d5dd79428a1ba540d9f8df14bbb794/contracts/interfaces/IEscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/40ee0298e9d149b252571265df4978f25f912e2a/contracts/interfaces/IEscrowFactory.sol)
 
 
 ## Functions
@@ -68,7 +68,7 @@ struct DstEscrowImmutablesCreation {
     address token;
     uint256 amount;
     uint256 safetyDeposit;
-    IEscrow.DstTimelocks timelocks;
+    Timelocks timelocks;
     uint256 srcCancellationTimestamp;
 }
 ```

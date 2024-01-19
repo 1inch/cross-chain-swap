@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { IEscrow } from "./IEscrow.sol";
+import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 interface IEscrowFactory {
     /**
@@ -16,7 +16,7 @@ interface IEscrowFactory {
         address token;
         uint256 amount;
         uint256 safetyDeposit;
-        IEscrow.DstTimelocks timelocks;
+        Timelocks timelocks;
         // Start of the cancellation period for the source chain.
         uint256 srcCancellationTimestamp;
     }

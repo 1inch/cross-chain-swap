@@ -10,6 +10,7 @@ import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
+import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 
@@ -21,6 +22,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using SafeERC20 for IERC20;
+    using TimelocksLib for Timelocks;
 
     // Address of the escrow contract implementation to clone.
     address public immutable IMPLEMENTATION;
@@ -48,7 +50,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         bytes calldata extraData
     ) internal override {
         {
-            bytes calldata whitelist = extraData[356:];
+            bytes calldata whitelist = extraData[196:];
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
@@ -61,7 +63,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             makingAmount, // srcAmount
             takingAmount // dstAmount
         );
-        bytes calldata extraDataParams = extraData[4:356];
+        bytes calldata extraDataParams = extraData[4:196];
         bytes memory data = abi.encodePacked(
             block.timestamp, // deployedAt
             interactionParams,
@@ -87,10 +89,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         if (msg.value < dstEscrowImmutables.safetyDeposit) revert InsufficientEscrowBalance();
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
-            block.timestamp +
-            dstEscrowImmutables.timelocks.finality +
-            dstEscrowImmutables.timelocks.withdrawal +
-            dstEscrowImmutables.timelocks.publicWithdrawal >
+            dstEscrowImmutables.timelocks.getDstCancellationStart(block.timestamp) >
             dstEscrowImmutables.srcCancellationTimestamp
         ) revert InvalidCreationTime();
         bytes memory data = abi.encode(
@@ -102,9 +101,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             dstEscrowImmutables.token,
             dstEscrowImmutables.amount,
             dstEscrowImmutables.safetyDeposit,
-            dstEscrowImmutables.timelocks.finality,
-            dstEscrowImmutables.timelocks.withdrawal,
-            dstEscrowImmutables.timelocks.publicWithdrawal
+            dstEscrowImmutables.timelocks
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
 

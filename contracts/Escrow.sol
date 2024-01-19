@@ -7,6 +7,7 @@ import { Clone } from "clones-with-immutable-args/Clone.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
+import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 
 /**
@@ -19,6 +20,7 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
  */
 contract Escrow is Clone, IEscrow {
     using SafeERC20 for IERC20;
+    using TimelocksLib for Timelocks;
 
     /**
      * @notice See {IEscrow-withdrawSrc}.
@@ -29,11 +31,12 @@ contract Escrow is Clone, IEscrow {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         if (msg.sender != escrowImmutables.interactionParams.taker) revert InvalidCaller();
 
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        // Check that it's public withdrawal period.
+        Timelocks timelocks = escrowImmutables.extraDataParams.timelocks;
+
+        // Check that it's a withdrawal period.
         if (
-            block.timestamp < finalisedTimestamp ||
-            block.timestamp >= finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.withdrawal
+            block.timestamp < timelocks.getSrcWithdrawalStart(escrowImmutables.deployedAt) ||
+            block.timestamp >= timelocks.getSrcCancellationStart(escrowImmutables.deployedAt)
         ) revert InvalidWithdrawalTime();
 
         _checkSecretAndTransfer(
@@ -56,16 +59,16 @@ contract Escrow is Clone, IEscrow {
      */
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        uint256 cancellationTimestamp = finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.withdrawal;
-        // Check that it's cancellation period.
-        if (block.timestamp < cancellationTimestamp) {
+        Timelocks timelocks = escrowImmutables.extraDataParams.timelocks;
+
+        // Check that it's a cancellation period.
+        if (block.timestamp < timelocks.getSrcCancellationStart(escrowImmutables.deployedAt)) {
             revert InvalidCancellationTime();
         }
 
         // Check that the caller is a taker if it's the private cancellation period.
         if (
-            block.timestamp < cancellationTimestamp + escrowImmutables.extraDataParams.srcTimelocks.cancel &&
+            block.timestamp < timelocks.getSrcPubCancellationStart(escrowImmutables.deployedAt) &&
             msg.sender != escrowImmutables.interactionParams.taker
         ) {
             revert InvalidCaller();
@@ -88,16 +91,18 @@ contract Escrow is Clone, IEscrow {
      */
     function withdrawDst(bytes32 secret) external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
-        uint256 publicWithdrawalTimestamp = finalisedTimestamp + escrowImmutables.timelocks.withdrawal;
-        // Check that it's an withdrawal period.
+
+        // Check that it's a withdrawal period.
         if (
-            block.timestamp < finalisedTimestamp ||
-            block.timestamp >= publicWithdrawalTimestamp + escrowImmutables.timelocks.publicWithdrawal
+            block.timestamp < escrowImmutables.timelocks.getDstWithdrawalStart(escrowImmutables.deployedAt) ||
+            block.timestamp >= escrowImmutables.timelocks.getDstCancellationStart(escrowImmutables.deployedAt)
         ) revert InvalidWithdrawalTime();
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < publicWithdrawalTimestamp && msg.sender != escrowImmutables.taker) revert InvalidCaller();
+        if (
+            block.timestamp < escrowImmutables.timelocks.getDstPubWithdrawalStart(escrowImmutables.deployedAt) &&
+            msg.sender != escrowImmutables.taker
+        ) revert InvalidCaller();
 
         _checkSecretAndTransfer(
             secret,
@@ -121,11 +126,9 @@ contract Escrow is Clone, IEscrow {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         if (msg.sender != escrowImmutables.taker) revert InvalidCaller();
 
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
         // Check that it's a cancellation period.
         if (
-            block.timestamp <
-            finalisedTimestamp + escrowImmutables.timelocks.withdrawal + escrowImmutables.timelocks.publicWithdrawal
+            block.timestamp < escrowImmutables.timelocks.getDstCancellationStart(escrowImmutables.deployedAt)
         ) {
             revert InvalidCancellationTime();
         }
