@@ -9,7 +9,7 @@ import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/libraries/Make
 import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
 import { WrappedTokenMock } from "limit-order-protocol/mocks/WrappedTokenMock.sol";
 import { IFeeBank } from "limit-order-settlement/interfaces/IFeeBank.sol";
-import { Address } from "solidity-utils/libraries/AddressLib.sol";
+import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
@@ -20,6 +20,7 @@ import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 import { Utils, VmSafe } from "./Utils.sol";
 
 contract BaseSetup is Test {
+    using AddressLib for Address;
     using MakerTraitsLib for MakerTraits;
     using TimelocksLib for Timelocks;
 
@@ -221,27 +222,18 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
-        uint256 srcSafetyDeposit = srcAmount * 10 / 100;
-        uint256 dstSafetyDeposit = dstAmount * 10 / 100;
         extraData = _buidDynamicData(
             secret,
             block.chainid,
             address(dai),
-            srcSafetyDeposit,
-            dstSafetyDeposit
+            srcAmount * 10 / 100,
+            dstAmount * 10 / 100
         );
 
         bytes memory whitelist = abi.encodePacked(
             uint32(block.timestamp), // auction start time
             uint80(uint160(bob.addr)), // resolver address
             uint16(0) // time delta
-        );
-
-        bytes memory postInteractionData = abi.encodePacked(
-            address(escrowFactory),
-            RESOLVER_FEE,
-            extraData,
-            whitelist
         );
 
         if (fakeOrder) {
@@ -256,6 +248,13 @@ contract BaseSetup is Test {
                 makerTraits: MakerTraits.wrap(0)
             });
         } else {
+            bytes memory postInteractionData = abi.encodePacked(
+                address(escrowFactory),
+                RESOLVER_FEE,
+                extraData,
+                whitelist
+            );
+
             (order, extension) = _buildOrder(
                 alice.addr,
                 bob.addr,
@@ -269,8 +268,21 @@ contract BaseSetup is Test {
             );
         }
         orderHash = limitOrderProtocol.hashOrder(order);
+        bytes memory interactionParams = abi.encode(
+            order.maker,
+            bob.addr,
+            block.chainid, // srcChainId
+            order.makerAsset.get(), // srcToken
+            srcAmount,
+            dstAmount
+        );
+        bytes memory data = abi.encodePacked(
+            block.timestamp, // deployedAt
+            interactionParams,
+            extraData
+        );
 
-        srcClone = Escrow(escrowFactory.addressOfEscrow(orderHash));
+        srcClone = Escrow(escrowFactory.addressOfEscrow(data));
         extraData = abi.encodePacked(
             RESOLVER_FEE,
             extraData,
@@ -292,11 +304,7 @@ contract BaseSetup is Test {
             IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables,
             bytes memory data
         ) = _buildDstEscrowImmutables(secret, amount, maker, taker, token);
-        address msgSender = bob.addr;
-        uint256 deployedAt = block.timestamp;
-        bytes32 salt = keccak256(abi.encodePacked(deployedAt, data, msgSender));
-        Escrow dstClone = Escrow(escrowFactory.addressOfEscrow(salt));
-        return (escrowImmutables, dstClone);
+        return (escrowImmutables, Escrow(escrowFactory.addressOfEscrow(data)));
     }
 
     function _buildDstEscrowImmutables(
@@ -323,14 +331,16 @@ contract BaseSetup is Test {
             srcCancellationTimestamp
         );
         data = abi.encode(
-            hashlock,
-            alice.addr,
-            bob.addr,
+            block.timestamp,
             block.chainid,
-            address(dai),
+            hashlock,
+            maker,
+            taker,
+            token,
             amount,
             safetyDeposit,
-            timelocksDst
+            timelocksDst,
+            bob.addr // caller
         );
     }
 

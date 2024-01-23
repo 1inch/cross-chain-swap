@@ -56,7 +56,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
         assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
+        assertEq(returnedImmutables.interactionParams.taker, bob.addr);
         assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
     }
 

@@ -40,11 +40,11 @@ interface IEscrow {
     */
     struct DstEscrowImmutables {
         uint256 deployedAt;
+        uint256 chainId;
         // Hash of the secret.
         bytes32 hashlock;
         address maker;
         address taker;
-        uint256 chainId;
         address token;
         uint256 amount;
         uint256 safetyDeposit;

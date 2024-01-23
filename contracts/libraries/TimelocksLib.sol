@@ -72,7 +72,9 @@ library TimelocksLib {
      * @return The start of the private withdrawal period.
      */
     function getSrcWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256) {
-        return startTimestamp + getSrcFinalityDuration(timelocks);
+        unchecked {
+            return startTimestamp + getSrcFinalityDuration(timelocks);
+        }
     }
 
     /**
@@ -106,7 +108,9 @@ library TimelocksLib {
      * @return The start of the private cancellation period.
      */
     function getSrcCancellationStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256) {
-        return getSrcWithdrawalStart(timelocks, startTimestamp) + getSrcWithdrawalDuration(timelocks);
+        unchecked {
+            return getSrcWithdrawalStart(timelocks, startTimestamp) + getSrcWithdrawalDuration(timelocks);
+        }
     }
 
     /**
@@ -140,7 +144,9 @@ library TimelocksLib {
      * @return The start of the public cancellation period.
      */
     function getSrcPubCancellationStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256) {
-        return getSrcCancellationStart(timelocks, startTimestamp) + getSrcCancellationDuration(timelocks);
+        unchecked {
+            return getSrcCancellationStart(timelocks, startTimestamp) + getSrcCancellationDuration(timelocks);
+        }
     }
 
     // ----- Destination chain timelocks ----- //
@@ -176,7 +182,9 @@ library TimelocksLib {
      * @return The start of the private withdrawal period.
      */
     function getDstWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256) {
-        return startTimestamp + getDstFinalityDuration(timelocks);
+        unchecked {
+            return startTimestamp + getDstFinalityDuration(timelocks);
+        }
     }
 
     /**
@@ -210,7 +218,9 @@ library TimelocksLib {
      * @return The start of the public withdrawal period.
      */
     function getDstPubWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256) {
-        return getDstWithdrawalStart(timelocks, startTimestamp) + getDstWithdrawalDuration(timelocks);
+        unchecked {
+            return getDstWithdrawalStart(timelocks, startTimestamp) + getDstWithdrawalDuration(timelocks);
+        }
     }
 
     /**
@@ -244,6 +254,8 @@ library TimelocksLib {
      * @return The start of the private cancellation period.
      */
     function getDstCancellationStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256) {
-        return getDstPubWithdrawalStart(timelocks, startTimestamp) + getDstPubWithdrawalDuration(timelocks);
+        unchecked {
+            return getDstPubWithdrawalStart(timelocks, startTimestamp) + getDstPubWithdrawalDuration(timelocks);
+        }
     }
 }

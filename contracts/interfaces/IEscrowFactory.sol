@@ -34,8 +34,8 @@ interface IEscrowFactory {
 
     /**
      * @notice Returns the deterministic address of the escrow based on the salt.
-     * @param salt The salt used to deploy escrow.
+     * @param data The immutable arguments used to deploy escrow.
      * @return The computed address of the escrow.
      */
-    function addressOfEscrow(bytes32 salt) external view returns (address);
+    function addressOfEscrow(bytes memory data) external view returns (address);
 }
