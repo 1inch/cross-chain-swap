@@ -22,8 +22,8 @@ interface IEscrow {
         bytes32 hashlock;
         uint256 dstChainId;
         address dstToken;
-        uint256 srcSafetyDeposit;
-        uint256 dstSafetyDeposit;
+        // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
+        uint256 deposits;
         Timelocks timelocks;
     }
 

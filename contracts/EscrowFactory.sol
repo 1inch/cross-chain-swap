@@ -49,13 +49,13 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         bytes calldata extraData
     ) internal override {
         {
-            bytes calldata whitelist = extraData[196:];
+            bytes calldata whitelist = extraData[164:];
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
         // Prepare immutables for the escrow contract.
-        // 32 bytes for block.timestamp + 6 * 32 bytes for InteractionParams + 6 * 32 bytes for ExtraDataParams
-        bytes memory data = new bytes(0x1a0);
+        // 32 bytes for block.timestamp + 6 * 32 bytes for InteractionParams + 5 * 32 bytes for ExtraDataParams
+        bytes memory data = new bytes(0x180);
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
             mstore(add(data, 0x20), timestamp())
@@ -67,17 +67,14 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             calldatacopy(add(data, 0xa0), add(order, 0x60), 0x20) // srcToken
             mstore(add(data, 0xc0), makingAmount) // srcAmount
             mstore(add(data, 0xe0), takingAmount) // dstAmount
-            // Copy ExtraDataParams: 6 * 32 bytes excluding first 4 bytes for a fee
-            calldatacopy(add(data, 0x100), add(extraData.offset, 0x4), 0xc0)
+            // Copy ExtraDataParams: 5 * 32 bytes excluding first 4 bytes for a fee
+            calldatacopy(add(data, 0x100), add(extraData.offset, 0x4), 0xa0)
         }
 
         address escrow = _createEscrow(data, 0);
-        uint256 safetyDeposit;
-        // solhint-disable-next-line no-inline-assembly
-        assembly ("memory-safe") {
-            // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
-            safetyDeposit := calldataload(add(extraData.offset, 0x64))
-        }
+        // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
+        // srcSafetyDeposit is the first 16 bytes in the `deposits`
+        uint256 safetyDeposit = uint128(bytes16(extraData[100:116]));
         if (
             escrow.balance < safetyDeposit ||
             IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount

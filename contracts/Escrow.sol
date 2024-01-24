@@ -48,7 +48,7 @@ contract Escrow is Clone, IEscrow {
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.srcSafetyDeposit}("");
+        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.deposits >> 128}("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -80,7 +80,7 @@ contract Escrow is Clone, IEscrow {
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.srcSafetyDeposit}("");
+        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.deposits >> 128}("");
         if (!success) revert NativeTokenSendingFailure();
     }
 

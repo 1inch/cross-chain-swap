@@ -203,8 +203,7 @@ contract BaseSetup is Test {
                 hashlock,
                 chainId,
                 token,
-                srcSafetyDeposit,
-                dstSafetyDeposit,
+                (srcSafetyDeposit << 128) | dstSafetyDeposit,
                 timelocks
             )
         );
