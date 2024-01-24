@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 interface IEscrow {
-    // TODO: is it possible to optimise this?
     // Data for the immutables from the order post interacton.
     struct InteractionParams {
         address maker;

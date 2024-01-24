@@ -338,8 +338,7 @@ contract BaseSetup is Test {
             token,
             amount,
             safetyDeposit,
-            timelocksDst,
-            bob.addr // caller
+            timelocksDst
         );
     }
 

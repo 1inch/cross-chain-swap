@@ -96,14 +96,13 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         ) revert InvalidCreationTime();
 
         // 32 bytes for block.timestamp + 32 bytes for chaiId + 7 * 32 bytes for DstEscrowImmutablesCreation
-        bytes memory data = new bytes(0x140);
+        bytes memory data = new bytes(0x120);
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             mstore(add(data, 0x20), timestamp())
             mstore(add(data, 0x40), chainid())
             // Copy DstEscrowImmutablesCreation
             calldatacopy(add(data, 0x60), dstEscrowImmutables, 0xe0)
-            mstore(add(data, 0x140), caller())
         }
 
         address escrow = _createEscrow(data, msg.value);
