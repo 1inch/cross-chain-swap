@@ -1,5 +1,5 @@
 # EscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/a0032266a4f4e0c7ae999b45292f7c9116abe373/contracts/EscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/4a7a924cfc3cdc40ce87e400e418d193236c06fb/contracts/EscrowFactory.sol)
 
 **Inherits:**
 [IEscrowFactory](/contracts/interfaces/IEscrowFactory.sol/interface.IEscrowFactory.md), SimpleSettlementExtension
