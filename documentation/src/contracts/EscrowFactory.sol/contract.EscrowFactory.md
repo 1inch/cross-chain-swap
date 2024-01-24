@@ -1,5 +1,5 @@
 # EscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/40ee0298e9d149b252571265df4978f25f912e2a/contracts/EscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/a0032266a4f4e0c7ae999b45292f7c9116abe373/contracts/EscrowFactory.sol)
 
 **Inherits:**
 [IEscrowFactory](/contracts/interfaces/IEscrowFactory.sol/interface.IEscrowFactory.md), SimpleSettlementExtension
@@ -38,7 +38,7 @@ after all funds have been transferred. See [IPostInteraction-postInteraction](/l
 function _postInteraction(
     IOrderMixin.Order calldata order,
     bytes calldata,
-    bytes32 orderHash,
+    bytes32,
     address taker,
     uint256 makingAmount,
     uint256 takingAmount,
@@ -62,25 +62,24 @@ See [IEscrowFactory-addressOfEscrow](/contracts/interfaces/IEscrowFactory.sol/in
 
 
 ```solidity
-function addressOfEscrow(bytes32 salt) public view returns (address);
+function addressOfEscrow(bytes memory data) public view returns (address);
 ```
 
 ### _createEscrow
 
 Creates a new escrow contract with immutable arguments.
 
-*The escrow contract is a proxy clone created using the create3 pattern.*
+*The escrow contract is a proxy clone created using the create2 pattern.*
 
 
 ```solidity
-function _createEscrow(bytes memory data, bytes32 salt, uint256 value) private returns (address clone);
+function _createEscrow(bytes memory data, uint256 value) private returns (address clone);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`data`|`bytes`|Encoded immutable args.|
-|`salt`|`bytes32`|The salt that influences the contract address in deterministic deployment.|
 |`value`|`uint256`||
 
 **Returns**

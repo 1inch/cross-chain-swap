@@ -1,5 +1,5 @@
 # IEscrow
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/40ee0298e9d149b252571265df4978f25f912e2a/contracts/interfaces/IEscrow.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/a0032266a4f4e0c7ae999b45292f7c9116abe373/contracts/interfaces/IEscrow.sol)
 
 
 ## Functions
@@ -178,10 +178,10 @@ chainId, token, amount and safetyDeposit relate to the destination chain.
 ```solidity
 struct DstEscrowImmutables {
     uint256 deployedAt;
+    uint256 chainId;
     bytes32 hashlock;
     address maker;
     address taker;
-    uint256 chainId;
     address token;
     uint256 amount;
     uint256 safetyDeposit;
