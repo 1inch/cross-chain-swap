@@ -5,19 +5,15 @@ pragma solidity ^0.8.0;
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 interface IEscrow {
-    // Data for the immutables from the order post interacton.
-    struct InteractionParams {
+    // Data for the source chain order immutables.
+    struct SrcEscrowImmutables {
         address maker;
         address taker;
         uint256 srcChainId;
         address srcToken;
         uint256 srcAmount;
         uint256 dstAmount;
-    }
-
-    // Data for the immutables from the order extension.
-    struct ExtraDataParams {
-        // Hash of the secret.
+         // Hash of the secret.
         bytes32 hashlock;
         uint256 dstChainId;
         address dstToken;
@@ -26,19 +22,11 @@ interface IEscrow {
         Timelocks timelocks;
     }
 
-    // Data for the source chain order immutables.
-    struct SrcEscrowImmutables {
-        uint256 deployedAt;
-        InteractionParams interactionParams;
-        ExtraDataParams extraDataParams;
-    }
-
     /**
      * Data for the destination chain order immutables.
      * chainId, token, amount and safetyDeposit relate to the destination chain.
     */
     struct DstEscrowImmutables {
-        uint256 deployedAt;
         uint256 chainId;
         // Hash of the secret.
         bytes32 hashlock;

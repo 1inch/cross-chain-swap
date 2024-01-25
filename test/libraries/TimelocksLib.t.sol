@@ -24,12 +24,12 @@ contract TimelocksLibTest is BaseSetup {
             .setDstWithdrawalDuration(dstTimelocks.withdrawal)
             .setDstPubWithdrawalDuration(dstTimelocks.publicWithdrawal);
         
-        assertEq(timelocksTest.getSrcFinalityDuration(), srcTimelocks.finality);
-        assertEq(timelocksTest.getSrcWithdrawalDuration(), srcTimelocks.withdrawal);
-        assertEq(timelocksTest.getSrcCancellationDuration(), srcTimelocks.cancel);
-        assertEq(timelocksTest.getDstFinalityDuration(), dstTimelocks.finality);
-        assertEq(timelocksTest.getDstWithdrawalDuration(), dstTimelocks.withdrawal);
-        assertEq(timelocksTest.getDstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
+        assertEq(timelocksTest.srcFinalityDuration(), srcTimelocks.finality);
+        assertEq(timelocksTest.srcWithdrawalDuration(), srcTimelocks.withdrawal);
+        assertEq(timelocksTest.srcCancellationDuration(), srcTimelocks.cancel);
+        assertEq(timelocksTest.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(timelocksTest.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(timelocksTest.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function test_getStartTimestamps() public {
@@ -43,12 +43,12 @@ contract TimelocksLibTest is BaseSetup {
             .setDstWithdrawalDuration(dstTimelocks.withdrawal)
             .setDstPubWithdrawalDuration(dstTimelocks.publicWithdrawal);
         
-        assertEq(timelocksTest.getSrcWithdrawalStart(timestamp), timestamp + srcTimelocks.finality);
-        assertEq(timelocksTest.getSrcCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        assertEq(timelocksTest.getSrcPubCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
-        assertEq(timelocksTest.getDstWithdrawalStart(timestamp), timestamp + dstTimelocks.finality);
-        assertEq(timelocksTest.getDstPubWithdrawalStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(timelocksTest.getDstCancellationStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(timelocksTest.srcWithdrawalStart(timestamp), timestamp + srcTimelocks.finality);
+        assertEq(timelocksTest.srcCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
+        assertEq(timelocksTest.srcPubCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
+        assertEq(timelocksTest.dstWithdrawalStart(timestamp), timestamp + dstTimelocks.finality);
+        assertEq(timelocksTest.dstPubWithdrawalStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
+        assertEq(timelocksTest.dstCancellationStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
     }
 
     /* solhint-enable func-name-mixedcase */

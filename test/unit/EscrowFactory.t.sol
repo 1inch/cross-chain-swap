@@ -45,15 +45,15 @@ contract EscrowFactoryTest is BaseSetup {
         );
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
-        assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
-        assertEq(returnedImmutables.extraDataParams.timelocks.getSrcFinalityDuration(), srcTimelocks.finality);
-        assertEq(returnedImmutables.extraDataParams.timelocks.getSrcWithdrawalDuration(), srcTimelocks.withdrawal);
-        assertEq(returnedImmutables.extraDataParams.timelocks.getSrcCancellationDuration(), srcTimelocks.cancel);
-        assertEq(returnedImmutables.extraDataParams.timelocks.getDstFinalityDuration(), dstTimelocks.finality);
-        assertEq(returnedImmutables.extraDataParams.timelocks.getDstWithdrawalDuration(), dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.extraDataParams.timelocks.getDstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
+        assertEq(returnedImmutables.srcAmount, srcAmount);
+        assertEq(returnedImmutables.dstToken, address(dai));
+        assertEq(returnedImmutables.timelocks.srcFinalityDuration(), srcTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.srcWithdrawalDuration(), srcTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.srcCancellationDuration(), srcTimelocks.cancel);
+        assertEq(returnedImmutables.timelocks.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
@@ -79,9 +79,9 @@ contract EscrowFactoryTest is BaseSetup {
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.amount, amount);
-        assertEq(returnedImmutables.timelocks.getDstFinalityDuration(), dstTimelocks.finality);
-        assertEq(returnedImmutables.timelocks.getDstWithdrawalDuration(), dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.getDstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
+        assertEq(returnedImmutables.timelocks.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {

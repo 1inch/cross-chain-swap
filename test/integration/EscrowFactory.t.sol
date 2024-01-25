@@ -55,9 +55,9 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.interactionParams.taker, bob.addr);
-        assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
+        assertEq(returnedImmutables.taker, bob.addr);
+        assertEq(returnedImmutables.dstToken, address(dai));
     }
 
     function test_NoInsufficientBalanceDeploymentForMakerInt() public {

@@ -172,7 +172,8 @@ contract BaseSetup is Test {
         timelocksDst = timelocksDst
             .setDstFinalityDuration(dstTimelocks.finality)
             .setDstWithdrawalDuration(dstTimelocks.withdrawal)
-            .setDstPubWithdrawalDuration(dstTimelocks.publicWithdrawal);
+            .setDstPubWithdrawalDuration(dstTimelocks.publicWithdrawal)
+            .setDeployedAt(block.timestamp);
         timelocks = timelocksDst
             .setSrcFinalityDuration(srcTimelocks.finality)
             .setSrcWithdrawalDuration(srcTimelocks.withdrawal)
@@ -276,7 +277,6 @@ contract BaseSetup is Test {
             dstAmount
         );
         bytes memory data = abi.encodePacked(
-            block.timestamp, // deployedAt
             interactionParams,
             extraData
         );
@@ -330,7 +330,6 @@ contract BaseSetup is Test {
             srcCancellationTimestamp
         );
         data = abi.encode(
-            block.timestamp,
             block.chainid,
             hashlock,
             maker,
