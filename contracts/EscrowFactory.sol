@@ -91,8 +91,8 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         if (
             block.timestamp +
             dstEscrowImmutables.timelocks.finality +
-            dstEscrowImmutables.timelocks.unlock +
-            dstEscrowImmutables.timelocks.publicUnlock >
+            dstEscrowImmutables.timelocks.withdrawal +
+            dstEscrowImmutables.timelocks.publicWithdrawal >
             dstEscrowImmutables.srcCancellationTimestamp
         ) revert InvalidCreationTime();
         bytes memory data = abi.encode(
@@ -105,8 +105,8 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             dstEscrowImmutables.amount,
             dstEscrowImmutables.safetyDeposit,
             dstEscrowImmutables.timelocks.finality,
-            dstEscrowImmutables.timelocks.unlock,
-            dstEscrowImmutables.timelocks.publicUnlock
+            dstEscrowImmutables.timelocks.withdrawal,
+            dstEscrowImmutables.timelocks.publicWithdrawal
         );
         bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
 
