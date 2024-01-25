@@ -30,7 +30,7 @@ type Timelocks is uint256;
  * @title Timelocks library for compact storage of timelocks in a uint256.
  */
 library TimelocksLib {
-    uint256 private constant _TIMESTAMP_MASK = (1 << 40) - 1;
+    uint256 private constant _TIMESTAMP_MASK = type(uint40).max;
     // 6 variables 40 bits each
     uint256 private constant _SRC_FINALITY_OFFSET = 216;
     uint256 private constant _SRC_WITHDRAWAL_OFFSET = 176;
