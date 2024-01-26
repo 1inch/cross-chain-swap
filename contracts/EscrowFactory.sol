@@ -60,26 +60,25 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
+        Timelocks timelocks = Timelocks.wrap(uint256(bytes32(extraData[132:164]))).setDeployedAt(block.timestamp);
+
         // Prepare immutables for the escrow contract.
         // 11 * 32 bytes
         bytes memory data = new bytes(0x160);
-        IEscrow.SrcEscrowImmutables memory immutables;
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            immutables := add(data, 0x20)
+            // Copy order.maker
+            calldatacopy(add(data, 0x20), add(order, 0x20), 0x20)
+            mstore(add(data, 0x40), taker)
+            mstore(add(data, 0x60), chainid()) // srcChainId
+            // Copy order.makerAsset
+            calldatacopy(add(data, 0x80), add(order, 0x60), 0x20) // srcToken
+            mstore(add(data, 0xa0), makingAmount) // srcAmount
+            mstore(add(data, 0xc0), takingAmount) // dstAmount
+            // Copy hashlock, dstChainId, dstToken, deposits: 4 * 32 bytes excluding first 4 bytes for a fee
+            calldatacopy(add(data, 0xe0), add(extraData.offset, 0x4), 0x80)
+            mstore(add(data, 0x160), timelocks)
         }
-        immutables.maker = order.maker.get();
-        immutables.taker = taker;
-        immutables.srcChainId = block.chainid;
-        immutables.srcToken = order.makerAsset.get();
-        immutables.srcAmount = makingAmount;
-        immutables.dstAmount = takingAmount;
-        // solhint-disable-next-line no-inline-assembly
-        assembly("memory-safe") {
-            // Copy hashlock, dstChainId, dstToken and deposits from the extraData.
-            calldatacopy(add(immutables, 0xc0), add(extraData.offset, _EXTRA_DATA_PARAMS_OFFSET), 0x80)
-        }
-        immutables.timelocks = Timelocks.wrap(uint256(bytes32(extraData[132:164]))).setDeployedAt(block.timestamp);
 
         address escrow = _createEscrow(data, 0);
         // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
@@ -107,19 +106,14 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
 
         // 32 bytes for chaiId + 7 * 32 bytes for DstEscrowImmutablesCreation
         bytes memory data = new bytes(0x100);
-        IEscrow.DstEscrowImmutables memory immutables;
+        Timelocks timelocks = dstImmutables.timelocks.setDeployedAt(block.timestamp);
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            immutables := add(data, 0x20)
+            mstore(add(data, 0x20), chainid())
+            // Copy DstEscrowImmutablesCreation
+            calldatacopy(add(data, 0x40), dstImmutables, 0xc0)
+            mstore(add(data, 0x100), timelocks)
         }
-        immutables.chainId = block.chainid;
-        immutables.hashlock = dstImmutables.hashlock;
-        immutables.maker = dstImmutables.maker;
-        immutables.taker = dstImmutables.taker;
-        immutables.token = dstImmutables.token;
-        immutables.amount = dstImmutables.amount;
-        immutables.safetyDeposit = dstImmutables.safetyDeposit;
-        immutables.timelocks = dstImmutables.timelocks.setDeployedAt(block.timestamp);
 
         address escrow = _createEscrow(data, msg.value);
         IERC20(dstImmutables.token).safeTransferFrom(

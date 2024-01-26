@@ -66,7 +66,7 @@ library TimelocksLib {
      * @return The duration of the finality period.
      */
     function srcFinalityDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return (Timelocks.unwrap(timelocks) & (_TIMELOCK_MASK << _SRC_FINALITY_OFFSET)) >> _SRC_FINALITY_OFFSET;
+        return Timelocks.unwrap(timelocks) >> _SRC_FINALITY_OFFSET & _TIMELOCK_MASK ;
     }
 
     /**
@@ -102,7 +102,7 @@ library TimelocksLib {
      * @return The duration of the private withdrawal period.
      */
     function srcWithdrawalDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return (Timelocks.unwrap(timelocks) & (_TIMELOCK_MASK << _SRC_WITHDRAWAL_OFFSET)) >> _SRC_WITHDRAWAL_OFFSET;
+        return Timelocks.unwrap(timelocks) >> _SRC_WITHDRAWAL_OFFSET & _TIMELOCK_MASK;
     }
 
     /**
@@ -138,7 +138,7 @@ library TimelocksLib {
      * @return The duration of the private cancellation period.
      */
     function srcCancellationDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return (Timelocks.unwrap(timelocks) & (_TIMELOCK_MASK << _SRC_CANCEL_OFFSET)) >> _SRC_CANCEL_OFFSET;
+        return Timelocks.unwrap(timelocks) >> _SRC_CANCEL_OFFSET & _TIMELOCK_MASK;
     }
 
     /**
@@ -176,7 +176,7 @@ library TimelocksLib {
      * @return The duration of the finality period.
      */
     function dstFinalityDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return (Timelocks.unwrap(timelocks) & (_TIMELOCK_MASK << _DST_FINALITY_OFFSET)) >> _DST_FINALITY_OFFSET;
+        return Timelocks.unwrap(timelocks) >> _DST_FINALITY_OFFSET & _TIMELOCK_MASK;
     }
 
     /**
@@ -212,7 +212,7 @@ library TimelocksLib {
      * @return The duration of the private withdrawal period.
      */
     function dstWithdrawalDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return (Timelocks.unwrap(timelocks) & (_TIMELOCK_MASK << _DST_WITHDRAWAL_OFFSET)) >> _DST_WITHDRAWAL_OFFSET;
+        return Timelocks.unwrap(timelocks) >> _DST_WITHDRAWAL_OFFSET & _TIMELOCK_MASK;
     }
 
     /**
@@ -248,7 +248,7 @@ library TimelocksLib {
      * @return The duration of the public withdrawal period.
      */
     function dstPubWithdrawalDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return (Timelocks.unwrap(timelocks) & (_TIMELOCK_MASK << _DST_PUB_WITHDRAWAL_OFFSET)) >> _DST_PUB_WITHDRAWAL_OFFSET;
+        return Timelocks.unwrap(timelocks) >> _DST_PUB_WITHDRAWAL_OFFSET & _TIMELOCK_MASK;
     }
 
     /**
