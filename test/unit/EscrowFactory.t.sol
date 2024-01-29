@@ -69,19 +69,19 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: safetyDeposit}(immutables);
+        escrowFactory.createEscrowDst{value: safetyDeposit}(immutables);
 
-        assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);
+        assertEq(bob.addr.balance, balanceBobNative - immutables.args.safetyDeposit);
         assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount);
         assertEq(address(dstClone).balance, balanceEscrowNative + safetyDeposit);
 
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
-        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.amount, amount);
-        assertEq(returnedImmutables.timelocks.dstFinalityDuration(), dstTimelocks.finality);
-        assertEq(returnedImmutables.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
+        assertEq(returnedImmutables.args.hashlock, keccak256(abi.encodePacked(secret)));
+        assertEq(returnedImmutables.args.amount, amount);
+        assertEq(returnedImmutables.args.timelocks.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.args.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.args.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
@@ -170,7 +170,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
@@ -179,7 +179,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
-        escrowFactory.createEscrow(immutables);
+        escrowFactory.createEscrowDst(immutables);
     }
 
     /* solhint-enable func-name-mixedcase */

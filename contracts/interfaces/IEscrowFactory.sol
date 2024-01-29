@@ -2,21 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-import { Timelocks } from "../libraries/TimelocksLib.sol";
+import { IEscrow } from "./IEscrow.sol";
 
 interface IEscrowFactory {
     /**
      * token, amount and safetyDeposit are related to the destination chain.
     */
     struct DstEscrowImmutablesCreation {
-        // Hash of the secret.
-        bytes32 hashlock;
-        address maker;
-        address taker;
-        address token;
-        uint256 amount;
-        uint256 safetyDeposit;
-        Timelocks timelocks;
+        IEscrow.DstEscrowArgs args;
         // Start of the cancellation period for the source chain.
         uint256 srcCancellationTimestamp;
     }
@@ -30,7 +23,7 @@ interface IEscrowFactory {
      * and approve the destination token to be transferred to the created escrow.
      * @param dstEscrowImmutables The immutables of the escrow contract that are used in deployment.
      */
-    function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable;
+    function createEscrowDst(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable;
 
     /**
      * @notice Returns the deterministic address of the escrow based on the salt.

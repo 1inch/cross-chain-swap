@@ -10,8 +10,8 @@ import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
+import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
-import { IEscrow } from "./interfaces/IEscrow.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 
 /**
@@ -21,11 +21,12 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
+    using PackedAddressesLib for PackedAddresses;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
     uint256 internal constant _EXTRA_DATA_PARAMS_OFFSET = 4;
-    uint256 internal constant _WHITELIST_OFFSET = 164;
+    uint256 internal constant _WHITELIST_OFFSET = 228;
     // Address of the escrow contract implementation to clone.
     address public immutable IMPLEMENTATION;
 
@@ -42,7 +43,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
      * `extraData` consists of:
      *   - 4 bytes for the fee
-     *   - 5 * 32 bytes for hashlock, dstChainId, dstToken, deposits and timelocks
+     *   - 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
      *   - whitelist
      */
     function _postInteraction(
@@ -60,24 +61,21 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
-        Timelocks timelocks = Timelocks.wrap(uint256(bytes32(extraData[132:164]))).setDeployedAt(block.timestamp);
+        Timelocks timelocks = Timelocks.wrap(
+            uint256(bytes32(extraData[_WHITELIST_OFFSET-32:_WHITELIST_OFFSET]))
+        ).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
-        // 11 * 32 bytes
-        bytes memory data = new bytes(0x160);
+        // 10 * 32 bytes
+        bytes memory data = new bytes(0x140);
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            // Copy order.maker
-            calldatacopy(add(data, 0x20), add(order, 0x20), 0x20)
-            mstore(add(data, 0x40), taker)
-            mstore(add(data, 0x60), chainid()) // srcChainId
-            // Copy order.makerAsset
-            calldatacopy(add(data, 0x80), add(order, 0x60), 0x20) // srcToken
-            mstore(add(data, 0xa0), makingAmount) // srcAmount
-            mstore(add(data, 0xc0), takingAmount) // dstAmount
-            // Copy hashlock, dstChainId, dstToken, deposits: 4 * 32 bytes excluding first 4 bytes for a fee
-            calldatacopy(add(data, 0xe0), add(extraData.offset, 0x4), 0x80)
-            mstore(add(data, 0x160), timelocks)
+            mstore(add(data, 0x20), chainid()) // srcChainId
+            mstore(add(data, 0x40), makingAmount) // srcAmount
+            mstore(add(data, 0x60), takingAmount) // dstAmount
+            // Copy hashlock, packedAddresses, dstChainId, dstToken, deposits: 6 * 32 bytes
+            calldatacopy(add(data, 0x80), add(extraData.offset, _EXTRA_DATA_PARAMS_OFFSET), 0xc0)
+            mstore(add(data, 0x140), timelocks)
         }
 
         address escrow = _createEscrow(data, 0);
@@ -94,30 +92,30 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     }
 
     /**
-     * @notice See {IEscrowFactory-createEscrow}.
+     * @notice See {IEscrowFactory-createEscrowDst}.
      */
-    function createEscrow(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
-        if (msg.value < dstImmutables.safetyDeposit) revert InsufficientEscrowBalance();
+    function createEscrowDst(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
+        if (msg.value < dstImmutables.args.safetyDeposit) revert InsufficientEscrowBalance();
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
-            dstImmutables.timelocks.dstCancellationStart(block.timestamp) >
+            dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) >
             dstImmutables.srcCancellationTimestamp
         ) revert InvalidCreationTime();
 
-        // 32 bytes for chaiId + 7 * 32 bytes for DstEscrowImmutablesCreation
-        bytes memory data = new bytes(0x100);
-        Timelocks timelocks = dstImmutables.timelocks.setDeployedAt(block.timestamp);
+        // 32 bytes for chaiId + 6 * 32 bytes for DstEscrowImmutablesCreation
+        bytes memory data = new bytes(0xe0);
+        Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
             mstore(add(data, 0x20), chainid())
-            // Copy DstEscrowImmutablesCreation
+            // Copy DstEscrowImmutablesCreation excluding timelocks
             calldatacopy(add(data, 0x40), dstImmutables, 0xc0)
             mstore(add(data, 0x100), timelocks)
         }
 
         address escrow = _createEscrow(data, msg.value);
-        IERC20(dstImmutables.token).safeTransferFrom(
-            msg.sender, escrow, dstImmutables.amount
+        IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
+            msg.sender, escrow, dstImmutables.args.amount
         );
     }
 

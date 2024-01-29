@@ -2,19 +2,20 @@
 
 pragma solidity ^0.8.0;
 
+import { PackedAddresses } from "../libraries/PackedAddressesLib.sol";
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 interface IEscrow {
     // Data for the source chain order immutables.
     struct SrcEscrowImmutables {
-        address maker;
-        address taker;
         uint256 srcChainId;
-        address srcToken;
         uint256 srcAmount;
         uint256 dstAmount;
-         // Hash of the secret.
+        // --- Extra data ---
+        // Hash of the secret.
         bytes32 hashlock;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
         uint256 dstChainId;
         address dstToken;
         // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
@@ -23,19 +24,24 @@ interface IEscrow {
     }
 
     /**
-     * Data for the destination chain order immutables.
-     * chainId, token, amount and safetyDeposit relate to the destination chain.
+     * token, amount and safetyDeposit are related to the destination chain.
     */
-    struct DstEscrowImmutables {
-        uint256 chainId;
+    struct DstEscrowArgs {
         // Hash of the secret.
         bytes32 hashlock;
-        address maker;
-        address taker;
-        address token;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
+    }
+
+    /**
+     * Data for the destination chain order immutables.
+    */
+    struct DstEscrowImmutables {
+        uint256 chainId;
+        DstEscrowArgs args;
     }
 
     error InvalidCaller();

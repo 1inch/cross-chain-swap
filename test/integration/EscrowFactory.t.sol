@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
+import { PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
 
 import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
@@ -56,7 +57,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.taker, bob.addr);
+        assertEq(PackedAddressesMemLib.taker(returnedImmutables.packedAddresses), bob.addr);
         assertEq(returnedImmutables.dstToken, address(dai));
     }
 

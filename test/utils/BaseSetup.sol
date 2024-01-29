@@ -15,13 +15,16 @@ import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { Escrow } from "contracts/Escrow.sol";
 import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { PackedAddresses, PackedAddressesMemLib } from "./libraries/PackedAddressesMemLib.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
 
 contract BaseSetup is Test {
     using AddressLib for Address;
     using MakerTraitsLib for MakerTraits;
+    using PackedAddressesMemLib for PackedAddresses;
     using TimelocksLib for Timelocks;
 
     /**
@@ -193,6 +196,7 @@ contract BaseSetup is Test {
 
     function _buidDynamicData(
         bytes32 secret,
+        PackedAddresses memory packedAddresses,
         uint256 chainId,
         address token,
         uint256 srcSafetyDeposit,
@@ -202,6 +206,7 @@ contract BaseSetup is Test {
         return (
             abi.encode(
                 hashlock,
+                packedAddresses,
                 chainId,
                 token,
                 (srcSafetyDeposit << 128) | dstSafetyDeposit,
@@ -222,8 +227,14 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
+        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(
+            alice.addr,
+            bob.addr,
+            address(usdc)
+        );
         extraData = _buidDynamicData(
             secret,
+            packedAddresses,
             block.chainid,
             address(dai),
             srcAmount * 10 / 100,
@@ -269,10 +280,7 @@ contract BaseSetup is Test {
         }
         orderHash = limitOrderProtocol.hashOrder(order);
         bytes memory interactionParams = abi.encode(
-            order.maker,
-            bob.addr,
             block.chainid, // srcChainId
-            order.makerAsset.get(), // srcToken
             srcAmount,
             dstAmount
         );
@@ -319,22 +327,23 @@ contract BaseSetup is Test {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
+        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, taker, token);
+
+        IEscrow.DstEscrowArgs memory args = IEscrow.DstEscrowArgs({
+            hashlock: hashlock,
+            packedAddresses: packedAddresses,
+            amount: amount,
+            safetyDeposit: safetyDeposit,
+            timelocks: timelocksDst
+        });
         immutables = IEscrowFactory.DstEscrowImmutablesCreation(
-            hashlock,
-            maker,
-            taker,
-            token,
-            amount,
-            safetyDeposit,
-            timelocksDst,
+            args,
             srcCancellationTimestamp
         );
         data = abi.encode(
             block.chainid,
             hashlock,
-            maker,
-            taker,
-            token,
+            packedAddresses,
             amount,
             safetyDeposit,
             timelocksDst
