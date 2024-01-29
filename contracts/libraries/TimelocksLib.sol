@@ -30,14 +30,14 @@ type Timelocks is uint256;
  * @title Timelocks library for compact storage of timelocks in a uint256.
  */
 library TimelocksLib {
-    uint256 private constant _TIMELOCK_MASK = type(uint32).max;
+    uint256 internal constant _TIMELOCK_MASK = type(uint32).max;
     // 6 variables 32 bits each
-    uint256 private constant _SRC_FINALITY_OFFSET = 224;
-    uint256 private constant _SRC_WITHDRAWAL_OFFSET = 192;
-    uint256 private constant _SRC_CANCEL_OFFSET = 160;
-    uint256 private constant _DST_FINALITY_OFFSET = 128;
-    uint256 private constant _DST_WITHDRAWAL_OFFSET = 96;
-    uint256 private constant _DST_PUB_WITHDRAWAL_OFFSET = 64;
+    uint256 internal constant _SRC_FINALITY_OFFSET = 224;
+    uint256 internal constant _SRC_WITHDRAWAL_OFFSET = 192;
+    uint256 internal constant _SRC_CANCELLATION_OFFSET = 160;
+    uint256 internal constant _DST_FINALITY_OFFSET = 128;
+    uint256 internal constant _DST_WITHDRAWAL_OFFSET = 96;
+    uint256 internal constant _DST_PUB_WITHDRAWAL_OFFSET = 64;
 
     /**
      * @notice Returns the Escrow deployment timestamp.
@@ -59,7 +59,6 @@ library TimelocksLib {
     }
 
     // ----- Source chain timelocks ----- //
-    // ---------- Src Finality ----------- //
     /**
      * @notice Returns the duration of the finality period on the source chain.
      * @param timelocks The timelocks to get the finality duration from.
@@ -69,21 +68,6 @@ library TimelocksLib {
         return Timelocks.unwrap(timelocks) >> _SRC_FINALITY_OFFSET & _TIMELOCK_MASK ;
     }
 
-    /**
-     * @notice Sets the duration of the finality period on the source chain.
-     * @param timelocks The timelocks to set the finality duration to.
-     * @param value The new duration of the finality period.
-     * @return The timelocks with the finality duration set.
-     */
-    function setSrcFinalityDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            // Clear the finality duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(_TIMELOCK_MASK << _SRC_FINALITY_OFFSET)) |
-            ((value & _TIMELOCK_MASK) << _SRC_FINALITY_OFFSET)
-        );
-    }
-
-    // ---------- Src Withdrawal ----------- //
     /**
      * @notice Returns the start of the private withdrawal period on the source chain.
      * @param timelocks The timelocks to get the finality duration from.
@@ -106,21 +90,6 @@ library TimelocksLib {
     }
 
     /**
-     * @notice Sets the duration of the private withdrawal period on the source chain.
-     * @param timelocks The timelocks to set the private withdrawal duration to.
-     * @param value The new duration of the private withdrawal period.
-     * @return The timelocks with the private withdrawal duration set.
-     */
-    function setSrcWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            // Clear the private withdrawal duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(_TIMELOCK_MASK << _SRC_WITHDRAWAL_OFFSET)) |
-            ((value & _TIMELOCK_MASK) << _SRC_WITHDRAWAL_OFFSET)
-        );
-    }
-
-    // ---------- Src Cancellation ----------- //
-    /**
      * @notice Returns the start of the private cancellation period on the source chain.
      * @param timelocks The timelocks to get the private withdrawal duration from.
      * @param startTimestamp The timestamp when the counting starts.
@@ -138,24 +107,9 @@ library TimelocksLib {
      * @return The duration of the private cancellation period.
      */
     function srcCancellationDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return Timelocks.unwrap(timelocks) >> _SRC_CANCEL_OFFSET & _TIMELOCK_MASK;
+        return Timelocks.unwrap(timelocks) >> _SRC_CANCELLATION_OFFSET & _TIMELOCK_MASK;
     }
 
-    /**
-     * @notice Sets the duration of the private cancellation period on the source chain.
-     * @param timelocks The timelocks to set the private cancellation duration to.
-     * @param value The duration of the private cancellation period.
-     * @return The timelocks with the private cancellation duration set.
-     */
-    function setSrcCancellationDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            // Clear the private cancellation duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(_TIMELOCK_MASK << _SRC_CANCEL_OFFSET)) |
-            ((value & _TIMELOCK_MASK) << _SRC_CANCEL_OFFSET)
-        );
-    }
-
-    // ---------- Src Public Cancellation ----------- //
     /**
      * @notice Returns the start of the public cancellation period on the source chain.
      * @param timelocks The timelocks to get the private cancellation duration from.
@@ -169,7 +123,6 @@ library TimelocksLib {
     }
 
     // ----- Destination chain timelocks ----- //
-    // ---------- Dst Finality ----------- //
     /**
      * @notice Returns the duration of the finality period on the destination chain.
      * @param timelocks The timelocks to get the finality duration from.
@@ -179,21 +132,6 @@ library TimelocksLib {
         return Timelocks.unwrap(timelocks) >> _DST_FINALITY_OFFSET & _TIMELOCK_MASK;
     }
 
-    /**
-     * @notice Sets the duration of the finality period on the destination chain.
-     * @param timelocks The timelocks to set the finality duration to.
-     * @param value The duration of the finality period.
-     * @return The timelocks with the finality duration set.
-     */
-    function setDstFinalityDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            // Clear the finality duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(_TIMELOCK_MASK << _DST_FINALITY_OFFSET)) |
-            ((value & _TIMELOCK_MASK) << _DST_FINALITY_OFFSET)
-        );
-    }
-
-    // ---------- Dst Withdrawal ----------- //
     /**
      * @notice Returns the start of the private withdrawal period on the destination chain.
      * @param timelocks The timelocks to get the finality duration from.
@@ -216,21 +154,6 @@ library TimelocksLib {
     }
 
     /**
-     * @notice Sets the duration of the private withdrawal period on the destination chain.
-     * @param timelocks The timelocks to set the private withdrawal duration to.
-     * @param value The new duration of the private withdrawal period.
-     * @return The timelocks with the private withdrawal duration set.
-     */
-    function setDstWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            // Clear the private withdrawal duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(_TIMELOCK_MASK << _DST_WITHDRAWAL_OFFSET)) |
-            ((value & _TIMELOCK_MASK) << _DST_WITHDRAWAL_OFFSET)
-        );
-    }
-
-    // ---------- Dst Public Withdrawal ----------- //
-    /**
      * @notice Returns the start of the public withdrawal period on the destination chain.
      * @param timelocks The timelocks to get the private withdrawal duration from.
      * @param startTimestamp The timestamp when the counting starts.
@@ -251,21 +174,6 @@ library TimelocksLib {
         return Timelocks.unwrap(timelocks) >> _DST_PUB_WITHDRAWAL_OFFSET & _TIMELOCK_MASK;
     }
 
-    /**
-     * @notice Sets the duration of the public withdrawal period on the destination chain.
-     * @param timelocks The timelocks to set the public withdrawal duration to.
-     * @param value The new duration of the public withdrawal period.
-     * @return The timelocks with the public withdrawal duration set.
-     */
-    function setDstPubWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            // Clear the public withdrawal duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(_TIMELOCK_MASK << _DST_PUB_WITHDRAWAL_OFFSET)) |
-            ((value & _TIMELOCK_MASK) << _DST_PUB_WITHDRAWAL_OFFSET)
-        );
-    }
-
-    // ---------- Dst Cancellation ----------- //
     /**
      * @notice Returns the start of the private cancellation period on the destination chain.
      * @param timelocks The timelocks to get the public withdrawal duration from.

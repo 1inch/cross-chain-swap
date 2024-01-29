@@ -16,7 +16,7 @@ import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 import { Escrow } from "contracts/Escrow.sol";
 import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { PackedAddresses, PackedAddressesMemLib } from "./libraries/PackedAddressesMemLib.sol";
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
@@ -25,7 +25,7 @@ contract BaseSetup is Test {
     using AddressLib for Address;
     using MakerTraitsLib for MakerTraits;
     using PackedAddressesMemLib for PackedAddresses;
-    using TimelocksLib for Timelocks;
+    using TimelocksSettersLib for Timelocks;
 
     /**
      * Timelocks for the source chain.
@@ -172,15 +172,19 @@ contract BaseSetup is Test {
     }
 
     function _setTimelocks() internal {
-        timelocksDst = timelocksDst
-            .setDstFinalityDuration(dstTimelocks.finality)
-            .setDstWithdrawalDuration(dstTimelocks.withdrawal)
-            .setDstPubWithdrawalDuration(dstTimelocks.publicWithdrawal)
-            .setDeployedAt(block.timestamp);
-        timelocks = timelocksDst
-            .setSrcFinalityDuration(srcTimelocks.finality)
-            .setSrcWithdrawalDuration(srcTimelocks.withdrawal)
-            .setSrcCancellationDuration(srcTimelocks.cancel);
+        timelocks = TimelocksSettersLib.init(
+            srcTimelocks.finality,
+            srcTimelocks.withdrawal,
+            srcTimelocks.cancel,
+            dstTimelocks.finality,
+            dstTimelocks.withdrawal,
+            dstTimelocks.publicWithdrawal,
+            block.timestamp
+        );
+        timelocksDst = timelocks
+            .setSrcFinalityDuration(0)
+            .setSrcWithdrawalDuration(0)
+            .setSrcCancellationDuration(0);
     }
 
     function _deployContracts() internal {
