@@ -47,6 +47,7 @@ contract EscrowFactoryTest is BaseSetup {
         );
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
+        assertEq(returnedImmutables.orderHash, orderHash);
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.srcAmount, srcAmount);
         assertEq(returnedImmutables.dstToken, address(dai));
@@ -82,14 +83,15 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(address(dstClone).balance, balanceEscrowNative + safetyDeposit);
 
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
-        assertEq(returnedImmutables.args.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.args.amount, amount);
-        assertEq(returnedImmutables.args.packedAddresses.maker(), alice.addr);
-        assertEq(returnedImmutables.args.packedAddresses.taker(), bob.addr);
-        assertEq(returnedImmutables.args.packedAddresses.token(), address(dai));
-        assertEq(returnedImmutables.args.timelocks.dstFinalityDuration(), dstTimelocks.finality);
-        assertEq(returnedImmutables.args.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.args.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
+        assertEq(returnedImmutables.orderHash, bytes32(block.timestamp));
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
+        assertEq(returnedImmutables.amount, amount);
+        assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
+        assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
+        assertEq(returnedImmutables.packedAddresses.token(), address(dai));
+        assertEq(returnedImmutables.timelocks.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {

@@ -49,7 +49,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     function _postInteraction(
         IOrderMixin.Order calldata order,
         bytes calldata /* extension */,
-        bytes32 /* orderHash */,
+        bytes32 orderHash,
         address taker,
         uint256 makingAmount,
         uint256 takingAmount,
@@ -70,7 +70,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         bytes memory data = new bytes(0x140);
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            mstore(add(data, 0x20), chainid()) // srcChainId
+            mstore(add(data, 0x20), orderHash)
             mstore(add(data, 0x40), makingAmount) // srcAmount
             mstore(add(data, 0x60), takingAmount) // dstAmount
             // Copy hashlock, packedAddresses, dstChainId, dstToken, deposits: 6 * 32 bytes
@@ -102,15 +102,14 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             dstImmutables.srcCancellationTimestamp
         ) revert InvalidCreationTime();
 
-        // 32 bytes for chaiId + 6 * 32 bytes for DstEscrowImmutablesCreation
+        // 7 * 32 bytes for DstEscrowImmutablesCreation
         bytes memory data = new bytes(0xe0);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            mstore(add(data, 0x20), chainid())
             // Copy DstEscrowImmutablesCreation excluding timelocks
-            calldatacopy(add(data, 0x40), dstImmutables, 0xc0)
-            mstore(add(data, 0x100), timelocks)
+            calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
+            mstore(add(data, 0xe0), timelocks)
         }
 
         address escrow = _createEscrow(data, msg.value);

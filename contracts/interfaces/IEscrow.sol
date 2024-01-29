@@ -8,7 +8,7 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
 interface IEscrow {
     // Data for the source chain order immutables.
     struct SrcEscrowImmutables {
-        uint256 srcChainId;
+        bytes32 orderHash;
         uint256 srcAmount;
         uint256 dstAmount;
         // --- Extra data ---
@@ -24,9 +24,11 @@ interface IEscrow {
     }
 
     /**
+     * Data for the destination chain order immutables.
      * token, amount and safetyDeposit are related to the destination chain.
     */
-    struct DstEscrowArgs {
+    struct DstEscrowImmutables {
+        bytes32 orderHash;
         // Hash of the secret.
         bytes32 hashlock;
         // maker, taker, token in two 32-byte slots
@@ -34,14 +36,6 @@ interface IEscrow {
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
-    }
-
-    /**
-     * Data for the destination chain order immutables.
-    */
-    struct DstEscrowImmutables {
-        uint256 chainId;
-        DstEscrowArgs args;
     }
 
     error InvalidCaller();

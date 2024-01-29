@@ -284,7 +284,7 @@ contract BaseSetup is Test {
         }
         orderHash = limitOrderProtocol.hashOrder(order);
         bytes memory interactionParams = abi.encode(
-            block.chainid, // srcChainId
+            orderHash,
             srcAmount,
             dstAmount
         );
@@ -333,7 +333,8 @@ contract BaseSetup is Test {
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
         PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, taker, token);
 
-        IEscrow.DstEscrowArgs memory args = IEscrow.DstEscrowArgs({
+        IEscrow.DstEscrowImmutables memory args = IEscrow.DstEscrowImmutables({
+            orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
             packedAddresses: packedAddresses,
             amount: amount,
@@ -344,14 +345,7 @@ contract BaseSetup is Test {
             args,
             srcCancellationTimestamp
         );
-        data = abi.encode(
-            block.chainid,
-            hashlock,
-            packedAddresses,
-            amount,
-            safetyDeposit,
-            timelocksDst
-        );
+        data = abi.encode(args);
     }
 
     function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns(MakerTraits) {

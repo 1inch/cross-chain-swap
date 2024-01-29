@@ -9,7 +9,7 @@ interface IEscrowFactory {
      * token, amount and safetyDeposit are related to the destination chain.
     */
     struct DstEscrowImmutablesCreation {
-        IEscrow.DstEscrowArgs args;
+        IEscrow.DstEscrowImmutables args;
         // Start of the cancellation period for the source chain.
         uint256 srcCancellationTimestamp;
     }
