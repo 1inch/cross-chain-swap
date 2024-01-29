@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import { Address } from "solidity-utils/libraries/AddressLib.sol";
+
 import { PackedAddresses } from "../libraries/PackedAddressesLib.sol";
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
@@ -17,7 +19,7 @@ interface IEscrow {
         // maker, taker, token in two 32-byte slots
         PackedAddresses packedAddresses;
         uint256 dstChainId;
-        address dstToken;
+        Address dstToken;
         // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
         uint256 deposits;
         Timelocks timelocks;

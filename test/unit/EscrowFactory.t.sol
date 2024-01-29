@@ -8,11 +8,12 @@ import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { PackedAddresses, PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
-import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { Address, AddressLib, BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
-    using TimelocksLib for Timelocks;
+    using AddressLib for Address;
     using PackedAddressesMemLib for PackedAddresses;
+    using TimelocksLib for Timelocks;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
@@ -50,7 +51,7 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.orderHash, orderHash);
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.srcAmount, srcAmount);
-        assertEq(returnedImmutables.dstToken, address(dai));
+        assertEq(returnedImmutables.dstToken.get(), address(dai));
         assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
         assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
         assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
