@@ -5,12 +5,14 @@ import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettleme
 
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { PackedAddresses, PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
     using TimelocksLib for Timelocks;
+    using PackedAddressesMemLib for PackedAddresses;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
@@ -48,6 +50,9 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.srcAmount, srcAmount);
         assertEq(returnedImmutables.dstToken, address(dai));
+        assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
+        assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
+        assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
         assertEq(returnedImmutables.timelocks.srcFinalityDuration(), srcTimelocks.finality);
         assertEq(returnedImmutables.timelocks.srcWithdrawalDuration(), srcTimelocks.withdrawal);
         assertEq(returnedImmutables.timelocks.srcCancellationDuration(), srcTimelocks.cancel);
@@ -79,6 +84,9 @@ contract EscrowFactoryTest is BaseSetup {
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
         assertEq(returnedImmutables.args.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.args.amount, amount);
+        assertEq(returnedImmutables.args.packedAddresses.maker(), alice.addr);
+        assertEq(returnedImmutables.args.packedAddresses.taker(), bob.addr);
+        assertEq(returnedImmutables.args.packedAddresses.token(), address(dai));
         assertEq(returnedImmutables.args.timelocks.dstFinalityDuration(), dstTimelocks.finality);
         assertEq(returnedImmutables.args.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
         assertEq(returnedImmutables.args.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
