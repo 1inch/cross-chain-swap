@@ -76,7 +76,7 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrowDst{value: safetyDeposit}(immutables);
+        escrowFactory.createDstEscrow{value: safetyDeposit}(immutables);
 
         assertEq(bob.addr.balance, balanceBobNative - immutables.args.safetyDeposit);
         assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
@@ -174,23 +174,38 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
 
         vm.warp(immutables.srcCancellationTimestamp + 1);
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
-        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
-        escrowFactory.createEscrowDst(immutables);
+        escrowFactory.createDstEscrow(immutables);
+    }
+
+    function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
+        );
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
     /* solhint-enable func-name-mixedcase */

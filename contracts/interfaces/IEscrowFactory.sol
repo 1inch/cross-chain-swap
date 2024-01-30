@@ -23,7 +23,7 @@ interface IEscrowFactory {
      * and approve the destination token to be transferred to the created escrow.
      * @param dstEscrowImmutables The immutables of the escrow contract that are used in deployment.
      */
-    function createEscrowDst(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable;
+    function createDstEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable;
 
     /**
      * @notice Returns the deterministic address of the escrow based on the salt.

@@ -92,10 +92,17 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     }
 
     /**
-     * @notice See {IEscrowFactory-createEscrowDst}.
+     * @notice See {IEscrowFactory-createDstEscrow}.
      */
-    function createEscrowDst(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
-        if (msg.value < dstImmutables.args.safetyDeposit) revert InsufficientEscrowBalance();
+    function createDstEscrow(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
+        uint256 nativeAmount = dstImmutables.args.safetyDeposit;
+        address token = dstImmutables.args.packedAddresses.token();
+        // If the destination token is native, add its amount to the safety deposit.
+        if (token == address(0)) {
+            nativeAmount += dstImmutables.args.amount;
+        }
+        if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
+
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
             dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) >
@@ -113,9 +120,11 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         }
 
         address escrow = _createEscrow(data, msg.value);
-        IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
-            msg.sender, escrow, dstImmutables.args.amount
-        );
+        if (token != address(0)) {
+            IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
+                msg.sender, escrow, dstImmutables.args.amount
+            );
+        }
     }
 
     /**
