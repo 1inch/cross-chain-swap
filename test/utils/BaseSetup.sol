@@ -15,9 +15,10 @@ import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { Escrow } from "contracts/Escrow.sol";
 import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { ERC20True } from "contracts/mocks/ERC20True.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { PackedAddresses, PackedAddressesMemLib } from "./libraries/PackedAddressesMemLib.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
 
@@ -153,7 +154,6 @@ contract BaseSetup is Test {
 
         vm.startPrank(bob.addr);
         dai.approve(address(escrowFactory), 1000 ether);
-        dai.approve(address(limitOrderProtocol), 1000 ether);
         inch.approve(address(feeBank), 1000 ether);
         feeBank.deposit(10 ether);
         vm.stopPrank();
@@ -225,7 +225,7 @@ contract BaseSetup is Test {
         uint256 srcAmount,
         uint256 dstAmount,
         bool fakeOrder
-    ) internal view returns(
+    ) internal returns(
         IOrderMixin.Order memory order,
         bytes32 orderHash,
         bytes memory extraData,
@@ -271,11 +271,13 @@ contract BaseSetup is Test {
                 whitelist
             );
 
+            ERC20True erc20True = new ERC20True();
+
             (order, extension) = _buildOrder(
                 alice.addr,
-                bob.addr,
+                address(0),
                 address(usdc),
-                address(dai),
+                address(erc20True),
                 srcAmount,
                 dstAmount,
                 MakerTraits.wrap(0),
