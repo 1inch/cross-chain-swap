@@ -271,13 +271,11 @@ contract BaseSetup is Test {
                 whitelist
             );
 
-            ERC20True erc20True = new ERC20True();
-
             (order, extension) = _buildOrder(
                 alice.addr,
                 address(0),
                 address(usdc),
-                address(erc20True),
+                address(new ERC20True()),
                 srcAmount,
                 dstAmount,
                 MakerTraits.wrap(0),
