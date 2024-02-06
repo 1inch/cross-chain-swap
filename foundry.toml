@@ -10,3 +10,8 @@ gas_reports = ["Escrow", "EscrowFactory"]
 
 [profile.lite.optimizer_details.yulDetails]
 optimizerSteps = ''
+
+[fmt]
+bracket_spacing = true
+multiline_func_header = 'params_first'
+wrap_comments = true

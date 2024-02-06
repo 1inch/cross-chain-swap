@@ -24,7 +24,7 @@ contract Escrow is Clone, IEscrow {
     using PackedAddressesLib for PackedAddresses;
     using TimelocksLib for Timelocks;
 
-    uint256 immutable public RESCUE_DELAY;
+    uint256 public immutable RESCUE_DELAY;
 
     constructor(uint256 rescueDelay) {
         RESCUE_DELAY = rescueDelay;
@@ -45,8 +45,8 @@ contract Escrow is Clone, IEscrow {
 
         // Check that it's a withdrawal period.
         if (
-            block.timestamp < timelocks.srcWithdrawalStart(deployedAt) ||
-            block.timestamp >= timelocks.srcCancellationStart(deployedAt)
+            block.timestamp < timelocks.srcWithdrawalStart(deployedAt)
+                || block.timestamp >= timelocks.srcCancellationStart(deployedAt)
         ) revert InvalidWithdrawalTime();
 
         _checkSecretAndTransfer(
@@ -58,7 +58,7 @@ contract Escrow is Clone, IEscrow {
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.deposits >> 128}("");
+        (bool success,) = msg.sender.call{ value: escrowImmutables.deposits >> 128 }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -79,8 +79,8 @@ contract Escrow is Clone, IEscrow {
 
         // Check that the caller is a taker if it's the private cancellation period.
         if (
-            block.timestamp < timelocks.srcPubCancellationStart(deployedAt) &&
-            msg.sender != escrowImmutables.packedAddresses.taker()
+            block.timestamp < timelocks.srcPubCancellationStart(deployedAt)
+                && msg.sender != escrowImmutables.packedAddresses.taker()
         ) {
             revert InvalidCaller();
         }
@@ -91,7 +91,7 @@ contract Escrow is Clone, IEscrow {
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.deposits >> 128}("");
+        (bool success,) = msg.sender.call{ value: escrowImmutables.deposits >> 128 }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -116,14 +116,14 @@ contract Escrow is Clone, IEscrow {
         uint256 deployedAt = timelocks.deployedAt();
         // Check that it's a withdrawal period.
         if (
-            block.timestamp < timelocks.dstWithdrawalStart(deployedAt) ||
-            block.timestamp >= timelocks.dstCancellationStart(deployedAt)
+            block.timestamp < timelocks.dstWithdrawalStart(deployedAt)
+                || block.timestamp >= timelocks.dstCancellationStart(deployedAt)
         ) revert InvalidWithdrawalTime();
 
         // Check that the caller is a taker if it's the private withdrawal period.
         if (
-            block.timestamp < timelocks.dstPubWithdrawalStart(deployedAt) &&
-            msg.sender != escrowImmutables.packedAddresses.taker()
+            block.timestamp < timelocks.dstPubWithdrawalStart(deployedAt)
+                && msg.sender != escrowImmutables.packedAddresses.taker()
         ) revert InvalidCaller();
 
         _checkSecretAndTransfer(
@@ -135,7 +135,7 @@ contract Escrow is Clone, IEscrow {
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.safetyDeposit}("");
+        (bool success,) = msg.sender.call{ value: escrowImmutables.safetyDeposit }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -150,19 +150,15 @@ contract Escrow is Clone, IEscrow {
         if (msg.sender != taker) revert InvalidCaller();
 
         // Check that it's a cancellation period.
-        if (
-            block.timestamp < escrowImmutables.timelocks.dstCancellationStart(escrowImmutables.timelocks.deployedAt())
-        ) {
+        if (block.timestamp < escrowImmutables.timelocks.dstCancellationStart(escrowImmutables.timelocks.deployedAt()))
+        {
             revert InvalidCancellationTime();
         }
 
-        IERC20(escrowImmutables.packedAddresses.token()).safeTransfer(
-            taker,
-            escrowImmutables.amount
-        );
+        IERC20(escrowImmutables.packedAddresses.token()).safeTransfer(taker, escrowImmutables.amount);
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.safetyDeposit}("");
+        (bool success,) = msg.sender.call{ value: escrowImmutables.safetyDeposit }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -179,7 +175,7 @@ contract Escrow is Clone, IEscrow {
      * @notice See {IEscrow-srcEscrowImmutables}.
      */
     function srcEscrowImmutables() public pure returns (SrcEscrowImmutables calldata data) {
-         // Get the offset of the immutable args in calldata.
+        // Get the offset of the immutable args in calldata.
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") { data := offset }
@@ -189,7 +185,7 @@ contract Escrow is Clone, IEscrow {
      * @notice See {IEscrow-dstEscrowImmutables}.
      */
     function dstEscrowImmutables() public pure returns (DstEscrowImmutables calldata data) {
-       // Get the offset of the immutable args in calldata.
+        // Get the offset of the immutable args in calldata.
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") { data := offset }
@@ -233,7 +229,7 @@ contract Escrow is Clone, IEscrow {
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
         if (token == address(0)) {
-            (bool success, ) = to.call{value: amount}("");
+            (bool success,) = to.call{ value: amount }("");
             if (!success) revert NativeTokenSendingFailure();
         } else {
             IERC20(token).safeTransfer(to, amount);

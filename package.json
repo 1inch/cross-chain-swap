@@ -19,6 +19,7 @@
     "coverage:html": "bash scripts/coverage.sh",
     "doc": "forge doc --build --out documentation",
     "lint": "solhint --max-warnings 0 \"**/*.sol\"",
+    "fmt:check": "forge fmt --check",
     "lint:fix": "solhint --max-warnings 0 \"**/*.sol\" --fix",
     "test": "forge test -vvv",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv"

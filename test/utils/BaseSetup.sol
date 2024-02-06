@@ -120,16 +120,8 @@ contract BaseSetup is Test {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({
-        finality: 120,
-        withdrawal: 900,
-        cancel: 110
-    });
-    DstTimelocks internal dstTimelocks = DstTimelocks({
-        finality: 300,
-        withdrawal: 240,
-        publicWithdrawal: 360
-    });
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 900, cancel: 110 });
+    DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 240, publicWithdrawal: 360 });
     /* solhint-enable private-vars-leading-underscore */
 
     receive() external payable {}
@@ -232,11 +224,8 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
-        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(
-            alice.addr,
-            bob.addr,
-            address(usdc)
-        );
+        PackedAddresses memory packedAddresses =
+            PackedAddressesMemLib.packAddresses(alice.addr, bob.addr, address(usdc));
         extraData = _buidDynamicData(
             secret,
             packedAddresses,
@@ -264,12 +253,8 @@ contract BaseSetup is Test {
                 makerTraits: MakerTraits.wrap(0)
             });
         } else {
-            bytes memory postInteractionData = abi.encodePacked(
-                address(escrowFactory),
-                RESOLVER_FEE,
-                extraData,
-                whitelist
-            );
+            bytes memory postInteractionData =
+                abi.encodePacked(address(escrowFactory), RESOLVER_FEE, extraData, whitelist);
 
             (order, extension) = _buildOrder(
                 alice.addr,
@@ -284,22 +269,11 @@ contract BaseSetup is Test {
             );
         }
         orderHash = limitOrderProtocol.hashOrder(order);
-        bytes memory interactionParams = abi.encode(
-            orderHash,
-            srcAmount,
-            dstAmount
-        );
-        bytes memory data = abi.encodePacked(
-            interactionParams,
-            extraData
-        );
+        bytes memory interactionParams = abi.encode(orderHash, srcAmount, dstAmount);
+        bytes memory data = abi.encodePacked(interactionParams, extraData);
 
         srcClone = Escrow(escrowFactory.addressOfEscrow(data));
-        extraData = abi.encodePacked(
-            RESOLVER_FEE,
-            extraData,
-            whitelist
-        );
+        extraData = abi.encodePacked(RESOLVER_FEE, extraData, whitelist);
     }
 
     function _prepareDataDst(
@@ -308,14 +282,9 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (
-        IEscrowFactory.DstEscrowImmutablesCreation memory,
-        Escrow
-    ) {
-        (
-            IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables,
-            bytes memory data
-        ) = _buildDstEscrowImmutables(secret, amount, maker, taker, token);
+    ) internal view returns (IEscrowFactory.DstEscrowImmutablesCreation memory, Escrow) {
+        (IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables, bytes memory data) =
+            _buildDstEscrowImmutables(secret, amount, maker, taker, token);
         return (escrowImmutables, Escrow(escrowFactory.addressOfEscrow(data)));
     }
 
@@ -325,10 +294,7 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns(
-        IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
-        bytes memory data
-    ) {
+    ) internal view returns (IEscrowFactory.DstEscrowImmutablesCreation memory immutables, bytes memory data) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
@@ -342,25 +308,22 @@ contract BaseSetup is Test {
             safetyDeposit: safetyDeposit,
             timelocks: timelocksDst
         });
-        immutables = IEscrowFactory.DstEscrowImmutablesCreation(
-            args,
-            srcCancellationTimestamp
-        );
+        immutables = IEscrowFactory.DstEscrowImmutablesCreation(args, srcCancellationTimestamp);
         data = abi.encode(args);
     }
 
-    function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns(MakerTraits) {
+    function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns (MakerTraits) {
         return MakerTraits.wrap(
-            0 |
-            params.series << 160 |
-            params.nonce << 120 |
-            params.expiry << 80 |
-            uint160(params.allowedSender) & ((1 << 80) - 1) |
-            (params.unwrapWeth == true ? _UNWRAP_WETH_FLAG : 0) |
-            (params.allowMultipleFills == true ? _ALLOW_MULTIPLE_FILLS_FLAG : 0) |
-            (params.allowPartialFill == false ? _NO_PARTIAL_FILLS_FLAG : 0) |
-            (params.shouldCheckEpoch == true ? _NEED_CHECK_EPOCH_MANAGER_FLAG : 0) |
-            (params.usePermit2 == true ? _USE_PERMIT2_FLAG : 0)
+            0
+                | params.series << 160
+                | params.nonce << 120
+                | params.expiry << 80
+                | uint160(params.allowedSender) & ((1 << 80) - 1)
+                | (params.unwrapWeth == true ? _UNWRAP_WETH_FLAG : 0)
+                | (params.allowMultipleFills == true ? _ALLOW_MULTIPLE_FILLS_FLAG : 0)
+                | (params.allowPartialFill == false ? _NO_PARTIAL_FILLS_FLAG : 0)
+                | (params.shouldCheckEpoch == true ? _NEED_CHECK_EPOCH_MANAGER_FLAG : 0)
+                | (params.usePermit2 == true ? _USE_PERMIT2_FLAG : 0)
         );
     }
 
@@ -374,7 +337,7 @@ contract BaseSetup is Test {
         MakerTraits makerTraits,
         InteractionParams memory interactions,
         bytes memory customData
-    ) internal pure returns(IOrderMixin.Order memory, bytes memory) {
+    ) internal pure returns (IOrderMixin.Order memory, bytes memory) {
         MakerTraitsParams memory makerTraitsParams = MakerTraitsParams({
             allowedSender: address(0),
             shouldCheckEpoch: false,
@@ -419,10 +382,7 @@ contract BaseSetup is Test {
 
         bytes memory extension = "";
         if (allInteractionsConcat.length > 0) {
-            extension = abi.encodePacked(
-                offsets,
-                allInteractionsConcat
-            );
+            extension = abi.encodePacked(offsets, allInteractionsConcat);
         }
         if (MakerTraits.unwrap(makerTraits) == 0) {
             makerTraits = _buildMakerTraits(makerTraitsParams);
@@ -464,24 +424,19 @@ contract BaseSetup is Test {
         bytes memory extension,
         bytes memory interaction,
         uint256 threshold
-    ) internal pure returns(TakerTraits, bytes memory) {
+    ) internal pure returns (TakerTraits, bytes memory) {
         TakerTraits traits = TakerTraits.wrap(
-            threshold | (
-                (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0) |
-                (unwrapWeth ? _UNWRAP_WETH_FLAG_TT : 0) |
-                (skipMakerPermit ? _SKIP_ORDER_PERMIT_FLAG : 0) |
-                (usePermit2 ? _USE_PERMIT2_FLAG_TT : 0) |
-                (target != address(0) ? _ARGS_HAS_TARGET : 0) |
-                (extension.length << _ARGS_EXTENSION_LENGTH_OFFSET) |
-                (interaction.length << _ARGS_INTERACTION_LENGTH_OFFSET)
-            )
+            threshold
+                | (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0)
+                | (unwrapWeth ? _UNWRAP_WETH_FLAG_TT : 0)
+                | (skipMakerPermit ? _SKIP_ORDER_PERMIT_FLAG : 0)
+                | (usePermit2 ? _USE_PERMIT2_FLAG_TT : 0)
+                | (target != address(0) ? _ARGS_HAS_TARGET : 0)
+                | (extension.length << _ARGS_EXTENSION_LENGTH_OFFSET)
+                | (interaction.length << _ARGS_INTERACTION_LENGTH_OFFSET)
         );
-        bytes memory targetBytes = target != address(0) ? abi.encodePacked(target): abi.encodePacked("");
-        bytes memory args = abi.encodePacked(
-            targetBytes,
-            extension,
-            interaction
-        );
+        bytes memory targetBytes = target != address(0) ? abi.encodePacked(target) : abi.encodePacked("");
+        bytes memory args = abi.encodePacked(targetBytes, extension, interaction);
         return (traits, args);
     }
 }

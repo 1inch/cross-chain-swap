@@ -65,7 +65,7 @@ library TimelocksLib {
      * @return The duration of the finality period.
      */
     function srcFinalityDuration(Timelocks timelocks) internal pure returns (uint256) {
-        return Timelocks.unwrap(timelocks) >> _SRC_FINALITY_OFFSET & _TIMELOCK_MASK ;
+        return Timelocks.unwrap(timelocks) >> _SRC_FINALITY_OFFSET & _TIMELOCK_MASK;
     }
 
     /**

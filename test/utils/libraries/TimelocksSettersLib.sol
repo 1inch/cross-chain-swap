@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol"; 
+import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 /**
  * @title Library with setters for Timelocks.
@@ -28,14 +28,14 @@ library TimelocksSettersLib {
         uint256 dstPubWithdrawal,
         uint256 deployedAtVal
     ) internal pure returns (Timelocks) {
-        return Timelocks.wrap(0 |
-            ((srcFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_FINALITY_OFFSET) |
-            ((srcWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_WITHDRAWAL_OFFSET) |
-            ((srcCancellation & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_CANCELLATION_OFFSET) |
-            ((dstFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET) |
-            ((dstWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET) |
-            ((dstPubWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET) |
-            uint40(deployedAtVal)
+        return Timelocks.wrap(
+            0 | ((srcFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_FINALITY_OFFSET)
+                | ((srcWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_WITHDRAWAL_OFFSET)
+                | ((srcCancellation & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_CANCELLATION_OFFSET)
+                | ((dstFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET)
+                | ((dstWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
+                | ((dstPubWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
+                | uint40(deployedAtVal)
         );
     }
 
@@ -48,11 +48,10 @@ library TimelocksSettersLib {
     function setSrcFinalityDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             // Clear the finality duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._SRC_FINALITY_OFFSET)) |
-            ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_FINALITY_OFFSET)
+            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._SRC_FINALITY_OFFSET))
+                | ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_FINALITY_OFFSET)
         );
     }
-
 
     /**
      * @notice Sets the duration of the private withdrawal period on the source chain.
@@ -63,8 +62,8 @@ library TimelocksSettersLib {
     function setSrcWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             // Clear the private withdrawal duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._SRC_WITHDRAWAL_OFFSET)) |
-            ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_WITHDRAWAL_OFFSET)
+            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._SRC_WITHDRAWAL_OFFSET))
+                | ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_WITHDRAWAL_OFFSET)
         );
     }
 
@@ -77,8 +76,8 @@ library TimelocksSettersLib {
     function setSrcCancellationDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             // Clear the private cancellation duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._SRC_CANCELLATION_OFFSET)) |
-            ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_CANCELLATION_OFFSET)
+            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._SRC_CANCELLATION_OFFSET))
+                | ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_CANCELLATION_OFFSET)
         );
     }
 
@@ -91,8 +90,8 @@ library TimelocksSettersLib {
     function setDstFinalityDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             // Clear the finality duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._DST_FINALITY_OFFSET)) |
-            ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET)
+            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._DST_FINALITY_OFFSET))
+                | ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET)
         );
     }
 
@@ -105,8 +104,8 @@ library TimelocksSettersLib {
     function setDstWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             // Clear the private withdrawal duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._DST_WITHDRAWAL_OFFSET)) |
-            ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
+            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._DST_WITHDRAWAL_OFFSET))
+                | ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
         );
     }
 
@@ -119,8 +118,8 @@ library TimelocksSettersLib {
     function setDstPubWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             // Clear the public withdrawal duration bits and set the new value.
-            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)) |
-            ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
+            (Timelocks.unwrap(timelocks) & ~(TimelocksLib._TIMELOCK_MASK << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET))
+                | ((value & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
         );
     }
 }

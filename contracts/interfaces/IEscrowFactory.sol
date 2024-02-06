@@ -7,7 +7,7 @@ import { IEscrow } from "./IEscrow.sol";
 interface IEscrowFactory {
     /**
      * token, amount and safetyDeposit are related to the destination chain.
-    */
+     */
     struct DstEscrowImmutablesCreation {
         IEscrow.DstEscrowImmutables args;
         // Start of the cancellation period for the source chain.

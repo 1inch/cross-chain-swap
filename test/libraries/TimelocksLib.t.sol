@@ -27,13 +27,23 @@ contract TimelocksLibTest is BaseSetup {
             dstTimelocks.publicWithdrawal,
             timestamp
         );
-        
+
         assertEq(timelocksTest.srcWithdrawalStart(timestamp), timestamp + srcTimelocks.finality);
-        assertEq(timelocksTest.srcCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        assertEq(timelocksTest.srcPubCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
+        assertEq(
+            timelocksTest.srcCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal
+        );
+        assertEq(
+            timelocksTest.srcPubCancellationStart(timestamp),
+            timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel
+        );
         assertEq(timelocksTest.dstWithdrawalStart(timestamp), timestamp + dstTimelocks.finality);
-        assertEq(timelocksTest.dstPubWithdrawalStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(timelocksTest.dstCancellationStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(
+            timelocksTest.dstPubWithdrawalStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal
+        );
+        assertEq(
+            timelocksTest.dstCancellationStart(timestamp),
+            timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
+        );
     }
 
     /* solhint-enable func-name-mixedcase */

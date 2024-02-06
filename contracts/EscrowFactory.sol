@@ -30,8 +30,11 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     // Address of the escrow contract implementation to clone.
     address public immutable IMPLEMENTATION;
 
-    constructor(address implementation, address limitOrderProtocol, IERC20 token)
-        SimpleSettlementExtension(limitOrderProtocol, token) {
+    constructor(
+        address implementation,
+        address limitOrderProtocol,
+        IERC20 token
+    ) SimpleSettlementExtension(limitOrderProtocol, token) {
         IMPLEMENTATION = implementation;
     }
 
@@ -48,12 +51,12 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      */
     function _postInteraction(
         IOrderMixin.Order calldata order,
-        bytes calldata /* extension */,
+        bytes calldata, /* extension */
         bytes32 orderHash,
         address taker,
         uint256 makingAmount,
         uint256 takingAmount,
-        uint256 /* remainingMakingAmount */,
+        uint256, /* remainingMakingAmount */
         bytes calldata extraData
     ) internal override {
         {
@@ -61,15 +64,14 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
-        Timelocks timelocks = Timelocks.wrap(
-            uint256(bytes32(extraData[_WHITELIST_OFFSET-32:_WHITELIST_OFFSET]))
-        ).setDeployedAt(block.timestamp);
+        Timelocks timelocks = Timelocks.wrap(uint256(bytes32(extraData[_WHITELIST_OFFSET - 32:_WHITELIST_OFFSET])))
+            .setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
         // 10 * 32 bytes
         bytes memory data = new bytes(0x140);
         // solhint-disable-next-line no-inline-assembly
-        assembly("memory-safe") {
+        assembly ("memory-safe") {
             mstore(add(data, 0x20), orderHash)
             mstore(add(data, 0x40), makingAmount) // srcAmount
             mstore(add(data, 0x60), takingAmount) // dstAmount
@@ -82,10 +84,9 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
         // srcSafetyDeposit is the first 16 bytes in the `deposits`
         uint256 safetyDeposit = uint128(bytes16(extraData[100:116]));
-        if (
-            escrow.balance < safetyDeposit ||
-            IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount
-        ) revert InsufficientEscrowBalance();
+        if (escrow.balance < safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
+            revert InsufficientEscrowBalance();
+        }
 
         uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
         _chargeFee(taker, resolverFee);
@@ -104,16 +105,16 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
 
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (
-            dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) >
-            dstImmutables.srcCancellationTimestamp
-        ) revert InvalidCreationTime();
+        if (dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) > dstImmutables.srcCancellationTimestamp)
+        {
+            revert InvalidCreationTime();
+        }
 
         // 7 * 32 bytes for DstEscrowImmutablesCreation
         bytes memory data = new bytes(0xe0);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
         // solhint-disable-next-line no-inline-assembly
-        assembly("memory-safe") {
+        assembly ("memory-safe") {
             // Copy DstEscrowImmutablesCreation excluding timelocks
             calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
             mstore(add(data, 0xe0), timelocks)
@@ -140,10 +141,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      * @param data Encoded immutable args.
      * @return clone The address of the created escrow contract.
      */
-    function _createEscrow(
-        bytes memory data,
-        uint256 value
-    ) private returns (address clone) {
+    function _createEscrow(bytes memory data, uint256 value) private returns (address clone) {
         clone = IMPLEMENTATION.clone2(data, value);
     }
 }

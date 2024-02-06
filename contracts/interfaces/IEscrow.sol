@@ -28,7 +28,7 @@ interface IEscrow {
     /**
      * Data for the destination chain order immutables.
      * token, amount and safetyDeposit are related to the destination chain.
-    */
+     */
     struct DstEscrowImmutables {
         bytes32 orderHash;
         // Hash of the secret.
