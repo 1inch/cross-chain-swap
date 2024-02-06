@@ -9,19 +9,17 @@ This project uses [Foundry](https://github.com/foundry-rs/foundry) for smart con
 
 ### Prerequisites
 
-- Ensure you have [Rust](https://www.rust-lang.org/tools/install) installed, as it is required for compiling Foundry from source.
-- Install Foundry, including the `forge` tool, follow these steps:
+- Ensure you have [Rust](https://www.rust-lang.org/tools/install) installed.
+- To [install Foundry](https://book.getfoundry.sh/getting-started/installation), including the `forge` tool, follow these steps:
 
-  ```
-  # install:
+  ``` shell
+  # Install Foundryup:
   curl -L https://foundry.paradigm.xyz | bash
   
-  # add foundry to PATH env
-  export PATH="$HOME/.foundry/bin:$PATH"
-  source ~/.bashrc
-  # source ~/.zshrc
+  # Apply updated config to current terminal session
+  source ~/.zshenv
   
-  # update foundry
+  # Install forge, cast, anvil, and chisel
   foundryup
   ```
 
@@ -29,14 +27,14 @@ This project uses [Foundry](https://github.com/foundry-rs/foundry) for smart con
 
 To init and update submodules run:
 
-```
+``` shell
 git submodule update --init --recursive
 ```
 
 ## Tests
 
-To install dependencies and execute tests run:
+To execute tests run:
 
-```
-yarn && yarn test
+``` shell
+yarn test
 ```
