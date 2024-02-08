@@ -56,7 +56,7 @@ library TimelocksLib {
      */
     function rescueStart(Timelocks timelocks, uint256 rescueDelay) internal pure returns (uint256) {
         unchecked {
-            return uint40(Timelocks.unwrap(timelocks)) + rescueDelay;
+            return uint32(Timelocks.unwrap(timelocks)) + rescueDelay;
         }
     }
 
