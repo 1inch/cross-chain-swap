@@ -1,5 +1,5 @@
 # IEscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/f45e33f855d5dd79428a1ba540d9f8df14bbb794/contracts/interfaces/IEscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/4a7a924cfc3cdc40ce87e400e418d193236c06fb/contracts/interfaces/IEscrowFactory.sol)
 
 
 ## Functions
@@ -27,13 +27,13 @@ Returns the deterministic address of the escrow based on the salt.
 
 
 ```solidity
-function addressOfEscrow(bytes32 salt) external view returns (address);
+function addressOfEscrow(bytes memory data) external view returns (address);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`salt`|`bytes32`|The salt used to deploy escrow.|
+|`data`|`bytes`|The immutable arguments used to deploy escrow.|
 
 **Returns**
 
@@ -68,7 +68,7 @@ struct DstEscrowImmutablesCreation {
     address token;
     uint256 amount;
     uint256 safetyDeposit;
-    IEscrow.DstTimelocks timelocks;
+    Timelocks timelocks;
     uint256 srcCancellationTimestamp;
 }
 ```

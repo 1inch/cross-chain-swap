@@ -2,76 +2,42 @@
 
 pragma solidity ^0.8.0;
 
+import { Address } from "solidity-utils/libraries/AddressLib.sol";
+
+import { PackedAddresses } from "../libraries/PackedAddressesLib.sol";
+import { Timelocks } from "../libraries/TimelocksLib.sol";
+
 interface IEscrow {
-    // TODO: is it possible to optimise this?
-    /**
-     * Timelocks for the source chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
-     * cancel: The duration of the period when escrow can only be cancelled by the taker.
-     */
-    struct SrcTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 cancel;
-    }
-
-    /**
-     * Timelocks for the destination chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
-     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
-     */
-    struct DstTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 publicWithdrawal;
-    }
-
-    // Data for the immutables from the order post interacton.
-    struct InteractionParams {
-        address maker;
-        address taker;
-        uint256 srcChainId;
-        address srcToken;
-        uint256 srcAmount;
-        uint256 dstAmount;
-    }
-
-    // Data for the immutables from the order extension.
-    struct ExtraDataParams {
-        // Hash of the secret.
-        bytes32 hashlock;
-        uint256 dstChainId;
-        address dstToken;
-        uint256 srcSafetyDeposit;
-        uint256 dstSafetyDeposit;
-        SrcTimelocks srcTimelocks;
-        DstTimelocks dstTimelocks;
-    }
-
     // Data for the source chain order immutables.
     struct SrcEscrowImmutables {
-        uint256 deployedAt;
-        InteractionParams interactionParams;
-        ExtraDataParams extraDataParams;
+        bytes32 orderHash;
+        uint256 srcAmount;
+        uint256 dstAmount;
+        // --- Extra data ---
+        // Hash of the secret.
+        bytes32 hashlock;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
+        uint256 dstChainId;
+        Address dstToken;
+        // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
+        uint256 deposits;
+        Timelocks timelocks;
     }
 
     /**
      * Data for the destination chain order immutables.
-     * chainId, token, amount and safetyDeposit relate to the destination chain.
+     * token, amount and safetyDeposit are related to the destination chain.
     */
     struct DstEscrowImmutables {
-        uint256 deployedAt;
+        bytes32 orderHash;
         // Hash of the secret.
         bytes32 hashlock;
-        address maker;
-        address taker;
-        uint256 chainId;
-        address token;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
         uint256 amount;
         uint256 safetyDeposit;
-        DstTimelocks timelocks;
+        Timelocks timelocks;
     }
 
     error InvalidCaller();

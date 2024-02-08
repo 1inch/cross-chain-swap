@@ -9,17 +9,47 @@ import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/libraries/Make
 import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
 import { WrappedTokenMock } from "limit-order-protocol/mocks/WrappedTokenMock.sol";
 import { IFeeBank } from "limit-order-settlement/interfaces/IFeeBank.sol";
-import { Address } from "solidity-utils/libraries/AddressLib.sol";
+import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
-import { Escrow, IEscrow } from "../../contracts/Escrow.sol";
-import { EscrowFactory, IEscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { Escrow } from "contracts/Escrow.sol";
+import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { PackedAddresses, PackedAddressesMemLib } from "./libraries/PackedAddressesMemLib.sol";
+import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
 
 contract BaseSetup is Test {
+    using AddressLib for Address;
     using MakerTraitsLib for MakerTraits;
+    using PackedAddressesMemLib for PackedAddresses;
+    using TimelocksSettersLib for Timelocks;
+
+    /**
+     * Timelocks for the source chain.
+     * finality: The duration of the chain finality period.
+     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
+     * cancel: The duration of the period when escrow can only be cancelled by the taker.
+     */
+    struct SrcTimelocks {
+        uint256 finality;
+        uint256 withdrawal;
+        uint256 cancel;
+    }
+
+    /**
+     * Timelocks for the destination chain.
+     * finality: The duration of the chain finality period.
+     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
+     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
+     */
+    struct DstTimelocks {
+        uint256 finality;
+        uint256 withdrawal;
+        uint256 publicWithdrawal;
+    }
 
     struct InteractionParams {
         bytes makerAssetSuffix;
@@ -70,7 +100,6 @@ contract BaseSetup is Test {
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
 
-    Utils internal utils;
     VmSafe.Wallet[] internal users;
 
     VmSafe.Wallet internal alice;
@@ -86,33 +115,25 @@ contract BaseSetup is Test {
     Escrow internal escrow;
     IFeeBank internal feeBank;
 
-    IEscrow.SrcTimelocks internal srcTimelocks = IEscrow.SrcTimelocks({
+    Timelocks internal timelocks;
+    Timelocks internal timelocksDst;
+
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({
         finality: 120,
         withdrawal: 900,
         cancel: 110
     });
-    IEscrow.DstTimelocks internal dstTimelocks = IEscrow.DstTimelocks({
+    DstTimelocks internal dstTimelocks = DstTimelocks({
         finality: 300,
         withdrawal: 240,
         publicWithdrawal: 360
-    });
-    MakerTraitsParams internal makerTraitsParams = MakerTraitsParams({
-        allowedSender: address(0),
-        shouldCheckEpoch: false,
-        allowPartialFill: true,
-        allowMultipleFills: true,
-        usePermit2: false,
-        unwrapWeth: false,
-        expiry: 0,
-        nonce: 0,
-        series: 0
     });
     /* solhint-enable private-vars-leading-underscore */
 
     receive() external payable {}
 
     function setUp() public virtual {
-        utils = new Utils();
+        Utils utils = new Utils();
         users = utils.createUsers(2);
 
         alice = users[0];
@@ -124,6 +145,8 @@ contract BaseSetup is Test {
         dai.mint(bob.addr, 1000 ether);
         usdc.mint(alice.addr, 1000 ether);
         inch.mint(bob.addr, 1000 ether);
+
+        _setTimelocks();
 
         _deployContracts();
 
@@ -148,6 +171,22 @@ contract BaseSetup is Test {
         vm.label(address(inch), "1INCH");
     }
 
+    function _setTimelocks() internal {
+        timelocks = TimelocksSettersLib.init(
+            srcTimelocks.finality,
+            srcTimelocks.withdrawal,
+            srcTimelocks.cancel,
+            dstTimelocks.finality,
+            dstTimelocks.withdrawal,
+            dstTimelocks.publicWithdrawal,
+            block.timestamp
+        );
+        timelocksDst = timelocks
+            .setSrcFinalityDuration(0)
+            .setSrcWithdrawalDuration(0)
+            .setSrcCancellationDuration(0);
+    }
+
     function _deployContracts() internal {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
 
@@ -161,6 +200,7 @@ contract BaseSetup is Test {
 
     function _buidDynamicData(
         bytes32 secret,
+        PackedAddresses memory packedAddresses,
         uint256 chainId,
         address token,
         uint256 srcSafetyDeposit,
@@ -170,16 +210,11 @@ contract BaseSetup is Test {
         return (
             abi.encode(
                 hashlock,
+                packedAddresses,
                 chainId,
                 token,
-                srcSafetyDeposit,
-                dstSafetyDeposit,
-                srcTimelocks.finality,
-                srcTimelocks.withdrawal,
-                srcTimelocks.cancel,
-                dstTimelocks.finality,
-                dstTimelocks.withdrawal,
-                dstTimelocks.publicWithdrawal
+                (srcSafetyDeposit << 128) | dstSafetyDeposit,
+                timelocks
             )
         );
     }
@@ -196,27 +231,24 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
-        uint256 srcSafetyDeposit = srcAmount * 10 / 100;
-        uint256 dstSafetyDeposit = dstAmount * 10 / 100;
+        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(
+            alice.addr,
+            bob.addr,
+            address(usdc)
+        );
         extraData = _buidDynamicData(
             secret,
+            packedAddresses,
             block.chainid,
             address(dai),
-            srcSafetyDeposit,
-            dstSafetyDeposit
+            srcAmount * 10 / 100,
+            dstAmount * 10 / 100
         );
 
         bytes memory whitelist = abi.encodePacked(
             uint32(block.timestamp), // auction start time
             uint80(uint160(bob.addr)), // resolver address
             uint16(0) // time delta
-        );
-
-        bytes memory postInteractionData = abi.encodePacked(
-            address(escrowFactory),
-            RESOLVER_FEE,
-            extraData,
-            whitelist
         );
 
         if (fakeOrder) {
@@ -231,6 +263,13 @@ contract BaseSetup is Test {
                 makerTraits: MakerTraits.wrap(0)
             });
         } else {
+            bytes memory postInteractionData = abi.encodePacked(
+                address(escrowFactory),
+                RESOLVER_FEE,
+                extraData,
+                whitelist
+            );
+
             (order, extension) = _buildOrder(
                 alice.addr,
                 bob.addr,
@@ -244,8 +283,17 @@ contract BaseSetup is Test {
             );
         }
         orderHash = limitOrderProtocol.hashOrder(order);
+        bytes memory interactionParams = abi.encode(
+            orderHash,
+            srcAmount,
+            dstAmount
+        );
+        bytes memory data = abi.encodePacked(
+            interactionParams,
+            extraData
+        );
 
-        srcClone = Escrow(escrowFactory.addressOfEscrow(orderHash));
+        srcClone = Escrow(escrowFactory.addressOfEscrow(data));
         extraData = abi.encodePacked(
             RESOLVER_FEE,
             extraData,
@@ -267,11 +315,7 @@ contract BaseSetup is Test {
             IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables,
             bytes memory data
         ) = _buildDstEscrowImmutables(secret, amount, maker, taker, token);
-        address msgSender = bob.addr;
-        uint256 deployedAt = block.timestamp;
-        bytes32 salt = keccak256(abi.encodePacked(deployedAt, data, msgSender));
-        Escrow dstClone = Escrow(escrowFactory.addressOfEscrow(salt));
-        return (escrowImmutables, dstClone);
+        return (escrowImmutables, Escrow(escrowFactory.addressOfEscrow(data)));
     }
 
     function _buildDstEscrowImmutables(
@@ -287,28 +331,21 @@ contract BaseSetup is Test {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
+        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, taker, token);
+
+        IEscrow.DstEscrowImmutables memory args = IEscrow.DstEscrowImmutables({
+            orderHash: bytes32(block.timestamp), // fake order hash
+            hashlock: hashlock,
+            packedAddresses: packedAddresses,
+            amount: amount,
+            safetyDeposit: safetyDeposit,
+            timelocks: timelocksDst
+        });
         immutables = IEscrowFactory.DstEscrowImmutablesCreation(
-            hashlock,
-            maker,
-            taker,
-            token,
-            amount,
-            safetyDeposit,
-            dstTimelocks,
+            args,
             srcCancellationTimestamp
         );
-        data = abi.encode(
-            hashlock,
-            alice.addr,
-            bob.addr,
-            block.chainid,
-            address(dai),
-            amount,
-            safetyDeposit,
-            dstTimelocks.finality,
-            dstTimelocks.withdrawal,
-            dstTimelocks.publicWithdrawal
-        );
+        data = abi.encode(args);
     }
 
     function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns(MakerTraits) {
@@ -336,7 +373,18 @@ contract BaseSetup is Test {
         MakerTraits makerTraits,
         InteractionParams memory interactions,
         bytes memory customData
-    ) internal view returns(IOrderMixin.Order memory, bytes memory) {
+    ) internal pure returns(IOrderMixin.Order memory, bytes memory) {
+        MakerTraitsParams memory makerTraitsParams = MakerTraitsParams({
+            allowedSender: address(0),
+            shouldCheckEpoch: false,
+            allowPartialFill: true,
+            allowMultipleFills: true,
+            usePermit2: false,
+            unwrapWeth: false,
+            expiry: 0,
+            nonce: 0,
+            series: 0
+        });
         bytes[8] memory allInteractions = [
             interactions.makerAssetSuffix,
             interactions.takerAssetSuffix,

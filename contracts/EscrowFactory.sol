@@ -10,9 +10,9 @@ import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
-import { IEscrow } from "./interfaces/IEscrow.sol";
+import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
+import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-
 
 /**
  * @title Escrow Factory contract
@@ -21,8 +21,12 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
+    using PackedAddressesLib for PackedAddresses;
     using SafeERC20 for IERC20;
+    using TimelocksLib for Timelocks;
 
+    uint256 internal constant _EXTRA_DATA_PARAMS_OFFSET = 4;
+    uint256 internal constant _WHITELIST_OFFSET = 228;
     // Address of the escrow contract implementation to clone.
     address public immutable IMPLEMENTATION;
 
@@ -37,6 +41,10 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      * to a pre-computed deterministic address of the created escrow.
      * The external postInteraction function call will be made from the Limit Order Protocol
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
+     * `extraData` consists of:
+     *   - 4 bytes for the fee
+     *   - 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
+     *   - whitelist
      */
     function _postInteraction(
         IOrderMixin.Order calldata order,
@@ -48,93 +56,85 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) internal override {
-        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
-        extraData = extraData[4:];
+        {
+            bytes calldata whitelist = extraData[_WHITELIST_OFFSET:];
+            if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
+        }
 
-        bytes calldata extraDataParams = extraData[:352];
-        bytes calldata whitelist = extraData[352:];
-
-        if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
+        Timelocks timelocks = Timelocks.wrap(
+            uint256(bytes32(extraData[_WHITELIST_OFFSET-32:_WHITELIST_OFFSET]))
+        ).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
-        bytes memory interactionParams = abi.encode(
-            order.maker,
-            taker,
-            block.chainid, // srcChainId
-            order.makerAsset.get(), // srcToken
-            makingAmount, // srcAmount
-            takingAmount // dstAmount
-        );
-        bytes memory data = abi.encodePacked(
-            block.timestamp, // deployedAt
-            interactionParams,
-            extraDataParams
-        );
+        // 10 * 32 bytes
+        bytes memory data = new bytes(0x140);
+        // solhint-disable-next-line no-inline-assembly
+        assembly("memory-safe") {
+            mstore(add(data, 0x20), orderHash)
+            mstore(add(data, 0x40), makingAmount) // srcAmount
+            mstore(add(data, 0x60), takingAmount) // dstAmount
+            // Copy hashlock, packedAddresses, dstChainId, dstToken, deposits: 6 * 32 bytes
+            calldatacopy(add(data, 0x80), add(extraData.offset, _EXTRA_DATA_PARAMS_OFFSET), 0xc0)
+            mstore(add(data, 0x140), timelocks)
+        }
 
-        // Salt is orderHash
-        address escrow = _createEscrow(data, orderHash, 0);
-        uint256 safetyDeposit = abi.decode(extraDataParams, (IEscrow.ExtraDataParams)).srcSafetyDeposit;
+        address escrow = _createEscrow(data, 0);
+        // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
+        // srcSafetyDeposit is the first 16 bytes in the `deposits`
+        uint256 safetyDeposit = uint128(bytes16(extraData[100:116]));
         if (
             escrow.balance < safetyDeposit ||
-            IERC20(order.makerAsset.get()).balanceOf(escrow) < makingAmount
+            IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount
         ) revert InsufficientEscrowBalance();
 
+        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
         _chargeFee(taker, resolverFee);
     }
 
     /**
-     * @notice See {IEscrowFactory-createEscrow}.
+     * @notice See {IEscrowFactory-createEscrowDst}.
      */
-    function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable {
-        if (msg.value < dstEscrowImmutables.safetyDeposit) revert InsufficientEscrowBalance();
+    function createEscrowDst(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
+        if (msg.value < dstImmutables.args.safetyDeposit) revert InsufficientEscrowBalance();
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (
-            block.timestamp +
-            dstEscrowImmutables.timelocks.finality +
-            dstEscrowImmutables.timelocks.withdrawal +
-            dstEscrowImmutables.timelocks.publicWithdrawal >
-            dstEscrowImmutables.srcCancellationTimestamp
+            dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) >
+            dstImmutables.srcCancellationTimestamp
         ) revert InvalidCreationTime();
-        bytes memory data = abi.encode(
-            block.timestamp, // deployedAt
-            dstEscrowImmutables.hashlock,
-            dstEscrowImmutables.maker,
-            dstEscrowImmutables.taker,
-            block.chainid,
-            dstEscrowImmutables.token,
-            dstEscrowImmutables.amount,
-            dstEscrowImmutables.safetyDeposit,
-            dstEscrowImmutables.timelocks.finality,
-            dstEscrowImmutables.timelocks.withdrawal,
-            dstEscrowImmutables.timelocks.publicWithdrawal
-        );
-        bytes32 salt = keccak256(abi.encodePacked(data, msg.sender));
 
-        address escrow = _createEscrow(data, salt, msg.value);
-        IERC20(dstEscrowImmutables.token).safeTransferFrom(
-            msg.sender, escrow, dstEscrowImmutables.amount
+        // 7 * 32 bytes for DstEscrowImmutablesCreation
+        bytes memory data = new bytes(0xe0);
+        Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
+        // solhint-disable-next-line no-inline-assembly
+        assembly("memory-safe") {
+            // Copy DstEscrowImmutablesCreation excluding timelocks
+            calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
+            mstore(add(data, 0xe0), timelocks)
+        }
+
+        address escrow = _createEscrow(data, msg.value);
+        IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
+            msg.sender, escrow, dstImmutables.args.amount
         );
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrow}.
      */
-    function addressOfEscrow(bytes32 salt) public view returns (address) {
-        return address(uint160(ClonesWithImmutableArgs.addressOfClone3(salt)));
+    function addressOfEscrow(bytes memory data) public view returns (address) {
+        return ClonesWithImmutableArgs.addressOfClone2(IMPLEMENTATION, data);
     }
 
     /**
      * @notice Creates a new escrow contract with immutable arguments.
-     * @dev The escrow contract is a proxy clone created using the create3 pattern.
+     * @dev The escrow contract is a proxy clone created using the create2 pattern.
      * @param data Encoded immutable args.
-     * @param salt The salt that influences the contract address in deterministic deployment.
      * @return clone The address of the created escrow contract.
      */
     function _createEscrow(
         bytes memory data,
-        bytes32 salt,
         uint256 value
     ) private returns (address clone) {
-        clone = address(uint160(IMPLEMENTATION.clone3(data, salt, value)));
+        clone = IMPLEMENTATION.clone2(data, value);
     }
 }

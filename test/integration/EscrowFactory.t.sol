@@ -3,10 +3,13 @@ pragma solidity 0.8.23;
 
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
+import { PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
 
-import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
+import { Address, AddressLib, BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
 contract IntegrationEscrowFactoryTest is BaseSetup {
+    using AddressLib for Address;
+
     function setUp() public virtual override {
         BaseSetup.setUp();
     }
@@ -55,9 +58,9 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
-        assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
+        assertEq(PackedAddressesMemLib.taker(returnedImmutables.packedAddresses), bob.addr);
+        assertEq(returnedImmutables.dstToken.get(), address(dai));
     }
 
     function test_NoInsufficientBalanceDeploymentForMakerInt() public {

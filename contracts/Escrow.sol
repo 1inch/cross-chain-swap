@@ -7,6 +7,8 @@ import { Clone } from "clones-with-immutable-args/Clone.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
+import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
+import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 
 /**
@@ -14,11 +16,13 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
  * @notice Contract to initially lock funds on both chains and then unlock with verification of the secret presented.
  * @dev Funds are locked in at the time of contract deployment. On both chains this is done by calling `EscrowFactory`
  * functions. On the source chain Limit Order Protocol calls the `postInteraction` function and on the destination
- * chain taker calls the `createEscrow` function.
+ * chain taker calls the `createEscrowDst` function.
  * Withdrawal and cancellation functions for the source and destination chains are implemented separately.
  */
 contract Escrow is Clone, IEscrow {
     using SafeERC20 for IERC20;
+    using PackedAddressesLib for PackedAddresses;
+    using TimelocksLib for Timelocks;
 
     /**
      * @notice See {IEscrow-withdrawSrc}.
@@ -27,25 +31,28 @@ contract Escrow is Clone, IEscrow {
      */
     function withdrawSrc(bytes32 secret) external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
-        if (msg.sender != escrowImmutables.interactionParams.taker) revert InvalidCaller();
+        address taker = escrowImmutables.packedAddresses.taker();
+        if (msg.sender != taker) revert InvalidCaller();
 
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        // Check that it's public withdrawal period.
+        Timelocks timelocks = escrowImmutables.timelocks;
+        uint256 deployedAt = escrowImmutables.timelocks.deployedAt();
+
+        // Check that it's a withdrawal period.
         if (
-            block.timestamp < finalisedTimestamp ||
-            block.timestamp >= finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.withdrawal
+            block.timestamp < timelocks.srcWithdrawalStart(deployedAt) ||
+            block.timestamp >= timelocks.srcCancellationStart(deployedAt)
         ) revert InvalidWithdrawalTime();
 
         _checkSecretAndTransfer(
             secret,
-            escrowImmutables.extraDataParams.hashlock,
-            escrowImmutables.interactionParams.taker,
-            escrowImmutables.interactionParams.srcToken,
-            escrowImmutables.interactionParams.srcAmount
+            escrowImmutables.hashlock,
+            taker,
+            escrowImmutables.packedAddresses.token(),
+            escrowImmutables.srcAmount
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.srcSafetyDeposit}("");
+        (bool success, ) = msg.sender.call{value: escrowImmutables.deposits >> 128}("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -56,28 +63,29 @@ contract Escrow is Clone, IEscrow {
      */
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.extraDataParams.srcTimelocks.finality;
-        uint256 cancellationTimestamp = finalisedTimestamp + escrowImmutables.extraDataParams.srcTimelocks.withdrawal;
-        // Check that it's cancellation period.
-        if (block.timestamp < cancellationTimestamp) {
+        Timelocks timelocks = escrowImmutables.timelocks;
+        uint256 deployedAt = escrowImmutables.timelocks.deployedAt();
+
+        // Check that it's a cancellation period.
+        if (block.timestamp < timelocks.srcCancellationStart(deployedAt)) {
             revert InvalidCancellationTime();
         }
 
         // Check that the caller is a taker if it's the private cancellation period.
         if (
-            block.timestamp < cancellationTimestamp + escrowImmutables.extraDataParams.srcTimelocks.cancel &&
-            msg.sender != escrowImmutables.interactionParams.taker
+            block.timestamp < timelocks.srcPubCancellationStart(deployedAt) &&
+            msg.sender != escrowImmutables.packedAddresses.taker()
         ) {
             revert InvalidCaller();
         }
 
-        IERC20(escrowImmutables.interactionParams.srcToken).safeTransfer(
-            escrowImmutables.interactionParams.maker,
-            escrowImmutables.interactionParams.srcAmount
+        IERC20(escrowImmutables.packedAddresses.token()).safeTransfer(
+            escrowImmutables.packedAddresses.maker(),
+            escrowImmutables.srcAmount
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: escrowImmutables.extraDataParams.srcSafetyDeposit}("");
+        (bool success, ) = msg.sender.call{value: escrowImmutables.deposits >> 128}("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -88,22 +96,25 @@ contract Escrow is Clone, IEscrow {
      */
     function withdrawDst(bytes32 secret) external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
-        uint256 publicWithdrawalTimestamp = finalisedTimestamp + escrowImmutables.timelocks.withdrawal;
-        // Check that it's an withdrawal period.
+
+        uint256 deployedAt = escrowImmutables.timelocks.deployedAt();
+        // Check that it's a withdrawal period.
         if (
-            block.timestamp < finalisedTimestamp ||
-            block.timestamp >= publicWithdrawalTimestamp + escrowImmutables.timelocks.publicWithdrawal
+            block.timestamp < escrowImmutables.timelocks.dstWithdrawalStart(deployedAt) ||
+            block.timestamp >= escrowImmutables.timelocks.dstCancellationStart(deployedAt)
         ) revert InvalidWithdrawalTime();
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < publicWithdrawalTimestamp && msg.sender != escrowImmutables.taker) revert InvalidCaller();
+        if (
+            block.timestamp < escrowImmutables.timelocks.dstPubWithdrawalStart(deployedAt) &&
+            msg.sender != escrowImmutables.packedAddresses.taker()
+        ) revert InvalidCaller();
 
         _checkSecretAndTransfer(
             secret,
             escrowImmutables.hashlock,
-            escrowImmutables.maker,
-            escrowImmutables.token,
+            escrowImmutables.packedAddresses.maker(),
+            escrowImmutables.packedAddresses.token(),
             escrowImmutables.amount
         );
 
@@ -119,19 +130,18 @@ contract Escrow is Clone, IEscrow {
      */
     function cancelDst() external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
-        if (msg.sender != escrowImmutables.taker) revert InvalidCaller();
+        address taker = escrowImmutables.packedAddresses.taker();
+        if (msg.sender != taker) revert InvalidCaller();
 
-        uint256 finalisedTimestamp = escrowImmutables.deployedAt + escrowImmutables.timelocks.finality;
         // Check that it's a cancellation period.
         if (
-            block.timestamp <
-            finalisedTimestamp + escrowImmutables.timelocks.withdrawal + escrowImmutables.timelocks.publicWithdrawal
+            block.timestamp < escrowImmutables.timelocks.dstCancellationStart(escrowImmutables.timelocks.deployedAt())
         ) {
             revert InvalidCancellationTime();
         }
 
-        IERC20(escrowImmutables.token).safeTransfer(
-            escrowImmutables.taker,
+        IERC20(escrowImmutables.packedAddresses.token()).safeTransfer(
+            taker,
             escrowImmutables.amount
         );
 

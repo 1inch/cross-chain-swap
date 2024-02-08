@@ -87,7 +87,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.expectRevert(IEscrow.InvalidWithdrawalTime.selector);
@@ -142,7 +142,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceBob = bob.addr.balance;
@@ -200,7 +200,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
@@ -217,7 +217,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
@@ -234,7 +234,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceThis = address(this).balance;
@@ -260,7 +260,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceBob = bob.addr.balance;
@@ -319,7 +319,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 10);
@@ -480,7 +480,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceBobNative = bob.addr.balance;
@@ -506,7 +506,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal + 100);
@@ -522,7 +522,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
@@ -538,7 +538,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 100);
@@ -587,7 +587,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createEscrowDst{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal + 100);
