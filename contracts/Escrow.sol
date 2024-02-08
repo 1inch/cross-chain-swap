@@ -16,7 +16,7 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
  * @notice Contract to initially lock funds on both chains and then unlock with verification of the secret presented.
  * @dev Funds are locked in at the time of contract deployment. On both chains this is done by calling `EscrowFactory`
  * functions. On the source chain Limit Order Protocol calls the `postInteraction` function and on the destination
- * chain taker calls the `createEscrowDst` function.
+ * chain taker calls the `createDstEscrow` function.
  * Withdrawal and cancellation functions for the source and destination chains are implemented separately.
  */
 contract Escrow is Clone, IEscrow {
@@ -198,6 +198,11 @@ contract Escrow is Clone, IEscrow {
         uint256 amount
     ) internal {
         if (!_isValidSecret(secret, hashlock)) revert InvalidSecret();
-        IERC20(token).safeTransfer(recipient, amount);
+        if (token == address(0)) {
+            (bool success, ) = recipient.call{value: amount}("");
+            if (!success) revert NativeTokenSendingFailure();
+        } else {
+            IERC20(token).safeTransfer(recipient, amount);
+        }
     }
 }
