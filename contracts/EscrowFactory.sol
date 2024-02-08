@@ -100,15 +100,13 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
         }
         if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
 
-        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (
-            dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) >
-            dstImmutables.srcCancellationTimestamp
-        ) revert InvalidCreationTime();
-
         // 7 * 32 bytes for DstEscrowImmutablesCreation
         bytes memory data = new bytes(0xe0);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
+
+        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
+        if (timelocks.dstCancellationStart() > dstImmutables.srcCancellationTimestamp) revert InvalidCreationTime();
+
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
             // Copy DstEscrowImmutablesCreation excluding timelocks
