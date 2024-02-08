@@ -10,7 +10,7 @@ lcov \
     --rc branch_coverage=1 \
     --remove coverage/lcov.info \
     --output-file coverage/filtered-lcov.info \
-    "*test*"
+    "*test*" "contracts/mocks/*"
 
 # Generate summary
 lcov \

@@ -5,10 +5,16 @@ import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettleme
 
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { PackedAddresses, PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
+import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
-import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { Address, AddressLib, BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
+    using AddressLib for Address;
+    using PackedAddressesMemLib for PackedAddresses;
+    using TimelocksLib for Timelocks;
+
     function setUp() public virtual override {
         BaseSetup.setUp();
     }
@@ -42,9 +48,19 @@ contract EscrowFactoryTest is BaseSetup {
         );
 
         IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
-        assertEq(returnedImmutables.extraDataParams.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(returnedImmutables.interactionParams.srcAmount, srcAmount);
-        assertEq(returnedImmutables.extraDataParams.dstToken, address(dai));
+        assertEq(returnedImmutables.orderHash, orderHash);
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
+        assertEq(returnedImmutables.srcAmount, srcAmount);
+        assertEq(returnedImmutables.dstToken.get(), address(dai));
+        assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
+        assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
+        assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
+        assertEq(returnedImmutables.timelocks.srcFinalityDuration(), srcTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.srcWithdrawalDuration(), srcTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.srcCancellationDuration(), srcTimelocks.cancel);
+        assertEq(returnedImmutables.timelocks.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
@@ -60,16 +76,23 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: safetyDeposit}(immutables);
+        escrowFactory.createDstEscrow{value: safetyDeposit}(immutables);
 
-        assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);
+        assertEq(bob.addr.balance, balanceBobNative - immutables.args.safetyDeposit);
         assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount);
         assertEq(address(dstClone).balance, balanceEscrowNative + safetyDeposit);
 
         IEscrow.DstEscrowImmutables memory returnedImmutables = dstClone.dstEscrowImmutables();
+        assertEq(returnedImmutables.orderHash, bytes32(block.timestamp));
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(returnedImmutables.amount, amount);
+        assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
+        assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
+        assertEq(returnedImmutables.packedAddresses.token(), address(dai));
+        assertEq(returnedImmutables.timelocks.dstFinalityDuration(), dstTimelocks.finality);
+        assertEq(returnedImmutables.timelocks.dstWithdrawalDuration(), dstTimelocks.withdrawal);
+        assertEq(returnedImmutables.timelocks.dstPubWithdrawalDuration(), dstTimelocks.publicWithdrawal);
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
@@ -151,23 +174,38 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
 
         vm.warp(immutables.srcCancellationTimestamp + 1);
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
-        escrowFactory.createEscrow(immutables);
+        escrowFactory.createDstEscrow(immutables);
+    }
+
+    function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
+        );
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
     }
 
     /* solhint-enable func-name-mixedcase */

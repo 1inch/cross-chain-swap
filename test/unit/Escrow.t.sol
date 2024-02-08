@@ -87,7 +87,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.expectRevert(IEscrow.InvalidWithdrawalTime.selector);
@@ -134,6 +134,201 @@ contract EscrowTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
+    function test_RescueFundsSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        assertEq(usdc.balanceOf(address(srcClone)), 0);
+        assertEq(address(srcClone).balance, 0);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceBob = usdc.balanceOf(bob.addr);
+        uint256 balanceBobNative = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.startPrank(bob.addr);
+        srcClone.withdrawSrc(SECRET);
+
+        assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+
+        // rescue
+        vm.warp(block.timestamp + RESCUE_DELAY);
+        srcClone.rescueFundsSrc(address(usdc), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(srcClone)), 0);
+    }
+
+    function test_RescueFundsSrcNative() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        assertEq(usdc.balanceOf(address(srcClone)), 0);
+        assertEq(address(srcClone).balance, 0);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT + MAKING_AMOUNT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceBob = usdc.balanceOf(bob.addr);
+        uint256 balanceBobNative = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.startPrank(bob.addr);
+        srcClone.withdrawSrc(SECRET);
+
+        assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), 0);
+        assertEq(address(srcClone).balance, MAKING_AMOUNT);
+
+        // rescue
+        vm.warp(block.timestamp + RESCUE_DELAY);
+        srcClone.rescueFundsSrc(address(0), MAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT + MAKING_AMOUNT);
+        assertEq(address(srcClone).balance, 0);
+    }
+
+    function test_NoRescueFundsEarlierSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        assertEq(usdc.balanceOf(address(srcClone)), 0);
+        assertEq(address(srcClone).balance, 0);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceBob = usdc.balanceOf(bob.addr);
+        uint256 balanceBobNative = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.startPrank(bob.addr);
+        srcClone.withdrawSrc(SECRET);
+
+        assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+
+        // rescue
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.expectRevert(IEscrow.InvalidRescueTime.selector);
+        srcClone.rescueFundsSrc(address(usdc), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+    }
+
+    function test_NoRescueFundsByAnyoneSrc() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+
+        assertEq(usdc.balanceOf(address(srcClone)), 0);
+        assertEq(address(srcClone).balance, 0);
+
+        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceBob = usdc.balanceOf(bob.addr);
+        uint256 balanceBobNative = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.prank(bob.addr);
+        srcClone.withdrawSrc(SECRET);
+
+        assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+
+        // rescue
+        vm.warp(block.timestamp + RESCUE_DELAY);
+        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        srcClone.rescueFundsSrc(address(usdc), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+    }
+
     function test_WithdrawByResolverDst() public {
         (
             IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
@@ -142,7 +337,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceBob = bob.addr.balance;
@@ -157,6 +352,169 @@ contract EscrowTest is BaseSetup {
         assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - TAKING_AMOUNT);
         assertEq(address(dstClone).balance, balanceEscrowNative - DST_SAFETY_DEPOSIT);
+    }
+
+    function test_WithdrawByResolverDstNative() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00));
+
+        // deploy escrow
+        vm.startPrank(bob.addr);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT + TAKING_AMOUNT}(immutables);
+
+        uint256 balanceAlice = alice.addr.balance;
+        uint256 balanceBob = bob.addr.balance;
+        uint256 balanceEscrow = address(dstClone).balance;
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(alice.addr.balance, balanceAlice + TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(address(dstClone).balance, balanceEscrow - DST_SAFETY_DEPOSIT - TAKING_AMOUNT);
+    }
+
+    function test_RescueFundsDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        assertEq(dai.balanceOf(address(dstClone)), 0);
+        assertEq(address(dstClone).balance, 0);
+
+        vm.startPrank(bob.addr);
+        dai.transfer(address(dstClone), DST_SAFETY_DEPOSIT);
+
+        // deploy escrow
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
+        uint256 balanceBob = dai.balanceOf(bob.addr);
+        uint256 balanceBobNative = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBobNative + DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), DST_SAFETY_DEPOSIT);
+        assertEq(address(dstClone).balance, 0);
+
+        // rescue
+        vm.warp(block.timestamp + RESCUE_DELAY);
+        dstClone.rescueFundsDst(address(dai), DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(bob.addr), balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), 0);
+    }
+
+    function test_RescueFundsDstNative() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        assertEq(address(dstClone).balance, 0);
+
+        vm.startPrank(bob.addr);
+        (bool success,) = address(dstClone).call{value: TAKING_AMOUNT}("");
+        assertEq(success, true);
+
+        // deploy escrow
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
+        uint256 balanceBob = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), 0);
+        assertEq(address(dstClone).balance, TAKING_AMOUNT);
+
+        // rescue
+        vm.warp(block.timestamp + RESCUE_DELAY);
+        dstClone.rescueFundsDst(address(0), TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT + TAKING_AMOUNT);
+        assertEq(address(dstClone).balance, 0);
+    }
+
+    function test_NoRescueFundsEarlierDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        assertEq(address(dstClone).balance, 0);
+
+        vm.startPrank(bob.addr);
+        (bool success,) = address(dstClone).call{value: TAKING_AMOUNT}("");
+        assertEq(success, true);
+
+        // deploy escrow
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
+        uint256 balanceBob = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), 0);
+        assertEq(address(dstClone).balance, TAKING_AMOUNT);
+
+        // rescue
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+        vm.expectRevert(IEscrow.InvalidRescueTime.selector);
+        dstClone.rescueFundsDst(address(0), TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(address(dstClone).balance, TAKING_AMOUNT);
+    }
+
+    function test_NoRescueFundsByAnyoneDst() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+
+        assertEq(address(dstClone).balance, 0);
+
+        vm.startPrank(bob.addr);
+        (bool success,) = address(dstClone).call{value: TAKING_AMOUNT}("");
+        assertEq(success, true);
+
+        // deploy escrow
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
+        uint256 balanceBob = bob.addr.balance;
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+        dstClone.withdrawDst(SECRET);
+
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(address(dstClone)), 0);
+        assertEq(address(dstClone).balance, TAKING_AMOUNT);
+
+        // rescue
+        vm.warp(block.timestamp + RESCUE_DELAY);
+        vm.stopPrank();
+        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        dstClone.rescueFundsDst(address(0), TAKING_AMOUNT);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(address(dstClone).balance, TAKING_AMOUNT);
     }
 
     function test_NoWithdrawalWithWrongSecretSrc() public {
@@ -200,7 +558,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
@@ -217,7 +575,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
@@ -234,7 +592,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceThis = address(this).balance;
@@ -260,7 +618,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         uint256 balanceBob = bob.addr.balance;
@@ -319,11 +677,27 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 10);
         vm.prank(address(escrowFactory));
+        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        dstClone.withdrawDst(SECRET);
+    }
+
+    function test_NoFailedNativeTokenTransferWithdrawalDstNative() public {
+        (
+            IEscrowFactory.DstEscrowImmutablesCreation memory immutables,
+            Escrow dstClone
+        ) = _prepareDataDst(SECRET, TAKING_AMOUNT, address(escrowFactory), bob.addr, address(0x00));
+
+        // deploy escrow
+        vm.startPrank(bob.addr);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT + TAKING_AMOUNT}(immutables);
+
+        // withdraw
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
         vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
         dstClone.withdrawDst(SECRET);
     }
@@ -480,7 +854,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceBobNative = bob.addr.balance;
@@ -506,7 +880,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal + 100);
@@ -522,7 +896,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + 100);
@@ -538,7 +912,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 100);
@@ -587,7 +961,7 @@ contract EscrowTest is BaseSetup {
 
         // deploy escrow
         vm.startPrank(bob.addr);
-        escrowFactory.createEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal + 100);

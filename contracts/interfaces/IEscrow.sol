@@ -2,80 +2,47 @@
 
 pragma solidity ^0.8.0;
 
+import { Address } from "solidity-utils/libraries/AddressLib.sol";
+
+import { PackedAddresses } from "../libraries/PackedAddressesLib.sol";
+import { Timelocks } from "../libraries/TimelocksLib.sol";
+
 interface IEscrow {
-    // TODO: is it possible to optimise this?
-    /**
-     * Timelocks for the source chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
-     * cancel: The duration of the period when escrow can only be cancelled by the taker.
-     */
-    struct SrcTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 cancel;
-    }
-
-    /**
-     * Timelocks for the destination chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
-     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
-     */
-    struct DstTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 publicWithdrawal;
-    }
-
-    // Data for the immutables from the order post interacton.
-    struct InteractionParams {
-        address maker;
-        address taker;
-        uint256 srcChainId;
-        address srcToken;
-        uint256 srcAmount;
-        uint256 dstAmount;
-    }
-
-    // Data for the immutables from the order extension.
-    struct ExtraDataParams {
-        // Hash of the secret.
-        bytes32 hashlock;
-        uint256 dstChainId;
-        address dstToken;
-        uint256 srcSafetyDeposit;
-        uint256 dstSafetyDeposit;
-        SrcTimelocks srcTimelocks;
-        DstTimelocks dstTimelocks;
-    }
-
     // Data for the source chain order immutables.
     struct SrcEscrowImmutables {
-        uint256 deployedAt;
-        InteractionParams interactionParams;
-        ExtraDataParams extraDataParams;
+        bytes32 orderHash;
+        uint256 srcAmount;
+        uint256 dstAmount;
+        // --- Extra data ---
+        // Hash of the secret.
+        bytes32 hashlock;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
+        uint256 dstChainId;
+        Address dstToken;
+        // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
+        uint256 deposits;
+        Timelocks timelocks;
     }
 
     /**
      * Data for the destination chain order immutables.
-     * chainId, token, amount and safetyDeposit relate to the destination chain.
+     * token, amount and safetyDeposit are related to the destination chain.
     */
     struct DstEscrowImmutables {
-        uint256 deployedAt;
+        bytes32 orderHash;
         // Hash of the secret.
         bytes32 hashlock;
-        address maker;
-        address taker;
-        uint256 chainId;
-        address token;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
         uint256 amount;
         uint256 safetyDeposit;
-        DstTimelocks timelocks;
+        Timelocks timelocks;
     }
 
     error InvalidCaller();
     error InvalidCancellationTime();
+    error InvalidRescueTime();
     error InvalidSecret();
     error InvalidWithdrawalTime();
     error NativeTokenSendingFailure();
@@ -98,6 +65,14 @@ interface IEscrow {
     function cancelSrc() external;
 
     /**
+     * @notice Rescues funds from the escrow on the source chain.
+     * @dev Funds can only be rescued by the taker after the rescue delay.
+     * @param token The address of the token to rescue. Zero address for native token.
+     * @param amount The amount of tokens to rescue.
+     */
+    function rescueFundsSrc(address token, uint256 amount) external;
+
+    /**
      * @notice Withdraws funds to the maker on the destination chain.
      * @dev Withdrawal can only be made by taker during the private withdrawal period or by anyone
      * during the public withdrawal period. In both cases, a secret with hash matching the hashlock must be provided.
@@ -112,6 +87,14 @@ interface IEscrow {
      * The safety deposit is sent to the caller (taker).
      */
     function cancelDst() external;
+
+    /**
+     * @notice Rescues funds from the escrow on the destination chain.
+     * @dev Funds can only be rescued by the taker after the rescue delay.
+     * @param token The address of the token to rescue. Zero address for native token.
+     * @param amount The amount of tokens to rescue.
+     */
+    function rescueFundsDst(address token, uint256 amount) external;
 
     /**
      * @notice Returns the immutable parameters of the escrow contract on the source chain.
