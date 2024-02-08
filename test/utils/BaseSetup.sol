@@ -99,6 +99,7 @@ contract BaseSetup is Test {
     uint256 internal constant SRC_SAFETY_DEPOSIT = 0.03 ether;
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
+    uint256 internal constant RESCUE_DELAY = 604800; // 7 days
 
     VmSafe.Wallet[] internal users;
 
@@ -190,7 +191,7 @@ contract BaseSetup is Test {
     function _deployContracts() internal {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
 
-        escrow = new Escrow();
+        escrow = new Escrow(RESCUE_DELAY);
         vm.label(address(escrow), "Escrow");
         escrowFactory = new EscrowFactory(address(escrow), address(limitOrderProtocol), inch);
         vm.label(address(escrowFactory), "EscrowFactory");

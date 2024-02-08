@@ -42,6 +42,7 @@ interface IEscrow {
 
     error InvalidCaller();
     error InvalidCancellationTime();
+    error InvalidRescueTime();
     error InvalidSecret();
     error InvalidWithdrawalTime();
     error NativeTokenSendingFailure();
@@ -64,6 +65,14 @@ interface IEscrow {
     function cancelSrc() external;
 
     /**
+     * @notice Rescues funds from the escrow on the source chain.
+     * @dev Funds can only be rescued by the taker after the rescue delay.
+     * @param token The address of the token to rescue. Zero address for native token.
+     * @param amount The amount of tokens to rescue.
+     */
+    function rescueFundsSrc(address token, uint256 amount) external;
+
+    /**
      * @notice Withdraws funds to the maker on the destination chain.
      * @dev Withdrawal can only be made by taker during the private withdrawal period or by anyone
      * during the public withdrawal period. In both cases, a secret with hash matching the hashlock must be provided.
@@ -78,6 +87,14 @@ interface IEscrow {
      * The safety deposit is sent to the caller (taker).
      */
     function cancelDst() external;
+
+    /**
+     * @notice Rescues funds from the escrow on the destination chain.
+     * @dev Funds can only be rescued by the taker after the rescue delay.
+     * @param token The address of the token to rescue. Zero address for native token.
+     * @param amount The amount of tokens to rescue.
+     */
+    function rescueFundsDst(address token, uint256 amount) external;
 
     /**
      * @notice Returns the immutable parameters of the escrow contract on the source chain.

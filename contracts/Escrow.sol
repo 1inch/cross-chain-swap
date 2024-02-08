@@ -24,6 +24,12 @@ contract Escrow is Clone, IEscrow {
     using PackedAddressesLib for PackedAddresses;
     using TimelocksLib for Timelocks;
 
+    uint256 immutable public RESCUE_DELAY;
+
+    constructor(uint256 rescueDelay) {
+        RESCUE_DELAY = rescueDelay;
+    }
+
     /**
      * @notice See {IEscrow-withdrawSrc}.
      * @dev The function works on the time interval highlighted with capital letters:
@@ -64,7 +70,7 @@ contract Escrow is Clone, IEscrow {
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         Timelocks timelocks = escrowImmutables.timelocks;
-        uint256 deployedAt = escrowImmutables.timelocks.deployedAt();
+        uint256 deployedAt = timelocks.deployedAt();
 
         // Check that it's a cancellation period.
         if (block.timestamp < timelocks.srcCancellationStart(deployedAt)) {
@@ -90,23 +96,33 @@ contract Escrow is Clone, IEscrow {
     }
 
     /**
+     * @notice See {IEscrow-rescueFundsSrc}.
+     */
+    function rescueFundsSrc(address token, uint256 amount) external {
+        SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
+        if (msg.sender != escrowImmutables.packedAddresses.taker()) revert InvalidCaller();
+        _rescueFunds(escrowImmutables.timelocks.deployedAt(), token, amount);
+    }
+
+    /**
      * @notice See {IEscrow-withdrawDst}.
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancel ----
      */
     function withdrawDst(bytes32 secret) external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
+        Timelocks timelocks = escrowImmutables.timelocks;
 
-        uint256 deployedAt = escrowImmutables.timelocks.deployedAt();
+        uint256 deployedAt = timelocks.deployedAt();
         // Check that it's a withdrawal period.
         if (
-            block.timestamp < escrowImmutables.timelocks.dstWithdrawalStart(deployedAt) ||
-            block.timestamp >= escrowImmutables.timelocks.dstCancellationStart(deployedAt)
+            block.timestamp < timelocks.dstWithdrawalStart(deployedAt) ||
+            block.timestamp >= timelocks.dstCancellationStart(deployedAt)
         ) revert InvalidWithdrawalTime();
 
         // Check that the caller is a taker if it's the private withdrawal period.
         if (
-            block.timestamp < escrowImmutables.timelocks.dstPubWithdrawalStart(deployedAt) &&
+            block.timestamp < timelocks.dstPubWithdrawalStart(deployedAt) &&
             msg.sender != escrowImmutables.packedAddresses.taker()
         ) revert InvalidCaller();
 
@@ -148,6 +164,15 @@ contract Escrow is Clone, IEscrow {
         // Send the safety deposit to the caller.
         (bool success, ) = msg.sender.call{value: escrowImmutables.safetyDeposit}("");
         if (!success) revert NativeTokenSendingFailure();
+    }
+
+    /**
+     * @notice See {IEscrow-rescueFundsDst}.
+     */
+    function rescueFundsDst(address token, uint256 amount) external {
+        DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
+        if (msg.sender != escrowImmutables.packedAddresses.taker()) revert InvalidCaller();
+        _rescueFunds(escrowImmutables.timelocks.deployedAt(), token, amount);
     }
 
     /**
@@ -198,11 +223,20 @@ contract Escrow is Clone, IEscrow {
         uint256 amount
     ) internal {
         if (!_isValidSecret(secret, hashlock)) revert InvalidSecret();
+        _uniTransfer(token, recipient, amount);
+    }
+
+    function _rescueFunds(uint256 deployedAt, address token, uint256 amount) internal {
+        if (block.timestamp < deployedAt + RESCUE_DELAY) revert InvalidRescueTime();
+        _uniTransfer(token, msg.sender, amount);
+    }
+
+    function _uniTransfer(address token, address to, uint256 amount) internal {
         if (token == address(0)) {
-            (bool success, ) = recipient.call{value: amount}("");
+            (bool success, ) = to.call{value: amount}("");
             if (!success) revert NativeTokenSendingFailure();
         } else {
-            IERC20(token).safeTransfer(recipient, amount);
+            IERC20(token).safeTransfer(to, amount);
         }
     }
 }
