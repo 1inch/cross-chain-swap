@@ -3,7 +3,7 @@
 pragma solidity 0.8.23;
 
 /**
- * @dev Timelocks for the source and the destination chains.
+ * @dev Timelocks for the source and the destination chains plus the deployment timestamp.
  * For illustrative purposes, it is possible to describe timelocks by two structures:
  * struct SrcTimelocks {
  *     uint256 finality;
@@ -49,6 +49,11 @@ library TimelocksLib {
         return Timelocks.wrap((Timelocks.unwrap(timelocks) & ~uint256(type(uint40).max)) | uint40(value));
     }
 
+    /**
+     * @notice Returns the start of the rescue period.
+     * @param timelocks The timelocks to get the rescue delay from.
+     * @return The start of the rescue period.
+     */
     function rescueStart(Timelocks timelocks, uint256 rescueDelay) internal pure returns (uint256) {
         unchecked {
             return uint40(Timelocks.unwrap(timelocks)) + rescueDelay;

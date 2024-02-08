@@ -28,6 +28,7 @@ contract TimelocksLibTest is BaseSetup {
             timestamp
         );
 
+        assertEq(timelocksTest.rescueStart(RESCUE_DELAY), timestamp + RESCUE_DELAY);
         assertEq(timelocksTest.srcWithdrawalStart(), timestamp + srcTimelocks.finality);
         assertEq(timelocksTest.srcCancellationStart(), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
         assertEq(timelocksTest.srcPubCancellationStart(), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
