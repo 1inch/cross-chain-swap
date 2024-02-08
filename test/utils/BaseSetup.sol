@@ -247,6 +247,7 @@ contract BaseSetup is Test {
         );
 
         bytes memory whitelist = abi.encodePacked(
+            uint8(16), // length
             uint32(block.timestamp), // auction start time
             uint80(uint160(bob.addr)), // resolver address
             uint16(0) // time delta
@@ -266,9 +267,10 @@ contract BaseSetup is Test {
         } else {
             bytes memory postInteractionData = abi.encodePacked(
                 address(escrowFactory),
-                RESOLVER_FEE,
                 extraData,
-                whitelist
+                whitelist,
+                RESOLVER_FEE,
+                bytes1(0x01)
             );
 
             (order, extension) = _buildOrder(
@@ -296,9 +298,10 @@ contract BaseSetup is Test {
 
         srcClone = Escrow(escrowFactory.addressOfEscrow(data));
         extraData = abi.encodePacked(
-            RESOLVER_FEE,
             extraData,
-            whitelist
+            whitelist,
+            RESOLVER_FEE,
+            bytes1(0x01)
         );
     }
 

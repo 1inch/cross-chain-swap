@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettlementExtension.sol";
+import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
@@ -159,7 +159,7 @@ contract EscrowFactoryTest is BaseSetup {
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(SimpleSettlementExtension.ResolverIsNotWhitelisted.selector);
+        vm.expectRevert(WhitelistExtension.ResolverIsNotWhitelisted.selector);
         escrowFactory.postInteraction(
             order,
             "", // extension
