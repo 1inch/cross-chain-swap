@@ -28,6 +28,7 @@ contract Escrow is Clone, IEscrow {
 
     constructor(uint256 rescueDelay) {
         RESCUE_DELAY = rescueDelay;
+        if (rescueDelay > type(uint32).max) revert InvalidRescueDelay();
     }
 
     /**
@@ -41,12 +42,11 @@ contract Escrow is Clone, IEscrow {
         if (msg.sender != taker) revert InvalidCaller();
 
         Timelocks timelocks = escrowImmutables.timelocks;
-        uint256 deployedAt = escrowImmutables.timelocks.deployedAt();
 
         // Check that it's a withdrawal period.
         if (
-            block.timestamp < timelocks.srcWithdrawalStart(deployedAt) ||
-            block.timestamp >= timelocks.srcCancellationStart(deployedAt)
+            block.timestamp < timelocks.srcWithdrawalStart() ||
+            block.timestamp >= timelocks.srcCancellationStart()
         ) revert InvalidWithdrawalTime();
 
         _checkSecretAndTransfer(
@@ -70,16 +70,15 @@ contract Escrow is Clone, IEscrow {
     function cancelSrc() external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         Timelocks timelocks = escrowImmutables.timelocks;
-        uint256 deployedAt = timelocks.deployedAt();
 
         // Check that it's a cancellation period.
-        if (block.timestamp < timelocks.srcCancellationStart(deployedAt)) {
+        if (block.timestamp < timelocks.srcCancellationStart()) {
             revert InvalidCancellationTime();
         }
 
         // Check that the caller is a taker if it's the private cancellation period.
         if (
-            block.timestamp < timelocks.srcPubCancellationStart(deployedAt) &&
+            block.timestamp < timelocks.srcPubCancellationStart() &&
             msg.sender != escrowImmutables.packedAddresses.taker()
         ) {
             revert InvalidCaller();
@@ -101,7 +100,7 @@ contract Escrow is Clone, IEscrow {
     function rescueFundsSrc(address token, uint256 amount) external {
         SrcEscrowImmutables calldata escrowImmutables = srcEscrowImmutables();
         if (msg.sender != escrowImmutables.packedAddresses.taker()) revert InvalidCaller();
-        _rescueFunds(escrowImmutables.timelocks.deployedAt(), token, amount);
+        _rescueFunds(escrowImmutables.timelocks, token, amount);
     }
 
     /**
@@ -113,16 +112,15 @@ contract Escrow is Clone, IEscrow {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         Timelocks timelocks = escrowImmutables.timelocks;
 
-        uint256 deployedAt = timelocks.deployedAt();
         // Check that it's a withdrawal period.
         if (
-            block.timestamp < timelocks.dstWithdrawalStart(deployedAt) ||
-            block.timestamp >= timelocks.dstCancellationStart(deployedAt)
+            block.timestamp < timelocks.dstWithdrawalStart() ||
+            block.timestamp >= timelocks.dstCancellationStart()
         ) revert InvalidWithdrawalTime();
 
         // Check that the caller is a taker if it's the private withdrawal period.
         if (
-            block.timestamp < timelocks.dstPubWithdrawalStart(deployedAt) &&
+            block.timestamp < timelocks.dstPubWithdrawalStart() &&
             msg.sender != escrowImmutables.packedAddresses.taker()
         ) revert InvalidCaller();
 
@@ -151,7 +149,7 @@ contract Escrow is Clone, IEscrow {
 
         // Check that it's a cancellation period.
         if (
-            block.timestamp < escrowImmutables.timelocks.dstCancellationStart(escrowImmutables.timelocks.deployedAt())
+            block.timestamp < escrowImmutables.timelocks.dstCancellationStart()
         ) {
             revert InvalidCancellationTime();
         }
@@ -172,7 +170,7 @@ contract Escrow is Clone, IEscrow {
     function rescueFundsDst(address token, uint256 amount) external {
         DstEscrowImmutables calldata escrowImmutables = dstEscrowImmutables();
         if (msg.sender != escrowImmutables.packedAddresses.taker()) revert InvalidCaller();
-        _rescueFunds(escrowImmutables.timelocks.deployedAt(), token, amount);
+        _rescueFunds(escrowImmutables.timelocks, token, amount);
     }
 
     /**
@@ -226,8 +224,8 @@ contract Escrow is Clone, IEscrow {
         _uniTransfer(token, recipient, amount);
     }
 
-    function _rescueFunds(uint256 deployedAt, address token, uint256 amount) internal {
-        if (block.timestamp < deployedAt + RESCUE_DELAY) revert InvalidRescueTime();
+    function _rescueFunds(Timelocks timelocks, address token, uint256 amount) internal {
+        if (block.timestamp < timelocks.rescueStart(RESCUE_DELAY)) revert InvalidRescueTime();
         _uniTransfer(token, msg.sender, amount);
     }
 
