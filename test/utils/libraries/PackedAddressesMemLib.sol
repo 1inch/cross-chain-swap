@@ -6,7 +6,7 @@ import { PackedAddresses, PackedAddressesLib } from "contracts/libraries/PackedA
 
 library PackedAddressesMemLib {
     /**
-     * @notice Packs the addresses into two uint256 values.
+     * @notice Packs the addresses into two bytes32 values.
      * @param makerAddr The maker address.
      * @param takerAddr The taker address.
      * @param tokenAddr The token address.
@@ -14,8 +14,8 @@ library PackedAddressesMemLib {
      */
     function packAddresses(address makerAddr, address takerAddr, address tokenAddr) internal pure returns (PackedAddresses memory) {
         return PackedAddresses({
-            addressesPart1: uint256(uint256(uint160(makerAddr)) << 96 | (uint160(takerAddr) >> 80)),
-            addressesPart2: uint256(uint256(uint160(takerAddr)) << 176 | uint160(tokenAddr))
+            addressesPart1: bytes32(bytes20(makerAddr)) | bytes32(bytes20(takerAddr)) >> 176,
+            addressesPart2: bytes32(bytes20(takerAddr)) << 80 | bytes32(bytes20(tokenAddr)) >> 96
         });
     }
 
