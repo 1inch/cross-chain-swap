@@ -28,15 +28,15 @@ library TimelocksSettersLib {
         uint256 dstPubWithdrawal,
         uint256 deployedAtVal
     ) internal pure returns (Timelocks) {
-        return Timelocks.wrap(
-            0 | ((srcFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_FINALITY_OFFSET)
-                | ((srcWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_WITHDRAWAL_OFFSET)
-                | ((srcCancellation & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_CANCELLATION_OFFSET)
-                | ((dstFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET)
-                | ((dstWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
-                | ((dstPubWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
-                | uint32(deployedAtVal)
-        );
+        uint256 data = 0
+            | ((srcFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_FINALITY_OFFSET)
+            | ((srcWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_WITHDRAWAL_OFFSET)
+            | ((srcCancellation & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._SRC_CANCELLATION_OFFSET)
+            | ((dstFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET)
+            | ((dstWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
+            | ((dstPubWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
+            | uint32(deployedAtVal);
+        return Timelocks.wrap(data);
     }
 
     /**

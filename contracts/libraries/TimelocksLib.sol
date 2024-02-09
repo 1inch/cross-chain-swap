@@ -94,7 +94,9 @@ library TimelocksLib {
     function srcPubCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
         unchecked {
             uint256 data = Timelocks.unwrap(timelocks);
-            return (data + (data >> _SRC_FINALITY_OFFSET) + (data >> _SRC_WITHDRAWAL_OFFSET) + (data >> _SRC_CANCELLATION_OFFSET)) & _TIMELOCK_MASK;
+            return (
+                data + (data >> _SRC_FINALITY_OFFSET) + (data >> _SRC_WITHDRAWAL_OFFSET) + (data >> _SRC_CANCELLATION_OFFSET)
+            ) & _TIMELOCK_MASK;
         }
     }
 
@@ -132,7 +134,9 @@ library TimelocksLib {
     function dstCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
         unchecked {
             uint256 data = Timelocks.unwrap(timelocks);
-            return (data + (data >> _DST_FINALITY_OFFSET) + (data >> _DST_WITHDRAWAL_OFFSET) + (data >> _DST_PUB_WITHDRAWAL_OFFSET)) & _TIMELOCK_MASK;
+            return (
+                data + (data >> _DST_FINALITY_OFFSET) + (data >> _DST_WITHDRAWAL_OFFSET) + (data >> _DST_PUB_WITHDRAWAL_OFFSET)
+            ) & _TIMELOCK_MASK;
         }
     }
 }

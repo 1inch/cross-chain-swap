@@ -224,8 +224,7 @@ contract BaseSetup is Test {
         bytes memory extension,
         Escrow srcClone
     ) {
-        PackedAddresses memory packedAddresses =
-            PackedAddressesMemLib.packAddresses(alice.addr, bob.addr, address(usdc));
+        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(alice.addr, bob.addr, address(usdc));
         extraData = _buidDynamicData(
             secret,
             packedAddresses,
@@ -253,8 +252,7 @@ contract BaseSetup is Test {
                 makerTraits: MakerTraits.wrap(0)
             });
         } else {
-            bytes memory postInteractionData =
-                abi.encodePacked(address(escrowFactory), RESOLVER_FEE, extraData, whitelist);
+            bytes memory postInteractionData = abi.encodePacked(address(escrowFactory), RESOLVER_FEE, extraData, whitelist);
 
             (order, extension) = _buildOrder(
                 alice.addr,
@@ -283,8 +281,9 @@ contract BaseSetup is Test {
         address taker,
         address token
     ) internal view returns (IEscrowFactory.DstEscrowImmutablesCreation memory, Escrow) {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables, bytes memory data) =
-            _buildDstEscrowImmutables(secret, amount, maker, taker, token);
+        (IEscrowFactory.DstEscrowImmutablesCreation memory escrowImmutables, bytes memory data) = _buildDstEscrowImmutables(
+            secret, amount, maker, taker, token
+        );
         return (escrowImmutables, Escrow(escrowFactory.addressOfEscrow(data)));
     }
 
@@ -313,18 +312,17 @@ contract BaseSetup is Test {
     }
 
     function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns (MakerTraits) {
-        return MakerTraits.wrap(
-            0
-                | params.series << 160
-                | params.nonce << 120
-                | params.expiry << 80
-                | uint160(params.allowedSender) & ((1 << 80) - 1)
-                | (params.unwrapWeth == true ? _UNWRAP_WETH_FLAG : 0)
-                | (params.allowMultipleFills == true ? _ALLOW_MULTIPLE_FILLS_FLAG : 0)
-                | (params.allowPartialFill == false ? _NO_PARTIAL_FILLS_FLAG : 0)
-                | (params.shouldCheckEpoch == true ? _NEED_CHECK_EPOCH_MANAGER_FLAG : 0)
-                | (params.usePermit2 == true ? _USE_PERMIT2_FLAG : 0)
-        );
+        uint256 data = 0
+            | params.series << 160
+            | params.nonce << 120
+            | params.expiry << 80
+            | uint160(params.allowedSender) & ((1 << 80) - 1)
+            | (params.unwrapWeth == true ? _UNWRAP_WETH_FLAG : 0)
+            | (params.allowMultipleFills == true ? _ALLOW_MULTIPLE_FILLS_FLAG : 0)
+            | (params.allowPartialFill == false ? _NO_PARTIAL_FILLS_FLAG : 0)
+            | (params.shouldCheckEpoch == true ? _NEED_CHECK_EPOCH_MANAGER_FLAG : 0)
+            | (params.usePermit2 == true ? _USE_PERMIT2_FLAG : 0);
+        return MakerTraits.wrap(data);
     }
 
     function _buildOrder(
@@ -425,16 +423,15 @@ contract BaseSetup is Test {
         bytes memory interaction,
         uint256 threshold
     ) internal pure returns (TakerTraits, bytes memory) {
-        TakerTraits traits = TakerTraits.wrap(
-            threshold
-                | (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0)
-                | (unwrapWeth ? _UNWRAP_WETH_FLAG_TT : 0)
-                | (skipMakerPermit ? _SKIP_ORDER_PERMIT_FLAG : 0)
-                | (usePermit2 ? _USE_PERMIT2_FLAG_TT : 0)
-                | (target != address(0) ? _ARGS_HAS_TARGET : 0)
-                | (extension.length << _ARGS_EXTENSION_LENGTH_OFFSET)
-                | (interaction.length << _ARGS_INTERACTION_LENGTH_OFFSET)
-        );
+        uint256 data = threshold
+            | (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0)
+            | (unwrapWeth ? _UNWRAP_WETH_FLAG_TT : 0)
+            | (skipMakerPermit ? _SKIP_ORDER_PERMIT_FLAG : 0)
+            | (usePermit2 ? _USE_PERMIT2_FLAG_TT : 0)
+            | (target != address(0) ? _ARGS_HAS_TARGET : 0)
+            | (extension.length << _ARGS_EXTENSION_LENGTH_OFFSET)
+            | (interaction.length << _ARGS_INTERACTION_LENGTH_OFFSET);
+        TakerTraits traits = TakerTraits.wrap(data);
         bytes memory targetBytes = target != address(0) ? abi.encodePacked(target) : abi.encodePacked("");
         bytes memory args = abi.encodePacked(targetBytes, extension, interaction);
         return (traits, args);

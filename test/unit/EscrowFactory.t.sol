@@ -27,7 +27,7 @@ contract EscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
-            , /* bytes memory extension */
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
 
@@ -57,15 +57,22 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
         assertEq(returnedImmutables.timelocks.srcWithdrawalStart(), block.timestamp + srcTimelocks.finality);
         assertEq(returnedImmutables.timelocks.srcCancellationStart(), block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.srcPubCancellationStart(), block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
+        assertEq(
+            returnedImmutables.timelocks.srcPubCancellationStart(),
+            block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel
+        );
         assertEq(returnedImmutables.timelocks.dstWithdrawalStart(), block.timestamp + dstTimelocks.finality);
         assertEq(returnedImmutables.timelocks.dstPubWithdrawalStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.dstCancellationStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(
+            returnedImmutables.timelocks.dstCancellationStart(),
+            block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
+        );
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables, Escrow dstClone) =
-            _prepareDataDst(secret, amount, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables, Escrow dstClone) = _prepareDataDst(
+            secret, amount, alice.addr, bob.addr, address(dai)
+        );
         uint256 balanceBobNative = bob.addr.balance;
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
@@ -90,7 +97,10 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.packedAddresses.token(), address(dai));
         assertEq(returnedImmutables.timelocks.dstWithdrawalStart(), block.timestamp + dstTimelocks.finality);
         assertEq(returnedImmutables.timelocks.dstPubWithdrawalStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.dstCancellationStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(
+            returnedImmutables.timelocks.dstCancellationStart(),
+            block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
+        );
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
@@ -98,7 +108,7 @@ contract EscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
-            , /* bytes memory extension */
+            /* bytes memory extension */,
             /* Escrow srcClone */
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
@@ -121,7 +131,7 @@ contract EscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
-            , /* bytes memory extension */
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
@@ -148,7 +158,7 @@ contract EscrowFactoryTest is BaseSetup {
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
-            , /* bytes memory extension */
+            /* bytes memory extension */,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
@@ -171,8 +181,9 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) =
-            _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
 
         vm.warp(immutables.srcCancellationTimestamp + 1);
 
@@ -183,8 +194,9 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) =
-            _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -193,8 +205,9 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
-        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) =
-            _prepareDataDst(SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00));
+        (IEscrowFactory.DstEscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
+        );
 
         // deploy escrow
         vm.prank(bob.addr);
