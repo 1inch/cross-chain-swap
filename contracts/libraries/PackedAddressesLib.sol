@@ -20,7 +20,8 @@ library PackedAddressesLib {
      * @return The maker address.
      */
     function maker(PackedAddresses calldata packedAddresses) internal pure returns (address) {
-        return _maker(packedAddresses.addressesPart1);
+        // 20 least significant bytes of addressesPart1
+        return address(bytes20(packedAddresses.addressesPart1));
     }
 
     /**
@@ -29,7 +30,8 @@ library PackedAddressesLib {
      * @return The taker address.
      */
     function taker(PackedAddresses calldata packedAddresses) internal pure returns (address) {
-        return _taker(packedAddresses.addressesPart1, packedAddresses.addressesPart2);
+        // 176 = 20 bytes of the maker address + 2 empty bytes, 80 = 10 bytes for the taker address from addressesPart1
+        return address(bytes20(packedAddresses.addressesPart1 << 176 | packedAddresses.addressesPart2 >> 80));
     }
 
     /**
@@ -38,21 +40,7 @@ library PackedAddressesLib {
      * @return The taker address.
      */
     function token(PackedAddresses calldata packedAddresses) internal pure returns (address) {
-        return _token(packedAddresses.addressesPart2);
-    }
-
-    function _maker(bytes32 addressesPart1) internal pure returns (address) {
-        // 20 least significant bytes of addressesPart1
-        return address(bytes20(addressesPart1));
-    }
-
-    function _taker(bytes32 addressesPart1, bytes32 addressesPart2) internal pure returns (address) {
-        // 176 = 20 bytes of the maker address + 2 empty bytes, 80 = 10 bytes for the taker address from addressesPart1
-        return address(bytes20(addressesPart1 << 176 | addressesPart2 >> 80));
-    }
-
-    function _token(bytes32 addressesPart2) internal pure returns (address) {
         // 96 = 10 bytes of the taker address + 2 empty bytes
-        return address(bytes20(addressesPart2 << 96));
+        return address(bytes20(packedAddresses.addressesPart2 << 96));
     }
 }
