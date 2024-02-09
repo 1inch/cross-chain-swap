@@ -35,7 +35,7 @@ library TimelocksSettersLib {
                 | ((dstFinality & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_FINALITY_OFFSET)
                 | ((dstWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
                 | ((dstPubWithdrawal & TimelocksLib._TIMELOCK_MASK) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
-                | uint40(deployedAtVal)
+                | uint32(deployedAtVal)
         );
     }
 

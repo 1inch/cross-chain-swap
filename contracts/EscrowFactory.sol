@@ -51,12 +51,12 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      */
     function _postInteraction(
         IOrderMixin.Order calldata order,
-        bytes calldata, /* extension */
+        bytes calldata /* extension */,
         bytes32 orderHash,
         address taker,
         uint256 makingAmount,
         uint256 takingAmount,
-        uint256, /* remainingMakingAmount */
+        uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) internal override {
         {
@@ -104,15 +104,13 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         }
         if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
 
-        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) > dstImmutables.srcCancellationTimestamp)
-        {
-            revert InvalidCreationTime();
-        }
-
         // 7 * 32 bytes for DstEscrowImmutablesCreation
         bytes memory data = new bytes(0xe0);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
+
+        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
+        if (timelocks.dstCancellationStart() > dstImmutables.srcCancellationTimestamp) revert InvalidCreationTime();
+
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             // Copy DstEscrowImmutablesCreation excluding timelocks

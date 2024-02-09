@@ -46,6 +46,7 @@ interface IEscrow {
     error InvalidSecret();
     error InvalidWithdrawalTime();
     error NativeTokenSendingFailure();
+    error InvalidRescueDelay();
 
     /**
      * @notice Withdraws funds to the taker on the source chain.

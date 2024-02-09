@@ -28,22 +28,13 @@ contract TimelocksLibTest is BaseSetup {
             timestamp
         );
 
-        assertEq(timelocksTest.srcWithdrawalStart(timestamp), timestamp + srcTimelocks.finality);
-        assertEq(
-            timelocksTest.srcCancellationStart(timestamp), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal
-        );
-        assertEq(
-            timelocksTest.srcPubCancellationStart(timestamp),
-            timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel
-        );
-        assertEq(timelocksTest.dstWithdrawalStart(timestamp), timestamp + dstTimelocks.finality);
-        assertEq(
-            timelocksTest.dstPubWithdrawalStart(timestamp), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal
-        );
-        assertEq(
-            timelocksTest.dstCancellationStart(timestamp),
-            timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
-        );
+        assertEq(timelocksTest.rescueStart(RESCUE_DELAY), timestamp + RESCUE_DELAY);
+        assertEq(timelocksTest.srcWithdrawalStart(), timestamp + srcTimelocks.finality);
+        assertEq(timelocksTest.srcCancellationStart(), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
+        assertEq(timelocksTest.srcPubCancellationStart(), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
+        assertEq(timelocksTest.dstWithdrawalStart(), timestamp + dstTimelocks.finality);
+        assertEq(timelocksTest.dstPubWithdrawalStart(), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
+        assertEq(timelocksTest.dstCancellationStart(), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
     }
 
     /* solhint-enable func-name-mixedcase */
