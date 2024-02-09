@@ -21,7 +21,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
-            , /* bytes memory extraData */
+            /* bytes memory extraData */,
             bytes memory extension,
             Escrow srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount, false);
@@ -67,7 +67,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
-            , /* bytes memory extraData */
+            /* bytes memory extraData */,
             bytes memory extension,
             Escrow srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, false);

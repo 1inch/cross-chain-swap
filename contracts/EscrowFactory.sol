@@ -64,8 +64,8 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
         }
 
-        Timelocks timelocks = Timelocks.wrap(uint256(bytes32(extraData[_WHITELIST_OFFSET - 32:_WHITELIST_OFFSET])))
-            .setDeployedAt(block.timestamp);
+        uint256 timelocksData =  uint256(bytes32(extraData[_WHITELIST_OFFSET - 32:_WHITELIST_OFFSET]));
+        Timelocks timelocks = Timelocks.wrap(timelocksData).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
         // 10 * 32 bytes
