@@ -247,7 +247,6 @@ contract BaseSetup is Test {
         );
 
         bytes memory whitelist = abi.encodePacked(
-            uint8(16), // length
             uint32(block.timestamp), // auction start time
             uint80(uint160(bob.addr)), // resolver address
             uint16(0) // time delta
@@ -270,7 +269,7 @@ contract BaseSetup is Test {
                 extraData,
                 whitelist,
                 RESOLVER_FEE,
-                bytes1(0x01)
+                bytes1(0x08) | bytes1(0x01)
             );
 
             (order, extension) = _buildOrder(
@@ -301,7 +300,7 @@ contract BaseSetup is Test {
             extraData,
             whitelist,
             RESOLVER_FEE,
-            bytes1(0x01)
+            bytes1(0x08) | bytes1(0x01)
         );
     }
 
