@@ -269,7 +269,7 @@ contract BaseSetup is Test {
                 extraData,
                 whitelist,
                 RESOLVER_FEE,
-                bytes1(0x08) | bytes1(0x01)
+                bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
             );
 
             (order, extension) = _buildOrder(
@@ -300,7 +300,7 @@ contract BaseSetup is Test {
             extraData,
             whitelist,
             RESOLVER_FEE,
-            bytes1(0x08) | bytes1(0x01)
+            bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
         );
     }
 

@@ -5,13 +5,13 @@ pragma solidity 0.8.23;
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
+import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { FeeBankCharger } from "limit-order-settlement/FeeBankCharger.sol";
-import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 import { FeeResolverExtension } from "limit-order-settlement/extensions/FeeResolverExtension.sol";
+import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
-import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
@@ -47,7 +47,8 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
      * `extraData` consists of:
      *   - 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
      *   - whitelist
-     *   - 4 bytes for the fee
+     *   - 0 / 4 bytes for the fee
+     *   - 1 byte for the bitmap
      */
     function _postInteraction(
         IOrderMixin.Order calldata order,
@@ -59,7 +60,9 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
         uint256 remainingMakingAmount,
         bytes calldata extraData
     ) internal override (FeeResolverExtension, WhitelistExtension) {
-        super._postInteraction(order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]);
+        super._postInteraction(
+            order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
+        );
 
         // 192 - timelocks offset in {IEscrow-SrcEscrowImmutables}
         Timelocks timelocks = Timelocks.wrap(
@@ -81,6 +84,7 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
 
         address escrow = _createEscrow(data, 0);
         // [160:176] - srcSafetyDeposit in {IEscrow-SrcEscrowImmutables}
+        // srcSafetyDeposit is the first 16 bytes in the `deposits`
         uint256 safetyDeposit = uint128(bytes16(extraData[160:176]));
         if (
             escrow.balance < safetyDeposit ||
