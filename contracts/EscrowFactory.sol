@@ -47,7 +47,7 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
      * `extraData` consists of:
      *   - 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
      *   - whitelist
-     *   - 4 bytes for the fee
+     *   - 0 / 4 bytes for the fee
      *   - 1 byte for the bitmap
      */
     function _postInteraction(
