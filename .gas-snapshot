@@ -1,5 +1,5 @@
-EscrowFactoryTest:testFuzz_DeployCloneForMaker(bytes32,uint56,uint56) (runs: 256, μ: 236574, ~: 239918)
-EscrowFactoryTest:testFuzz_DeployCloneForTaker(bytes32,uint56) (runs: 256, μ: 180968, ~: 183965)
+EscrowFactoryTest:testFuzz_DeployCloneForMaker(bytes32,uint56,uint56) (runs: 256, μ: 235831, ~: 239918)
+EscrowFactoryTest:testFuzz_DeployCloneForTaker(bytes32,uint56) (runs: 256, μ: 181245, ~: 183965)
 EscrowFactoryTest:test_NoDeploymentForNotResolver() (gas: 103874)
 EscrowFactoryTest:test_NoInsufficientBalanceDeploymentForMaker() (gas: 191423)
 EscrowFactoryTest:test_NoInsufficientBalanceDeploymentForTaker() (gas: 27693)

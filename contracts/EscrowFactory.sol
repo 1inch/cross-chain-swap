@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-import { ExtensionBase } from "limit-order-settlement/ExtensionBase.sol";
+import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { FeeBankCharger } from "limit-order-settlement/FeeBankCharger.sol";
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 import { FeeResolverExtension } from "limit-order-settlement/extensions/FeeResolverExtension.sol";
@@ -33,7 +33,7 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
     address public immutable IMPLEMENTATION;
 
     constructor(address implementation, address limitOrderProtocol, IERC20 token)
-        ExtensionBase(limitOrderProtocol)
+        BaseExtension(limitOrderProtocol)
         FeeBankCharger(token) {
         IMPLEMENTATION = implementation;
     }
