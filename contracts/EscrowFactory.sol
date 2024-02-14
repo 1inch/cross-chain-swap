@@ -27,12 +27,15 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
 
     uint256 internal constant _EXTRA_DATA_PARAMS_OFFSET = 4;
     uint256 internal constant _WHITELIST_OFFSET = 228;
-    // Address of the escrow contract implementation to clone.
-    address public immutable IMPLEMENTATION;
+    // Address of the source escrow contract implementation to clone.
+    address public immutable IMPL_SRC;
+    // Address of the destination escrow contract implementation to clone.
+    address public immutable IMPL_DST;
 
-    constructor(address implementation, address limitOrderProtocol, IERC20 token)
+    constructor(address implSrc, address implDst, address limitOrderProtocol, IERC20 token)
         SimpleSettlementExtension(limitOrderProtocol, token) {
-        IMPLEMENTATION = implementation;
+        IMPL_SRC = implSrc;
+        IMPL_DST = implDst;
     }
 
     /**
@@ -78,7 +81,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             mstore(add(data, 0x140), timelocks)
         }
 
-        address escrow = _createEscrow(data, 0);
+        address escrow = _createEscrow(IMPL_SRC, data, 0);
         // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
         // srcSafetyDeposit is the first 16 bytes in the `deposits`
         uint256 safetyDeposit = uint128(bytes16(extraData[100:116]));
@@ -94,7 +97,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     /**
      * @notice See {IEscrowFactory-createDstEscrow}.
      */
-    function createDstEscrow(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
+    function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable {
         uint256 nativeAmount = dstImmutables.args.safetyDeposit;
         address token = dstImmutables.args.packedAddresses.token();
         // If the destination token is native, add its amount to the safety deposit.
@@ -103,7 +106,7 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         }
         if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
 
-        // 7 * 32 bytes for DstEscrowImmutablesCreation
+        // 7 * 32 bytes for EscrowImmutablesCreation
         bytes memory data = new bytes(0xe0);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
 
@@ -112,12 +115,12 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
 
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            // Copy DstEscrowImmutablesCreation excluding timelocks
+            // Copy EscrowImmutablesCreation excluding timelocks
             calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
             mstore(add(data, 0xe0), timelocks)
         }
 
-        address escrow = _createEscrow(data, msg.value);
+        address escrow = _createEscrow(IMPL_DST, data, msg.value);
         if (token != address(0)) {
             IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
                 msg.sender, escrow, dstImmutables.args.amount
@@ -126,22 +129,31 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     }
 
     /**
-     * @notice See {IEscrowFactory-addressOfEscrow}.
+     * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
-    function addressOfEscrow(bytes memory data) public view returns (address) {
-        return ClonesWithImmutableArgs.addressOfClone2(IMPLEMENTATION, data);
+    function addressOfEscrowSrc(bytes memory data) public view returns (address) {
+        return ClonesWithImmutableArgs.addressOfClone2(IMPL_SRC, data);
+    }
+
+    /**
+     * @notice See {IEscrowFactory-addressOfEscrowDst}.
+     */
+    function addressOfEscrowDst(bytes memory data) public view returns (address) {
+        return ClonesWithImmutableArgs.addressOfClone2(IMPL_DST, data);
     }
 
     /**
      * @notice Creates a new escrow contract with immutable arguments.
      * @dev The escrow contract is a proxy clone created using the create2 pattern.
+     * @param implementation The address of the escrow contract implementation.
      * @param data Encoded immutable args.
      * @return clone The address of the created escrow contract.
      */
     function _createEscrow(
+        address implementation,
         bytes memory data,
         uint256 value
     ) private returns (address clone) {
-        clone = IMPLEMENTATION.clone2(data, value);
+        clone = implementation.clone2(data, value);
     }
 }
