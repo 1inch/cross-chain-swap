@@ -28,7 +28,11 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    uint256 internal constant _SRC_IMMUTABLES_LENGTH = 224;
+    uint256 private constant _SRC_DEPOSIT_OFFSET = 160;
+    uint256 private constant _DST_DEPOSIT_OFFSET = 176;
+    uint256 private constant _TIMELOCKS_OFFSET = 192;
+    uint256 private constant _SRC_IMMUTABLES_LENGTH = 224;
+
     // Address of the escrow contract implementation to clone.
     address public immutable IMPLEMENTATION;
 
@@ -64,9 +68,8 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
 
-        // 192 - timelocks offset in {IEscrow-SrcEscrowImmutables}
         Timelocks timelocks = Timelocks.wrap(
-            uint256(bytes32(extraData[192:_SRC_IMMUTABLES_LENGTH]))
+            uint256(bytes32(extraData[_TIMELOCKS_OFFSET:_SRC_IMMUTABLES_LENGTH]))
         ).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
@@ -83,9 +86,7 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
         }
 
         address escrow = _createEscrow(data, 0);
-        // [160:176] - srcSafetyDeposit in {IEscrow-SrcEscrowImmutables}
-        // srcSafetyDeposit is the first 16 bytes in the `deposits`
-        uint256 safetyDeposit = uint128(bytes16(extraData[160:176]));
+        uint256 safetyDeposit = uint128(bytes16(extraData[_SRC_DEPOSIT_OFFSET:_DST_DEPOSIT_OFFSET]));
         if (
             escrow.balance < safetyDeposit ||
             IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount
