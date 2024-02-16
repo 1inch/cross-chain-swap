@@ -1,9 +1,9 @@
 # IEscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/4a7a924cfc3cdc40ce87e400e418d193236c06fb/contracts/interfaces/IEscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/interfaces/IEscrowFactory.sol)
 
 
 ## Functions
-### createEscrow
+### createDstEscrow
 
 Creates a new escrow contract for taker on the destination chain.
 
@@ -12,22 +12,43 @@ and approve the destination token to be transferred to the created escrow.*
 
 
 ```solidity
-function createEscrow(DstEscrowImmutablesCreation calldata dstEscrowImmutables) external payable;
+function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`dstEscrowImmutables`|`DstEscrowImmutablesCreation`|The immutables of the escrow contract that are used in deployment.|
+|`dstImmutables`|`EscrowImmutablesCreation`|The immutables of the escrow contract that are used in deployment.|
 
 
-### addressOfEscrow
+### addressOfEscrowSrc
 
-Returns the deterministic address of the escrow based on the salt.
+Returns the deterministic address of the source escrow based on the salt.
 
 
 ```solidity
-function addressOfEscrow(bytes memory data) external view returns (address);
+function addressOfEscrowSrc(bytes memory data) external view returns (address);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`data`|`bytes`|The immutable arguments used to deploy escrow.|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`address`|The computed address of the escrow.|
+
+
+### addressOfEscrowDst
+
+Returns the deterministic address of the destination escrow based on the salt.
+
+
+```solidity
+function addressOfEscrowDst(bytes memory data) external view returns (address);
 ```
 **Parameters**
 
@@ -56,19 +77,13 @@ error InvalidCreationTime();
 ```
 
 ## Structs
-### DstEscrowImmutablesCreation
+### EscrowImmutablesCreation
 token, amount and safetyDeposit are related to the destination chain.
 
 
 ```solidity
-struct DstEscrowImmutablesCreation {
-    bytes32 hashlock;
-    address maker;
-    address taker;
-    address token;
-    uint256 amount;
-    uint256 safetyDeposit;
-    Timelocks timelocks;
+struct EscrowImmutablesCreation {
+    IEscrowDst.EscrowImmutables args;
     uint256 srcCancellationTimestamp;
 }
 ```

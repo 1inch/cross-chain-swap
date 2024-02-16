@@ -1,115 +1,115 @@
 # TimelocksLib
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/4a7a924cfc3cdc40ce87e400e418d193236c06fb/contracts/libraries/TimelocksLib.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/libraries/TimelocksLib.sol)
 
 
 ## State Variables
-### _TIMESTAMP_MASK
+### _TIMELOCK_MASK
 
 ```solidity
-uint256 private constant _TIMESTAMP_MASK = (1 << 40) - 1;
+uint256 internal constant _TIMELOCK_MASK = type(uint32).max;
 ```
 
 
 ### _SRC_FINALITY_OFFSET
 
 ```solidity
-uint256 private constant _SRC_FINALITY_OFFSET = 216;
+uint256 internal constant _SRC_FINALITY_OFFSET = 224;
 ```
 
 
 ### _SRC_WITHDRAWAL_OFFSET
 
 ```solidity
-uint256 private constant _SRC_WITHDRAWAL_OFFSET = 176;
+uint256 internal constant _SRC_WITHDRAWAL_OFFSET = 192;
 ```
 
 
-### _SRC_CANCEL_OFFSET
+### _SRC_CANCELLATION_OFFSET
 
 ```solidity
-uint256 private constant _SRC_CANCEL_OFFSET = 136;
+uint256 internal constant _SRC_CANCELLATION_OFFSET = 160;
 ```
 
 
 ### _DST_FINALITY_OFFSET
 
 ```solidity
-uint256 private constant _DST_FINALITY_OFFSET = 96;
+uint256 internal constant _DST_FINALITY_OFFSET = 128;
 ```
 
 
 ### _DST_WITHDRAWAL_OFFSET
 
 ```solidity
-uint256 private constant _DST_WITHDRAWAL_OFFSET = 56;
+uint256 internal constant _DST_WITHDRAWAL_OFFSET = 96;
 ```
 
 
 ### _DST_PUB_WITHDRAWAL_OFFSET
 
 ```solidity
-uint256 private constant _DST_PUB_WITHDRAWAL_OFFSET = 16;
+uint256 internal constant _DST_PUB_WITHDRAWAL_OFFSET = 64;
 ```
 
 
 ## Functions
-### getSrcFinalityDuration
+### setDeployedAt
 
-Gets the duration of the finality period on the source chain.
+Sets the Escrow deployment timestamp.
 
 
 ```solidity
-function getSrcFinalityDuration(Timelocks timelocks) internal pure returns (uint256);
+function setDeployedAt(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`timelocks`|`Timelocks`|The timelocks to set the deployment timestamp to.|
+|`value`|`uint256`|The new Escrow deployment timestamp.|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`Timelocks`|The timelocks with the deployment timestamp set.|
+
+
+### rescueStart
+
+Returns the start of the rescue period.
+
+
+```solidity
+function rescueStart(Timelocks timelocks, uint256 rescueDelay) internal pure returns (uint256);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`timelocks`|`Timelocks`|The timelocks to get the rescue delay from.|
+|`rescueDelay`|`uint256`||
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|The start of the rescue period.|
+
+
+### srcWithdrawalStart
+
+Returns the start of the private withdrawal period on the source chain.
+
+
+```solidity
+function srcWithdrawalStart(Timelocks timelocks) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`timelocks`|`Timelocks`|The timelocks to get the finality duration from.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The duration of the finality period.|
-
-
-### setSrcFinalityDuration
-
-Sets the duration of the finality period on the source chain.
-
-
-```solidity
-function setSrcFinalityDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to set the finality duration to.|
-|`value`|`uint256`|The new duration of the finality period.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Timelocks`|The timelocks with the finality duration set.|
-
-
-### getSrcWithdrawalStart
-
-Gets the start of the private withdrawal period on the source chain.
-
-
-```solidity
-function getSrcWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to get the finality duration from.|
-|`startTimestamp`|`uint256`|The timestamp when the counting starts.|
 
 **Returns**
 
@@ -118,63 +118,19 @@ function getSrcWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) inte
 |`<none>`|`uint256`|The start of the private withdrawal period.|
 
 
-### getSrcWithdrawalDuration
+### srcCancellationStart
 
-Gets the duration of the private withdrawal period on the source chain.
+Returns the start of the private cancellation period on the source chain.
 
 
 ```solidity
-function getSrcWithdrawalDuration(Timelocks timelocks) internal pure returns (uint256);
+function srcCancellationStart(Timelocks timelocks) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`timelocks`|`Timelocks`|The timelocks to get the private withdrawal duration from.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The duration of the private withdrawal period.|
-
-
-### setSrcWithdrawalDuration
-
-Sets the duration of the private withdrawal period on the source chain.
-
-
-```solidity
-function setSrcWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to set the private withdrawal duration to.|
-|`value`|`uint256`|The new duration of the private withdrawal period.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Timelocks`|The timelocks with the private withdrawal duration set.|
-
-
-### getSrcCancellationStart
-
-Gets the start of the private cancellation period on the source chain.
-
-
-```solidity
-function getSrcCancellationStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to get the private withdrawal duration from.|
-|`startTimestamp`|`uint256`|The timestamp when the counting starts.|
 
 **Returns**
 
@@ -183,63 +139,19 @@ function getSrcCancellationStart(Timelocks timelocks, uint256 startTimestamp) in
 |`<none>`|`uint256`|The start of the private cancellation period.|
 
 
-### getSrcCancellationDuration
+### srcPubCancellationStart
 
-Gets the duration of the private cancellation period on the source chain.
+Returns the start of the public cancellation period on the source chain.
 
 
 ```solidity
-function getSrcCancellationDuration(Timelocks timelocks) internal pure returns (uint256);
+function srcPubCancellationStart(Timelocks timelocks) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`timelocks`|`Timelocks`|The timelocks to get the private cancellation duration from.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The duration of the private cancellation period.|
-
-
-### setSrcCancellationDuration
-
-Sets the duration of the private cancellation period on the source chain.
-
-
-```solidity
-function setSrcCancellationDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to set the private cancellation duration to.|
-|`value`|`uint256`|The duration of the private cancellation period.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Timelocks`|The timelocks with the private cancellation duration set.|
-
-
-### getSrcPubCancellationStart
-
-Gets the start of the public cancellation period on the source chain.
-
-
-```solidity
-function getSrcPubCancellationStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to get the private cancellation duration from.|
-|`startTimestamp`|`uint256`|The timestamp when the counting starts.|
 
 **Returns**
 
@@ -248,63 +160,19 @@ function getSrcPubCancellationStart(Timelocks timelocks, uint256 startTimestamp)
 |`<none>`|`uint256`|The start of the public cancellation period.|
 
 
-### getDstFinalityDuration
+### dstWithdrawalStart
 
-Gets the duration of the finality period on the destination chain.
+Returns the start of the private withdrawal period on the destination chain.
 
 
 ```solidity
-function getDstFinalityDuration(Timelocks timelocks) internal pure returns (uint256);
+function dstWithdrawalStart(Timelocks timelocks) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`timelocks`|`Timelocks`|The timelocks to get the finality duration from.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The duration of the finality period.|
-
-
-### setDstFinalityDuration
-
-Sets the duration of the finality period on the destination chain.
-
-
-```solidity
-function setDstFinalityDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to set the finality duration to.|
-|`value`|`uint256`|The duration of the finality period.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Timelocks`|The timelocks with the finality duration set.|
-
-
-### getDstWithdrawalStart
-
-Gets the start of the private withdrawal period on the destination chain.
-
-
-```solidity
-function getDstWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to get the finality duration from.|
-|`startTimestamp`|`uint256`|The timestamp when the counting starts.|
 
 **Returns**
 
@@ -313,63 +181,19 @@ function getDstWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) inte
 |`<none>`|`uint256`|The start of the private withdrawal period.|
 
 
-### getDstWithdrawalDuration
+### dstPubWithdrawalStart
 
-Gets the duration of the private withdrawal period on the destination chain.
+Returns the start of the public withdrawal period on the destination chain.
 
 
 ```solidity
-function getDstWithdrawalDuration(Timelocks timelocks) internal pure returns (uint256);
+function dstPubWithdrawalStart(Timelocks timelocks) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`timelocks`|`Timelocks`|The timelocks to get the private withdrawal duration from.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The duration of the private withdrawal period.|
-
-
-### setDstWithdrawalDuration
-
-Sets the duration of the private withdrawal period on the destination chain.
-
-
-```solidity
-function setDstWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to set the private withdrawal duration to.|
-|`value`|`uint256`|The new duration of the private withdrawal period.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Timelocks`|The timelocks with the private withdrawal duration set.|
-
-
-### getDstPubWithdrawalStart
-
-Gets the start of the public withdrawal period on the destination chain.
-
-
-```solidity
-function getDstPubWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to get the private withdrawal duration from.|
-|`startTimestamp`|`uint256`|The timestamp when the counting starts.|
 
 **Returns**
 
@@ -378,63 +202,19 @@ function getDstPubWithdrawalStart(Timelocks timelocks, uint256 startTimestamp) i
 |`<none>`|`uint256`|The start of the public withdrawal period.|
 
 
-### getDstPubWithdrawalDuration
+### dstCancellationStart
 
-Gets the duration of the public withdrawal period on the destination chain.
+Returns the start of the private cancellation period on the destination chain.
 
 
 ```solidity
-function getDstPubWithdrawalDuration(Timelocks timelocks) internal pure returns (uint256);
+function dstCancellationStart(Timelocks timelocks) internal pure returns (uint256);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`timelocks`|`Timelocks`|The timelocks to get the public withdrawal duration from.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`uint256`|The duration of the public withdrawal period.|
-
-
-### setDstPubWithdrawalDuration
-
-Sets the duration of the public withdrawal period on the destination chain.
-
-
-```solidity
-function setDstPubWithdrawalDuration(Timelocks timelocks, uint256 value) internal pure returns (Timelocks);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to set the public withdrawal duration to.|
-|`value`|`uint256`|The new duration of the public withdrawal period.|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`Timelocks`|The timelocks with the public withdrawal duration set.|
-
-
-### getDstCancellationStart
-
-Gets the start of the private cancellation period on the destination chain.
-
-
-```solidity
-function getDstCancellationStart(Timelocks timelocks, uint256 startTimestamp) internal pure returns (uint256);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`timelocks`|`Timelocks`|The timelocks to get the public withdrawal duration from.|
-|`startTimestamp`|`uint256`|The timestamp when the counting starts.|
 
 **Returns**
 
