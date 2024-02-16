@@ -158,6 +158,12 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(success, true);
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        inch.mint(alice.addr, 10 ether);
+        vm.prank(alice.addr);
+        inch.approve(address(feeBank), 10 ether);
+        vm.prank(alice.addr);
+        feeBank.deposit(10 ether);
+
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(WhitelistExtension.ResolverIsNotWhitelisted.selector);
         escrowFactory.postInteraction(
