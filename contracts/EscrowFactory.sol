@@ -134,14 +134,14 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtensi
     /**
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
-    function addressOfEscrowSrc(bytes memory data) public view returns (address) {
+    function addressOfEscrowSrc(bytes memory data) external view returns (address) {
         return ClonesWithImmutableArgs.addressOfClone2(IMPL_SRC, data);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
-    function addressOfEscrowDst(bytes memory data) public view returns (address) {
+    function addressOfEscrowDst(bytes memory data) external view returns (address) {
         return ClonesWithImmutableArgs.addressOfClone2(IMPL_DST, data);
     }
 
