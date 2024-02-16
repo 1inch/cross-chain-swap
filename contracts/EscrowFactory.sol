@@ -21,7 +21,7 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
-contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtension {
+contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using PackedAddressesLib for PackedAddresses;
@@ -63,7 +63,7 @@ contract EscrowFactory is IEscrowFactory, FeeResolverExtension, WhitelistExtensi
         uint256 takingAmount,
         uint256 remainingMakingAmount,
         bytes calldata extraData
-    ) internal override (FeeResolverExtension, WhitelistExtension) {
+    ) internal override (WhitelistExtension, FeeResolverExtension) {
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
