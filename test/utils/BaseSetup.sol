@@ -266,9 +266,10 @@ contract BaseSetup is Test {
         } else {
             bytes memory postInteractionData = abi.encodePacked(
                 address(escrowFactory),
-                RESOLVER_FEE,
                 extraData,
-                whitelist
+                RESOLVER_FEE,
+                whitelist,
+                bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
             );
 
             (order, extension) = _buildOrder(
@@ -296,9 +297,10 @@ contract BaseSetup is Test {
 
         srcClone = Escrow(escrowFactory.addressOfEscrow(data));
         extraData = abi.encodePacked(
-            RESOLVER_FEE,
             extraData,
-            whitelist
+            RESOLVER_FEE,
+            whitelist,
+            bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
         );
     }
 
