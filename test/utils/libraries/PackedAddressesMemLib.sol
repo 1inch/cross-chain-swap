@@ -2,11 +2,11 @@
 
 pragma solidity 0.8.23;
 
-import { PackedAddresses, PackedAddressesLib } from "contracts/libraries/PackedAddressesLib.sol";
+import { PackedAddresses } from "contracts/libraries/PackedAddressesLib.sol";
 
 library PackedAddressesMemLib {
     /**
-     * @notice Packs the addresses into two uint256 values.
+     * @notice Packs the addresses into two bytes32 values.
      * @param makerAddr The maker address.
      * @param takerAddr The taker address.
      * @param tokenAddr The token address.
@@ -14,8 +14,8 @@ library PackedAddressesMemLib {
      */
     function packAddresses(address makerAddr, address takerAddr, address tokenAddr) internal pure returns (PackedAddresses memory) {
         return PackedAddresses({
-            addressesPart1: uint256(uint256(uint160(makerAddr)) << 96 | (uint160(takerAddr) >> 80)),
-            addressesPart2: uint256(uint256(uint160(takerAddr)) << 176 | uint160(tokenAddr))
+            addressesPart1: bytes32(bytes20(makerAddr)) | bytes32(bytes20(takerAddr)) >> 176,
+            addressesPart2: bytes32(bytes20(takerAddr)) << 80 | bytes32(bytes20(tokenAddr)) >> 96
         });
     }
 
@@ -25,7 +25,8 @@ library PackedAddressesMemLib {
      * @return The maker address.
      */
     function maker(PackedAddresses memory packedAddresses) internal pure returns (address) {
-        return PackedAddressesLib._maker(packedAddresses.addressesPart1);
+        // 20 least significant bytes of addressesPart1
+        return address(bytes20(packedAddresses.addressesPart1));
     }
 
     /**
@@ -34,7 +35,8 @@ library PackedAddressesMemLib {
      * @return The taker address.
      */
     function taker(PackedAddresses memory packedAddresses) internal pure returns (address) {
-        return PackedAddressesLib._taker(packedAddresses.addressesPart1, packedAddresses.addressesPart2);
+        // 176 = 20 bytes of the maker address + 2 empty bytes, 80 = 10 bytes for the taker address from addressesPart1
+        return address(bytes20(packedAddresses.addressesPart1 << 176 | packedAddresses.addressesPart2 >> 80));
     }
 
     /**
@@ -43,6 +45,7 @@ library PackedAddressesMemLib {
      * @return The taker address.
      */
     function token(PackedAddresses memory packedAddresses) internal pure returns (address) {
-        return PackedAddressesLib._token(packedAddresses.addressesPart2);
+        // 96 = 10 bytes of the taker address + 2 empty bytes
+        return address(bytes20(packedAddresses.addressesPart2 << 96));
     }
 }

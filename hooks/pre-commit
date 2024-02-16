@@ -1,0 +1,15 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+printf "Running yarn lint... \n"
+if yarn lint &>/dev/null; then
+  printf "${GREEN}Solidity code is valid${NC} \n"
+else
+  printf "${RED}Solidity code is invalid${NC} Please run yarn lint and fix problems \n"
+  exit 1
+fi
+
+source scripts/snapshot.sh
