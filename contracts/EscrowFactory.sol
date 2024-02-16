@@ -5,10 +5,13 @@ pragma solidity 0.8.23;
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-import { SimpleSettlementExtension } from "limit-order-settlement/SimpleSettlementExtension.sol";
+import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
+import { FeeBankCharger } from "limit-order-settlement/FeeBankCharger.sol";
+import { FeeResolverExtension } from "limit-order-settlement/extensions/FeeResolverExtension.sol";
+import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
-import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
@@ -18,21 +21,29 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
-contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
+contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using PackedAddressesLib for PackedAddresses;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    uint256 internal constant _EXTRA_DATA_PARAMS_OFFSET = 4;
-    uint256 internal constant _WHITELIST_OFFSET = 228;
-    // Address of the escrow contract implementation to clone.
-    address public immutable IMPLEMENTATION;
+    uint256 private constant _SRC_DEPOSIT_OFFSET = 100;
+    uint256 private constant _DST_DEPOSIT_OFFSET = 116;
+    uint256 private constant _TIMELOCKS_OFFSET = 192;
+    uint256 private constant _SRC_IMMUTABLES_LENGTH = 224;
 
-    constructor(address implementation, address limitOrderProtocol, IERC20 token)
-        SimpleSettlementExtension(limitOrderProtocol, token) {
-        IMPLEMENTATION = implementation;
+    // Address of the source escrow contract implementation to clone.
+    address public immutable IMPL_SRC;
+    // Address of the destination escrow contract implementation to clone.
+    address public immutable IMPL_DST;
+
+    constructor(address implSrc, address implDst, address limitOrderProtocol, IERC20 token)
+        BaseExtension(limitOrderProtocol)
+        FeeBankCharger(token)
+    {
+        IMPL_SRC = implSrc;
+        IMPL_DST = implDst;
     }
 
     /**
@@ -42,27 +53,27 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
      * The external postInteraction function call will be made from the Limit Order Protocol
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
      * `extraData` consists of:
-     *   - 4 bytes for the fee
      *   - 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
      *   - whitelist
+     *   - 0 / 4 bytes for the fee
+     *   - 1 byte for the bitmap
      */
     function _postInteraction(
         IOrderMixin.Order calldata order,
-        bytes calldata /* extension */,
+        bytes calldata extension,
         bytes32 orderHash,
         address taker,
         uint256 makingAmount,
         uint256 takingAmount,
-        uint256 /* remainingMakingAmount */,
+        uint256 remainingMakingAmount,
         bytes calldata extraData
-    ) internal override {
-        {
-            bytes calldata whitelist = extraData[_WHITELIST_OFFSET:];
-            if (!_isWhitelisted(whitelist, taker)) revert ResolverIsNotWhitelisted();
-        }
+    ) internal override (WhitelistExtension, FeeResolverExtension) {
+        super._postInteraction(
+            order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
+        );
 
         Timelocks timelocks = Timelocks.wrap(
-            uint256(bytes32(extraData[_WHITELIST_OFFSET-32:_WHITELIST_OFFSET]))
+            uint256(bytes32(extraData[_TIMELOCKS_OFFSET:_SRC_IMMUTABLES_LENGTH]))
         ).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
@@ -74,27 +85,22 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
             mstore(add(data, 0x40), makingAmount) // srcAmount
             mstore(add(data, 0x60), takingAmount) // dstAmount
             // Copy hashlock, packedAddresses, dstChainId, dstToken, deposits: 6 * 32 bytes
-            calldatacopy(add(data, 0x80), add(extraData.offset, _EXTRA_DATA_PARAMS_OFFSET), 0xc0)
+            calldatacopy(add(data, 0x80), extraData.offset, 0xc0)
             mstore(add(data, 0x140), timelocks)
         }
 
-        address escrow = _createEscrow(data, 0);
-        // 4 bytes for a fee +  3 * 32 bytes for hashlock, dstChainId and dstToken
-        // srcSafetyDeposit is the first 16 bytes in the `deposits`
-        uint256 safetyDeposit = uint128(bytes16(extraData[100:116]));
+        address escrow = _createEscrow(IMPL_SRC, data, 0);
+        uint256 safetyDeposit = uint128(bytes16(extraData[_SRC_DEPOSIT_OFFSET:_DST_DEPOSIT_OFFSET]));
         if (
             escrow.balance < safetyDeposit ||
             IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount
         ) revert InsufficientEscrowBalance();
-
-        uint256 resolverFee = _getResolverFee(uint256(uint32(bytes4(extraData[:4]))), order.makingAmount, makingAmount);
-        _chargeFee(taker, resolverFee);
     }
 
     /**
      * @notice See {IEscrowFactory-createDstEscrow}.
      */
-    function createDstEscrow(DstEscrowImmutablesCreation calldata dstImmutables) external payable {
+    function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable {
         uint256 nativeAmount = dstImmutables.args.safetyDeposit;
         address token = dstImmutables.args.packedAddresses.token();
         // If the destination token is native, add its amount to the safety deposit.
@@ -103,23 +109,21 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
         }
         if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
 
-        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (
-            dstImmutables.args.timelocks.dstCancellationStart(block.timestamp) >
-            dstImmutables.srcCancellationTimestamp
-        ) revert InvalidCreationTime();
-
-        // 7 * 32 bytes for DstEscrowImmutablesCreation
+        // 7 * 32 bytes for EscrowImmutablesCreation
         bytes memory data = new bytes(0xe0);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
+
+        // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
+        if (timelocks.dstCancellationStart() > dstImmutables.srcCancellationTimestamp) revert InvalidCreationTime();
+
         // solhint-disable-next-line no-inline-assembly
         assembly("memory-safe") {
-            // Copy DstEscrowImmutablesCreation excluding timelocks
+            // Copy EscrowImmutablesCreation excluding timelocks
             calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
             mstore(add(data, 0xe0), timelocks)
         }
 
-        address escrow = _createEscrow(data, msg.value);
+        address escrow = _createEscrow(IMPL_DST, data, msg.value);
         if (token != address(0)) {
             IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
                 msg.sender, escrow, dstImmutables.args.amount
@@ -128,22 +132,31 @@ contract EscrowFactory is IEscrowFactory, SimpleSettlementExtension {
     }
 
     /**
-     * @notice See {IEscrowFactory-addressOfEscrow}.
+     * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
-    function addressOfEscrow(bytes memory data) public view returns (address) {
-        return ClonesWithImmutableArgs.addressOfClone2(IMPLEMENTATION, data);
+    function addressOfEscrowSrc(bytes memory data) public view returns (address) {
+        return ClonesWithImmutableArgs.addressOfClone2(IMPL_SRC, data);
+    }
+
+    /**
+     * @notice See {IEscrowFactory-addressOfEscrowDst}.
+     */
+    function addressOfEscrowDst(bytes memory data) public view returns (address) {
+        return ClonesWithImmutableArgs.addressOfClone2(IMPL_DST, data);
     }
 
     /**
      * @notice Creates a new escrow contract with immutable arguments.
      * @dev The escrow contract is a proxy clone created using the create2 pattern.
+     * @param implementation The address of the escrow contract implementation.
      * @param data Encoded immutable args.
      * @return clone The address of the created escrow contract.
      */
     function _createEscrow(
+        address implementation,
         bytes memory data,
         uint256 value
     ) private returns (address clone) {
-        clone = IMPLEMENTATION.clone2(data, value);
+        clone = implementation.clone2(data, value);
     }
 }

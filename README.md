@@ -94,3 +94,10 @@ To execute tests run:
 ``` shell
 yarn test
 ```
+
+## How to setup pre-commit hooks
+
+Run the following commands in your terminal:
+```bash
+chmod +x hooks/pre-commit && cp hooks/pre-commit .git/hooks/pre-commit
+```

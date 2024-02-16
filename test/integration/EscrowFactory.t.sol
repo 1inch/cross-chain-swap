@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
-import { Escrow, IEscrow } from "contracts/Escrow.sol";
+import { EscrowSrc, IEscrowSrc } from "contracts/EscrowSrc.sol";
 import { PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
 
 import { Address, AddressLib, BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
@@ -23,7 +23,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            Escrow srcClone
+            EscrowSrc srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
@@ -57,7 +57,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
 
         assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
 
-        IEscrow.SrcEscrowImmutables memory returnedImmutables = srcClone.srcEscrowImmutables();
+        IEscrowSrc.EscrowImmutables memory returnedImmutables = srcClone.escrowImmutables();
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(PackedAddressesMemLib.taker(returnedImmutables.packedAddresses), bob.addr);
         assertEq(returnedImmutables.dstToken.get(), address(dai));
@@ -69,7 +69,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            Escrow srcClone
+            EscrowSrc srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);

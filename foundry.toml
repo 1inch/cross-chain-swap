@@ -3,10 +3,9 @@ src = 'contracts'
 out = 'out'
 libs = ['lib']
 test = 'test'
-cache_path  = 'cache_forge'
 optimizer_runs = 1000000
 via-ir = true
-gas_reports = ["Escrow", "EscrowFactory"]
+gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory"]
 
 [profile.lite.optimizer_details.yulDetails]
 optimizerSteps = ''

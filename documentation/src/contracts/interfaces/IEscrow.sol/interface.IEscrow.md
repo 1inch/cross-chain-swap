@@ -1,19 +1,20 @@
 # IEscrow
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/4a7a924cfc3cdc40ce87e400e418d193236c06fb/contracts/interfaces/IEscrow.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/interfaces/IEscrow.sol)
+
+Interface implies locking funds initially and then unlocking them with verification of the secret presented.
 
 
 ## Functions
-### withdrawSrc
+### withdraw
 
-Withdraws funds to the taker on the source chain.
+Withdraws funds to a predetermined recipient.
 
-*Withdrawal can only be made by the taker during the withdrawal period and with secret
-with hash matches the hashlock.
-The safety deposit is sent to the caller (taker).*
+*Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
+The safety deposit is sent to the caller.*
 
 
 ```solidity
-function withdrawSrc(bytes32 secret) external;
+function withdraw(bytes32 secret) external;
 ```
 **Parameters**
 
@@ -22,84 +23,34 @@ function withdrawSrc(bytes32 secret) external;
 |`secret`|`bytes32`|The secret that unlocks the escrow.|
 
 
-### cancelSrc
+### cancel
 
-Cancels the escrow on the source chain and returns tokens to the maker.
+Cancels the escrow and returns tokens to a predetermined recipient.
 
-*The escrow can only be cancelled by taker during the private cancel period or
-by anyone during the public cancel period.
+*The escrow can only be cancelled during the cancellation period.
 The safety deposit is sent to the caller.*
 
 
 ```solidity
-function cancelSrc() external;
+function cancel() external;
 ```
 
-### withdrawDst
+### rescueFunds
 
-Withdraws funds to the maker on the destination chain.
+Rescues funds from the escrow.
 
-*Withdrawal can only be made by taker during the private withdrawal period or by anyone
-during the public withdrawal period. In both cases, a secret with hash matching the hashlock must be provided.
-The safety deposit is sent to the caller.*
+*Funds can only be rescued by the taker after the rescue delay.*
 
 
 ```solidity
-function withdrawDst(bytes32 secret) external;
+function rescueFunds(address token, uint256 amount) external;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`secret`|`bytes32`|The secret that unlocks the escrow.|
-
-
-### cancelDst
-
-Cancels the escrow on the destination chain and returns tokens to the taker.
-
-*The escrow can only be cancelled by the taker during the cancel period.
-The safety deposit is sent to the caller (taker).*
-
-
-```solidity
-function cancelDst() external;
-```
-
-### srcEscrowImmutables
-
-Returns the immutable parameters of the escrow contract on the source chain.
-
-*The immutables are stored at the end of the proxy clone contract bytecode and
-are added to the calldata each time the proxy clone function is called.*
-
-
-```solidity
-function srcEscrowImmutables() external pure returns (SrcEscrowImmutables calldata);
-```
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`SrcEscrowImmutables`|The immutables of the escrow contract.|
-
-
-### dstEscrowImmutables
-
-Returns the immutable parameters of the escrow contract on the destination chain.
-
-*The immutables are stored at the end of the proxy clone contract bytecode and
-are added to the calldata each time the proxy clone function is called.*
-
-
-```solidity
-function dstEscrowImmutables() external pure returns (DstEscrowImmutables calldata);
-```
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`<none>`|`DstEscrowImmutables`|The immutables of the escrow contract.|
+|`token`|`address`|The address of the token to rescue. Zero address for native token.|
+|`amount`|`uint256`|The amount of tokens to rescue.|
 
 
 ## Errors
@@ -113,6 +64,12 @@ error InvalidCaller();
 
 ```solidity
 error InvalidCancellationTime();
+```
+
+### InvalidRescueTime
+
+```solidity
+error InvalidRescueTime();
 ```
 
 ### InvalidSecret
@@ -133,58 +90,9 @@ error InvalidWithdrawalTime();
 error NativeTokenSendingFailure();
 ```
 
-## Structs
-### InteractionParams
+### InvalidRescueDelay
 
 ```solidity
-struct InteractionParams {
-    address maker;
-    address taker;
-    uint256 srcChainId;
-    address srcToken;
-    uint256 srcAmount;
-    uint256 dstAmount;
-}
-```
-
-### ExtraDataParams
-
-```solidity
-struct ExtraDataParams {
-    bytes32 hashlock;
-    uint256 dstChainId;
-    address dstToken;
-    uint256 deposits;
-    Timelocks timelocks;
-}
-```
-
-### SrcEscrowImmutables
-
-```solidity
-struct SrcEscrowImmutables {
-    uint256 deployedAt;
-    InteractionParams interactionParams;
-    ExtraDataParams extraDataParams;
-}
-```
-
-### DstEscrowImmutables
-Data for the destination chain order immutables.
-chainId, token, amount and safetyDeposit relate to the destination chain.
-
-
-```solidity
-struct DstEscrowImmutables {
-    uint256 deployedAt;
-    uint256 chainId;
-    bytes32 hashlock;
-    address maker;
-    address taker;
-    address token;
-    uint256 amount;
-    uint256 safetyDeposit;
-    Timelocks timelocks;
-}
+error InvalidRescueDelay();
 ```
 
