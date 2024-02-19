@@ -259,7 +259,8 @@ contract BaseSetup is Test {
         } else {
             bytes memory postInteractionData = abi.encodePacked(
                 address(escrowFactory),
-                extraData, RESOLVER_FEE,
+                extraData,
+                RESOLVER_FEE,
                 whitelist,
                 bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
             );

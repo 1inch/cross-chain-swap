@@ -88,7 +88,7 @@ contract EscrowDst is Escrow, IEscrowDst {
      * @notice See {IEscrowDst-escrowImmutables}.
      */
     function escrowImmutables() public pure returns (EscrowImmutables calldata data) {
-       // Get the offset of the immutable args in calldata.
+        // Get the offset of the immutable args in calldata.
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") { data := offset }

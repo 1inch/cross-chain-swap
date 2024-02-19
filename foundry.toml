@@ -11,6 +11,7 @@ gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory"]
 optimizerSteps = ''
 
 [fmt]
+line_length = 140
 bracket_spacing = true
 multiline_func_header = 'params_first'
 wrap_comments = true

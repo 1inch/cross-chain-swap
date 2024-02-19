@@ -69,7 +69,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtensi
         uint256 takingAmount,
         uint256 remainingMakingAmount,
         bytes calldata extraData
-    ) internal override (WhitelistExtension, FeeResolverExtension) {
+    ) internal override(WhitelistExtension, FeeResolverExtension) {
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
