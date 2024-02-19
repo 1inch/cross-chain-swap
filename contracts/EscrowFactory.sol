@@ -74,7 +74,9 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtensi
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
 
-        Timelocks timelocks = Timelocks.wrap(uint256(bytes32(extraData[_TIMELOCKS_OFFSET:_SRC_IMMUTABLES_LENGTH]))).setDeployedAt(block.timestamp);
+        Timelocks timelocks = Timelocks.wrap(
+            uint256(bytes32(extraData[_TIMELOCKS_OFFSET:_SRC_IMMUTABLES_LENGTH]))
+        ).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
         // 10 * 32 bytes
@@ -91,7 +93,9 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtensi
 
         address escrow = _createEscrow(IMPL_SRC, data, 0);
         uint256 safetyDeposit = uint128(bytes16(extraData[_SRC_DEPOSIT_OFFSET:_DST_DEPOSIT_OFFSET]));
-        if (escrow.balance < safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) revert InsufficientEscrowBalance();
+        if (escrow.balance < safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
+            revert InsufficientEscrowBalance();
+        }
     }
 
     /**

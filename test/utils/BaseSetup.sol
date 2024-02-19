@@ -257,8 +257,12 @@ contract BaseSetup is Test {
                 makerTraits: MakerTraits.wrap(0)
             });
         } else {
-            // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
-            bytes memory postInteractionData = abi.encodePacked(address(escrowFactory), extraData, RESOLVER_FEE, whitelist, bytes1(0x08) | bytes1(0x01));
+            bytes memory postInteractionData = abi.encodePacked(
+                address(escrowFactory),
+                extraData, RESOLVER_FEE,
+                whitelist,
+                bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
+            );
 
             (order, extension) = _buildOrder(
                 alice.addr,
@@ -300,7 +304,7 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns(IEscrowFactory.EscrowImmutablesCreation memory immutables, bytes memory data) {
+    ) internal view returns (IEscrowFactory.EscrowImmutablesCreation memory immutables, bytes memory data) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
