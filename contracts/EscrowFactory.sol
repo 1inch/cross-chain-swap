@@ -7,8 +7,7 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
-import { FeeBankCharger } from "limit-order-settlement/FeeBankCharger.sol";
-import { FeeResolverExtension } from "limit-order-settlement/extensions/FeeResolverExtension.sol";
+import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
@@ -21,7 +20,7 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
-contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtension {
+contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
     using AddressLib for Address;
     using ClonesWithImmutableArgs for address;
     using PackedAddressesLib for PackedAddresses;
@@ -43,7 +42,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtensi
         address implDst,
         address limitOrderProtocol,
         IERC20 token
-    ) BaseExtension(limitOrderProtocol) FeeBankCharger(token) {
+    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
         IMPL_SRC = implSrc;
         IMPL_DST = implDst;
     }
@@ -69,7 +68,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, FeeResolverExtensi
         uint256 takingAmount,
         uint256 remainingMakingAmount,
         bytes calldata extraData
-    ) internal override(WhitelistExtension, FeeResolverExtension) {
+    ) internal override(WhitelistExtension, ResolverFeeExtension) {
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
