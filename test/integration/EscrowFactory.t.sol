@@ -40,7 +40,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{value: uint64(srcAmount) * 10 / 100}("");
+        (bool success,) = address(srcClone).call{ value: uint64(srcAmount) * 10 / 100 }("");
         assertEq(success, true);
 
         uint256 resolverCredit = feeBank.availableCredit(bob.addr);
@@ -86,7 +86,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(bob.addr);

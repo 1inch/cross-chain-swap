@@ -12,7 +12,11 @@ library PackedAddressesMemLib {
      * @param tokenAddr The token address.
      * @return The packed addresses.
      */
-    function packAddresses(address makerAddr, address takerAddr, address tokenAddr) internal pure returns (PackedAddresses memory) {
+    function packAddresses(
+        address makerAddr,
+        address takerAddr,
+        address tokenAddr
+    ) internal pure returns (PackedAddresses memory) {
         return PackedAddresses({
             addressesPart1: bytes32(bytes20(makerAddr)) | bytes32(bytes20(takerAddr)) >> 176,
             addressesPart2: bytes32(bytes20(takerAddr)) << 80 | bytes32(bytes20(tokenAddr)) >> 96

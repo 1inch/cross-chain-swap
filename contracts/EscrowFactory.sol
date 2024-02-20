@@ -37,10 +37,12 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     // Address of the destination escrow contract implementation to clone.
     address public immutable IMPL_DST;
 
-    constructor(address implSrc, address implDst, address limitOrderProtocol, IERC20 token)
-        BaseExtension(limitOrderProtocol)
-        ResolverFeeExtension(token)
-    {
+    constructor(
+        address implSrc,
+        address implDst,
+        address limitOrderProtocol,
+        IERC20 token
+    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
         IMPL_SRC = implSrc;
         IMPL_DST = implDst;
     }
@@ -66,7 +68,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         uint256 takingAmount,
         uint256 remainingMakingAmount,
         bytes calldata extraData
-    ) internal override (WhitelistExtension, ResolverFeeExtension) {
+    ) internal override(WhitelistExtension, ResolverFeeExtension) {
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
@@ -79,7 +81,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         // 10 * 32 bytes
         bytes memory data = new bytes(0x140);
         // solhint-disable-next-line no-inline-assembly
-        assembly("memory-safe") {
+        assembly ("memory-safe") {
             mstore(add(data, 0x20), orderHash)
             mstore(add(data, 0x40), makingAmount) // srcAmount
             mstore(add(data, 0x60), takingAmount) // dstAmount
@@ -90,10 +92,9 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
 
         address escrow = _createEscrow(IMPL_SRC, data, 0);
         uint256 safetyDeposit = uint128(bytes16(extraData[_SRC_DEPOSIT_OFFSET:_DST_DEPOSIT_OFFSET]));
-        if (
-            escrow.balance < safetyDeposit ||
-            IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount
-        ) revert InsufficientEscrowBalance();
+        if (escrow.balance < safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
+            revert InsufficientEscrowBalance();
+        }
     }
 
     /**
@@ -116,7 +117,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         if (timelocks.dstCancellationStart() > dstImmutables.srcCancellationTimestamp) revert InvalidCreationTime();
 
         // solhint-disable-next-line no-inline-assembly
-        assembly("memory-safe") {
+        assembly ("memory-safe") {
             // Copy EscrowImmutablesCreation excluding timelocks
             calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
             mstore(add(data, 0xe0), timelocks)

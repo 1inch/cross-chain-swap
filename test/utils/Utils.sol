@@ -15,10 +15,7 @@ contract Utils is Test {
     }
 
     // create users with 100 ETH balance each
-    function createUsers(uint256 userNum)
-        external
-        returns (VmSafe.Wallet[] memory)
-    {
+    function createUsers(uint256 userNum) external returns (VmSafe.Wallet[] memory) {
         VmSafe.Wallet[] memory users = new VmSafe.Wallet[](userNum);
         for (uint256 i = 0; i < userNum; i++) {
             VmSafe.Wallet memory user = this.getNextUserAddress();

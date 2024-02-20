@@ -17,7 +17,7 @@ abstract contract Escrow is Clone, IEscrow {
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    uint256 immutable public RESCUE_DELAY;
+    uint256 public immutable RESCUE_DELAY;
 
     constructor(uint256 rescueDelay) {
         RESCUE_DELAY = rescueDelay;
@@ -55,7 +55,7 @@ abstract contract Escrow is Clone, IEscrow {
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
         if (token == address(0)) {
-            (bool success, ) = to.call{value: amount}("");
+            (bool success,) = to.call{ value: amount }("");
             if (!success) revert NativeTokenSendingFailure();
         } else {
             IERC20(token).safeTransfer(to, amount);

@@ -37,10 +37,9 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         Timelocks timelocks = immutables.timelocks;
 
         // Check that it's a withdrawal period.
-        if (
-            block.timestamp < timelocks.srcWithdrawalStart() ||
-            block.timestamp >= timelocks.srcCancellationStart()
-        ) revert InvalidWithdrawalTime();
+        if (block.timestamp < timelocks.srcWithdrawalStart() || block.timestamp >= timelocks.srcCancellationStart()) {
+            revert InvalidWithdrawalTime();
+        }
 
         _checkSecretAndTransfer(
             secret,
@@ -51,7 +50,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         );
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: immutables.deposits >> 128}("");
+        (bool success,) = msg.sender.call{ value: immutables.deposits >> 128 }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -65,25 +64,17 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         Timelocks timelocks = immutables.timelocks;
 
         // Check that it's a cancellation period.
-        if (block.timestamp < timelocks.srcCancellationStart()) {
-            revert InvalidCancellationTime();
-        }
+        if (block.timestamp < timelocks.srcCancellationStart()) revert InvalidCancellationTime();
 
         // Check that the caller is a taker if it's the private cancellation period.
-        if (
-            block.timestamp < timelocks.srcPubCancellationStart() &&
-            msg.sender != immutables.packedAddresses.taker()
-        ) {
+        if (block.timestamp < timelocks.srcPubCancellationStart() && msg.sender != immutables.packedAddresses.taker()) {
             revert InvalidCaller();
         }
 
-        IERC20(immutables.packedAddresses.token()).safeTransfer(
-            immutables.packedAddresses.maker(),
-            immutables.srcAmount
-        );
+        IERC20(immutables.packedAddresses.token()).safeTransfer(immutables.packedAddresses.maker(), immutables.srcAmount);
 
         // Send the safety deposit to the caller.
-        (bool success, ) = msg.sender.call{value: immutables.deposits >> 128}("");
+        (bool success,) = msg.sender.call{ value: immutables.deposits >> 128 }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
@@ -100,7 +91,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @notice See {IEscrowSrc-escrowImmutables}.
      */
     function escrowImmutables() public pure returns (EscrowImmutables calldata data) {
-         // Get the offset of the immutable args in calldata.
+        // Get the offset of the immutable args in calldata.
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") { data := offset }
