@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { TimelocksSettersLib } from "../utils/libraries/TimelocksSettersLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
+import { TimelocksLibMock } from "../utils/mocks/TimelocksLibMock.sol";
 
 contract TimelocksLibTest is BaseSetup {
-    using TimelocksLib for Timelocks;
-    using TimelocksSettersLib for Timelocks;
+    TimelocksLibMock public timelocksLibMock;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
+        timelocksLibMock = new TimelocksLibMock();
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -28,13 +29,18 @@ contract TimelocksLibTest is BaseSetup {
             timestamp
         );
 
-        assertEq(timelocksTest.rescueStart(RESCUE_DELAY), timestamp + RESCUE_DELAY);
-        assertEq(timelocksTest.srcWithdrawalStart(), timestamp + srcTimelocks.finality);
-        assertEq(timelocksTest.srcCancellationStart(), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        assertEq(timelocksTest.srcPubCancellationStart(), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
-        assertEq(timelocksTest.dstWithdrawalStart(), timestamp + dstTimelocks.finality);
-        assertEq(timelocksTest.dstPubWithdrawalStart(), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(timelocksTest.dstCancellationStart(), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(timelocksLibMock.rescueStart(timelocksTest, RESCUE_DELAY), timestamp + RESCUE_DELAY);
+        assertEq(timelocksLibMock.srcWithdrawalStart(timelocksTest), timestamp + srcTimelocks.finality);
+        assertEq(timelocksLibMock.srcCancellationStart(timelocksTest), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
+        assertEq(timelocksLibMock.srcPubCancellationStart(timelocksTest), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
+        assertEq(timelocksLibMock.dstWithdrawalStart(timelocksTest), timestamp + dstTimelocks.finality);
+        assertEq(timelocksLibMock.dstPubWithdrawalStart(timelocksTest), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
+        assertEq(timelocksLibMock.dstCancellationStart(timelocksTest), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+    }
+
+    function test_setDeployedAt() public {
+        uint256 timestamp = block.timestamp;
+        assertEq(Timelocks.unwrap(timelocksLibMock.setDeployedAt(Timelocks.wrap(0), timestamp)), timestamp);
     }
 
     /* solhint-enable func-name-mixedcase */
