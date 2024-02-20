@@ -32,7 +32,7 @@ contract EscrowFactoryTest is BaseSetup {
             EscrowSrc srcClone
         ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
 
-        (bool success, ) = address(srcClone).call{value: uint64(srcAmount) * 10 / 100}("");
+        (bool success,) = address(srcClone).call{ value: uint64(srcAmount) * 10 / 100 }("");
         assertEq(success, true);
         usdc.transfer(address(srcClone), srcAmount);
 
@@ -58,17 +58,22 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
         assertEq(returnedImmutables.timelocks.srcWithdrawalStart(), block.timestamp + srcTimelocks.finality);
         assertEq(returnedImmutables.timelocks.srcCancellationStart(), block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.srcPubCancellationStart(), block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel);
+        assertEq(
+            returnedImmutables.timelocks.srcPubCancellationStart(),
+            block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel
+        );
         assertEq(returnedImmutables.timelocks.dstWithdrawalStart(), block.timestamp + dstTimelocks.finality);
         assertEq(returnedImmutables.timelocks.dstPubWithdrawalStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.dstCancellationStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(
+            returnedImmutables.timelocks.dstCancellationStart(),
+            block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
+        );
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
-        (
-            IEscrowFactory.EscrowImmutablesCreation memory immutables,
-            EscrowDst dstClone
-        ) = _prepareDataDst(secret, amount, alice.addr, bob.addr, address(dai));
+        (IEscrowFactory.EscrowImmutablesCreation memory immutables, EscrowDst dstClone) = _prepareDataDst(
+            secret, amount, alice.addr, bob.addr, address(dai)
+        );
         uint256 balanceBobNative = bob.addr.balance;
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
@@ -77,7 +82,7 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createDstEscrow{value: safetyDeposit}(immutables);
+        escrowFactory.createDstEscrow{ value: safetyDeposit }(immutables);
 
         assertEq(bob.addr.balance, balanceBobNative - immutables.args.safetyDeposit);
         assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
@@ -93,7 +98,10 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(returnedImmutables.packedAddresses.token(), address(dai));
         assertEq(returnedImmutables.timelocks.dstWithdrawalStart(), block.timestamp + dstTimelocks.finality);
         assertEq(returnedImmutables.timelocks.dstPubWithdrawalStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(returnedImmutables.timelocks.dstCancellationStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal);
+        assertEq(
+            returnedImmutables.timelocks.dstCancellationStart(),
+            block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
+        );
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
@@ -128,7 +136,7 @@ contract EscrowFactoryTest is BaseSetup {
             EscrowSrc srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
-        (bool success, ) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(address(limitOrderProtocol));
@@ -155,7 +163,7 @@ contract EscrowFactoryTest is BaseSetup {
             EscrowSrc srcClone
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
 
-        (bool success, ) = address(srcClone).call{value: SRC_SAFETY_DEPOSIT}("");
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
@@ -177,7 +185,6 @@ contract EscrowFactoryTest is BaseSetup {
             0, // remainingMakingAmount
             extraData
         );
-
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
@@ -190,7 +197,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
-        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables);
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
@@ -212,7 +219,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
-        escrowFactory.createDstEscrow{value: DST_SAFETY_DEPOSIT}(immutables);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables);
     }
 
     /* solhint-enable func-name-mixedcase */
