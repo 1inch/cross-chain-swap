@@ -125,6 +125,13 @@ contract BaseSetup is Test {
 
     SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 900, cancel: 110 });
     DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 240, publicWithdrawal: 360 });
+    bytes internal auctionPoints = abi.encodePacked(
+        uint24(800000), uint16(100),
+        uint24(700000), uint16(100),
+        uint24(600000), uint16(100),
+        uint24(500000), uint16(100),
+        uint24(400000), uint16(100)
+    );
     /* solhint-enable private-vars-leading-underscore */
 
     receive() external payable {}
@@ -217,6 +224,24 @@ contract BaseSetup is Test {
         );
     }
 
+    function _buildAuctionDetails(
+        uint24 gasBumpEstimate,
+        uint32 gasPriceEstimate,
+        uint32 startTime,
+        uint24 duration,
+        uint32 delay,
+        uint24 initialRateBump
+    ) internal view returns (bytes memory auctionDetails) {
+        auctionDetails = abi.encodePacked(
+            gasBumpEstimate,
+            gasPriceEstimate,
+            startTime + delay,
+            duration,
+            initialRateBump,
+            auctionPoints
+        );
+    }
+
     function _prepareDataSrc(
         bytes32 secret,
         uint256 srcAmount,
@@ -265,6 +290,16 @@ contract BaseSetup is Test {
                 bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
             );
 
+            bytes memory auctionDetails = _buildAuctionDetails(
+                0, // gasBumpEstimate
+                0, // gasPriceEstimate
+                uint32(block.timestamp), // startTime
+                1800, // duration: 30 minutes
+                0, // delay
+                900000 // initialRateBump
+            );
+            bytes memory gettersAmountData = abi.encodePacked(address(escrowFactory), auctionDetails);
+
             (order, extension) = _buildOrder(
                 alice.addr,
                 address(0),
@@ -273,9 +308,11 @@ contract BaseSetup is Test {
                 srcAmount,
                 dstAmount,
                 MakerTraits.wrap(0),
-                InteractionParams("", "", "", "", "", "", "", postInteractionData),
+                InteractionParams("", "", gettersAmountData, gettersAmountData, "", "", "", postInteractionData),
                 ""
             );
+
+            dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, bob.addr, srcAmount, srcAmount, auctionDetails);
         }
         orderHash = limitOrderProtocol.hashOrder(order);
         bytes memory interactionParams = abi.encode(orderHash, srcAmount, dstAmount);
