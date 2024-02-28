@@ -125,9 +125,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
 
         address escrow = _createEscrow(IMPL_DST, data, msg.value);
         if (token != address(0)) {
-            IERC20(dstImmutables.args.packedAddresses.token()).safeTransferFrom(
-                msg.sender, escrow, dstImmutables.args.amount
-            );
+            IERC20(token).safeTransferFrom(msg.sender, escrow, dstImmutables.args.amount);
         }
     }
 
