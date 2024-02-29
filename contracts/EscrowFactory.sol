@@ -44,8 +44,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     constructor(
         address limitOrderProtocol,
         IERC20 token,
-        uint256 rescueDelaySrc,
-        uint256 rescueDelayDst
+        uint32 rescueDelaySrc,
+        uint32 rescueDelayDst
     ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
         IMPL_SRC = address(new EscrowSrc(rescueDelaySrc));
         IMPL_DST = address(new EscrowDst(rescueDelayDst));

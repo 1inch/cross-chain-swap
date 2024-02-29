@@ -21,8 +21,7 @@ abstract contract Escrow is IEscrow {
     address public immutable FACTORY = msg.sender;
     bytes32 public immutable PROXY_BYTECODE_HASH = Clones.computeProxyBytecodeHash(address(this));
 
-    constructor(uint256 rescueDelay) {
-        if (rescueDelay > type(uint32).max) revert InvalidRescueDelay();
+    constructor(uint32 rescueDelay) {
         RESCUE_DELAY = rescueDelay;
     }
 

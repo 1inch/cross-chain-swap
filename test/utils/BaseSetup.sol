@@ -100,7 +100,7 @@ contract BaseSetup is Test {
     uint256 internal constant SRC_SAFETY_DEPOSIT = 0.03 ether;
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
-    uint256 internal constant RESCUE_DELAY = 604800; // 7 days
+    uint32 internal constant RESCUE_DELAY = 604800; // 7 days
 
     VmSafe.Wallet[] internal users;
 

@@ -22,7 +22,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
 
-    constructor(uint256 rescueDelay) Escrow(rescueDelay) {}
+    constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
 
     modifier onlyValidImmutables(Immutables calldata immutables) {
         _validateImmutables(immutables);

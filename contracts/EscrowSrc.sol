@@ -23,7 +23,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    constructor(uint256 rescueDelay) Escrow(rescueDelay) {}
+    constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
 
     modifier onlyValidImmutables(Immutables calldata immutables) {
         _validateImmutables(immutables);

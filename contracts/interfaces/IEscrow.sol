@@ -14,7 +14,6 @@ interface IEscrow {
     error InvalidSecret();
     error InvalidWithdrawalTime();
     error NativeTokenSendingFailure();
-    error InvalidRescueDelay();
 
     /* solhint-disable func-name-mixedcase */
     function RESCUE_DELAY() external view returns (uint256);
