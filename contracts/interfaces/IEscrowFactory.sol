@@ -3,9 +3,11 @@
 pragma solidity ^0.8.0;
 
 import { Address } from "solidity-utils/libraries/AddressLib.sol";
+
+import { Timelocks } from "../libraries/TimelocksLib.sol";
+
 import { IEscrowSrc } from "./IEscrowSrc.sol";
 import { IEscrowDst } from "./IEscrowDst.sol";
-import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 interface IEscrowFactory {
     struct ExtraDataImmutables {
