@@ -15,7 +15,7 @@ import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
 import { IEscrowSrc, EscrowSrc } from "contracts/EscrowSrc.sol";
-import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { EscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";

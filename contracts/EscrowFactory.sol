@@ -37,8 +37,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     // Address of the destination escrow contract implementation to clone.
     address public immutable IMPL_DST;
 
-    bytes32 private immutable PROXY_SRC_BYTECODE_HASH;
-    bytes32 private immutable PROXY_DST_BYTECODE_HASH;
+    bytes32 private immutable _PROXY_SRC_BYTECODE_HASH;
+    bytes32 private immutable _PROXY_DST_BYTECODE_HASH;
 
 
     constructor(
@@ -49,8 +49,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
         IMPL_SRC = address(new EscrowSrc(rescueDelaySrc));
         IMPL_DST = address(new EscrowDst(rescueDelayDst));
-        PROXY_SRC_BYTECODE_HASH = Clones.computeProxyBytecodeHash(IMPL_SRC);
-        PROXY_DST_BYTECODE_HASH = Clones.computeProxyBytecodeHash(IMPL_DST);
+        _PROXY_SRC_BYTECODE_HASH = Clones.computeProxyBytecodeHash(IMPL_SRC);
+        _PROXY_DST_BYTECODE_HASH = Clones.computeProxyBytecodeHash(IMPL_DST);
     }
 
     /**
@@ -80,6 +80,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         );
 
         ExtraDataImmutables calldata extraDataImmutables;
+        // solhint-disa
         assembly ("memory-safe") {
             extraDataImmutables := extraData.offset
         }
@@ -101,7 +102,6 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         });
 
         bytes32 salt;
-        // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             salt := keccak256(immutables, 0x160)
         }
@@ -146,14 +146,14 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
     function addressOfEscrowSrc(IEscrowSrc.Immutables calldata immutables) external view returns (address) {
-        return Create2.computeAddress(keccak256(abi.encode(immutables)), PROXY_SRC_BYTECODE_HASH);
+        return Create2.computeAddress(keccak256(abi.encode(immutables)), _PROXY_SRC_BYTECODE_HASH);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
     function addressOfEscrowDst(IEscrowDst.Immutables calldata immutables) external view returns (address) {
-        return Create2.computeAddress(keccak256(abi.encode(immutables)), PROXY_DST_BYTECODE_HASH);
+        return Create2.computeAddress(keccak256(abi.encode(immutables)), _PROXY_DST_BYTECODE_HASH);
     }
 
     /**

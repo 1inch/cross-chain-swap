@@ -16,7 +16,9 @@ interface IEscrow {
     error NativeTokenSendingFailure();
     error InvalidRescueDelay();
 
+    /* solhint-disable func-name-mixedcase */
     function RESCUE_DELAY() external view returns (uint256);
     function FACTORY() external view returns (address);
     function PROXY_BYTECODE_HASH() external view returns (bytes32);
+    /* solhint-enable func-name-mixedcase */
 }

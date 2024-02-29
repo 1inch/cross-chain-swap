@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Escrow, IEscrow } from "contracts/Escrow.sol";
-import { IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { IEscrow } from "contracts/Escrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 

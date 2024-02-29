@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.0.0) (proxy/Clones.sol)
 
 pragma solidity ^0.8.20;
 
@@ -28,8 +27,7 @@ library Clones {
      * the clones cannot be deployed twice at the same address.
      */
     function cloneDeterministic(address implementation, bytes32 salt, uint256 value) internal returns (address instance) {
-        /// @solidity memory-safe-assembly
-        assembly {
+        assembly ("memory-safe"){
             // Cleans the upper 96 bits of the `implementation` word, then packs the first 3 bytes
             // of the `implementation` address with the bytecode before the address.
             mstore(0x00, or(shr(0xe8, shl(0x60, implementation)), 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000))
