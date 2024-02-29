@@ -11,6 +11,7 @@ import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 import { Escrow } from "./Escrow.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowSrc } from "./interfaces/IEscrowSrc.sol";
+import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 
 /**
  * @title Source Escrow contract for cross-chain atomic swap.
@@ -22,6 +23,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     using AddressLib for Address;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
+    using ImmutablesLib for Immutables;
 
     constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
 
@@ -99,8 +101,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     }
 
     function _validateImmutables(Immutables calldata immutables) private view {
-        bytes32 salt = keccak256(abi.encode(immutables));
-        if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
+        if (Create2.computeAddress(immutables.hash(), PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
             revert InvalidImmutables();
         }
     }

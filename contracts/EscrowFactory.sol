@@ -17,6 +17,7 @@ import { IEscrowSrc, EscrowSrc } from "./EscrowSrc.sol";
 import { Clones } from "./libraries/Clones.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
+import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 
 /**
  * @title Escrow Factory contract
@@ -26,6 +27,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     using AddressLib for Address;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
+    using ImmutablesLib for IEscrowSrc.Immutables;
+    using ImmutablesLib for IEscrowDst.Immutables;
 
     uint256 private constant _SRC_DEPOSIT_OFFSET = 96;
     uint256 private constant _DST_DEPOSIT_OFFSET = 112;
@@ -99,12 +102,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
         });
 
-        bytes32 salt;
-        assembly ("memory-safe") {
-            salt := keccak256(immutables, 0x160)
-        }
-
-        address escrow = _createEscrow(IMPL_SRC, salt, 0);
+        address escrow = _createEscrow(IMPL_SRC, immutables.hashMem(), 0);
         if (escrow.balance < immutables.safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
         }
@@ -128,12 +126,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (immutables.timelocks.dstCancellationStart() > srcCancellationTimestamp) revert InvalidCreationTime();
 
-        bytes32 salt;
-        assembly ("memory-safe") {
-            salt := keccak256(immutables, 0x100)
-        }
-
-        address escrow = _createEscrow(IMPL_DST, salt, msg.value);
+        address escrow = _createEscrow(IMPL_DST, immutables.hashMem(), msg.value);
         if (token != address(0)) {
             IERC20(token).safeTransferFrom(msg.sender, escrow, dstImmutables.amount);
         }
@@ -143,14 +136,14 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
     function addressOfEscrowSrc(IEscrowSrc.Immutables calldata immutables) external view returns (address) {
-        return Create2.computeAddress(keccak256(abi.encode(immutables)), _PROXY_SRC_BYTECODE_HASH);
+        return Create2.computeAddress(immutables.hash(), _PROXY_SRC_BYTECODE_HASH);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
     function addressOfEscrowDst(IEscrowDst.Immutables calldata immutables) external view returns (address) {
-        return Create2.computeAddress(keccak256(abi.encode(immutables)), _PROXY_DST_BYTECODE_HASH);
+        return Create2.computeAddress(immutables.hash(), _PROXY_DST_BYTECODE_HASH);
     }
 
     /**
