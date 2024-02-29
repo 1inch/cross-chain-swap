@@ -24,15 +24,17 @@ contract EscrowFactoryTest is BaseSetup {
 
     function testFuzz_DeployCloneForMaker(bytes32 secret, uint56 srcAmount, uint56 dstAmount) public {
         vm.assume(srcAmount > 0 && dstAmount > 0);
+        uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
+        uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
             EscrowSrc srcClone
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount, true);
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount, srcSafetyDeposit, dstSafetyDeposit, address(0), true);
 
-        (bool success,) = address(srcClone).call{ value: uint64(srcAmount) * 10 / 100 }("");
+        (bool success,) = address(srcClone).call{ value: srcSafetyDeposit }("");
         assertEq(success, true);
         usdc.transfer(address(srcClone), srcAmount);
 
@@ -48,6 +50,8 @@ contract EscrowFactoryTest is BaseSetup {
             extraData
         );
 
+        assertEq(usdc.balanceOf(address(srcClone)), srcAmount);
+        assertEq(address(srcClone).balance, srcSafetyDeposit);
         IEscrowSrc.EscrowImmutables memory returnedImmutables = srcClone.escrowImmutables();
         assertEq(returnedImmutables.orderHash, orderHash);
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
@@ -68,6 +72,44 @@ contract EscrowFactoryTest is BaseSetup {
             returnedImmutables.timelocks.dstCancellationStart(),
             block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
         );
+    }
+
+    function testFuzz_DeployCloneForMakerWithReceiver() public {
+        address receiver = users[2].addr;
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            EscrowSrc srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true);
+
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
+        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        IEscrowSrc.EscrowImmutables memory returnedImmutables = srcClone.escrowImmutables();
+        assertEq(returnedImmutables.orderHash, orderHash);
+        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(SECRET)));
+        assertEq(returnedImmutables.srcAmount, MAKING_AMOUNT);
+        assertEq(returnedImmutables.dstToken.get(), address(dai));
+        assertEq(returnedImmutables.packedAddresses.maker(), receiver);
+        assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
+        assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
@@ -110,8 +152,10 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            /* Escrow srcClone */
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+            EscrowSrc srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
@@ -134,7 +178,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             EscrowSrc srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -161,7 +205,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             EscrowSrc srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
