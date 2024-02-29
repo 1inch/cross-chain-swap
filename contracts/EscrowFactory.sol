@@ -95,7 +95,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             hashlock: extraDataImmutables.hashlock,
             dstChainId: extraDataImmutables.dstChainId,
             dstToken: extraDataImmutables.dstToken,
-            deposits: extraDataImmutables.deposits,
+            safetyDeposit: extraDataImmutables.deposits >> 128,
             timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
         });
 
@@ -105,8 +105,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         }
 
         address escrow = _createEscrow(IMPL_SRC, salt, 0);
-        uint256 safetyDeposit = extraDataImmutables.deposits >> 128;
-        if (escrow.balance < safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
+        if (escrow.balance < immutables.safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
         }
     }

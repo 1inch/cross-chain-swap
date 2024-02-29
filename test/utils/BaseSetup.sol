@@ -332,7 +332,7 @@ contract BaseSetup is Test {
             hashlock: keccak256(abi.encodePacked(secret)),
             dstChainId: block.chainid,
             dstToken: Address.wrap(uint160(address(dai))),
-            deposits: (srcSafetyDeposit << 128) | dstSafetyDeposit,
+            safetyDeposit: srcSafetyDeposit,
             timelocks: timelocks
         });
 

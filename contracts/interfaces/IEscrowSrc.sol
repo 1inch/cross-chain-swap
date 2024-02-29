@@ -18,11 +18,11 @@ interface IEscrowSrc {
         Address maker;
         Address taker;
         Address srcToken;
-        // --- ExtraDataImmutables ---
+        // --- Almost ExtraDataImmutables (except safetyDeposit = deposits >> 128) ---
         bytes32 hashlock;  // Hash of the secret.
         uint256 dstChainId;
         Address dstToken;
-        uint256 deposits;  // (uint128(srcSafetyDeposit) << 128) | uint128(dstSafetyDeposit)
+        uint256 safetyDeposit;
         Timelocks timelocks;
     }
 
