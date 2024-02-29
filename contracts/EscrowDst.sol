@@ -38,14 +38,10 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         Timelocks timelocks = immutables.timelocks;
-
-        // Check that it's a withdrawal period.
-        if (block.timestamp < timelocks.dstWithdrawalStart() || block.timestamp >= timelocks.dstCancellationStart()) {
-            revert InvalidWithdrawalTime();
-        }
+        timelocks.requireDstWithdrawalPeriodStarted();
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < timelocks.dstPubWithdrawalStart() && msg.sender != immutables.taker.get()) {
+        if (!timelocks.isDstPubWithdrawalPeriodStarted() && msg.sender != immutables.taker.get()) {
             revert InvalidCaller();
         }
 
@@ -69,9 +65,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
         address taker = immutables.taker.get();
         if (msg.sender != taker) revert InvalidCaller();
-
-        // Check that it's a cancellation period.
-        if (block.timestamp < immutables.timelocks.dstCancellationStart()) revert InvalidCancellationTime();
+        immutables.timelocks.requireDstCancellationPeriodStarted();
 
         IERC20(immutables.token.get()).safeTransfer(taker, immutables.amount);
 

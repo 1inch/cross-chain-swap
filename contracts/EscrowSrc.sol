@@ -56,11 +56,10 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----
      */
     function cancel(Immutables calldata immutables) external {
-        // Check that it's a cancellation period.
-        if (block.timestamp < immutables.timelocks.srcCancellationStart()) revert InvalidCancellationTime();
+        immutables.timelocks.requireSrcCancellationPeriodStarted();
 
         // Check that the caller is a taker if it's the private cancellation period.
-        if (block.timestamp < immutables.timelocks.srcPubCancellationStart() && msg.sender != immutables.taker.get()) {
+        if (!immutables.timelocks.isSrcPubCancellationPeriodStarted() && msg.sender != immutables.taker.get()) {
             revert InvalidCaller();
         }
 
@@ -82,11 +81,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         if (msg.sender != immutables.taker.get()) revert InvalidCaller();
 
         Timelocks timelocks = immutables.timelocks;
-
-        // Check that it's a withdrawal period.
-        if (block.timestamp < timelocks.srcWithdrawalStart() || block.timestamp >= timelocks.srcCancellationStart()) {
-            revert InvalidWithdrawalTime();
-        }
+        timelocks.requireSrcWithdrawalPeriodStarted();
 
         _checkSecretAndTransfer(
             secret,

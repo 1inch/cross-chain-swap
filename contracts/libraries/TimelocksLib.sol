@@ -30,6 +30,10 @@ type Timelocks is uint256;
  * @title Timelocks library for compact storage of timelocks in a uint256.
  */
 library TimelocksLib {
+    error InvalidRescueTime();
+    error InvalidWithdrawalTime();
+    error InvalidCancellationTime();
+
     uint256 internal constant _TIMELOCK_MASK = type(uint32).max;
     // 6 variables 32 bits each
     uint256 internal constant _SRC_FINALITY_OFFSET = 224;
@@ -38,6 +42,44 @@ library TimelocksLib {
     uint256 internal constant _DST_FINALITY_OFFSET = 128;
     uint256 internal constant _DST_WITHDRAWAL_OFFSET = 96;
     uint256 internal constant _DST_PUB_WITHDRAWAL_OFFSET = 64;
+
+    function requireSrcCancellationPeriodStarted(Timelocks timelocks) internal view {
+        if (block.timestamp < srcCancellationStart(timelocks)) {
+            revert InvalidCancellationTime();
+        }
+    }
+
+    function requireDstCancellationPeriodStarted(Timelocks timelocks) internal view {
+        if (block.timestamp < dstCancellationStart(timelocks)) {
+            revert InvalidCancellationTime();
+        }
+    }
+
+    function requireRescuePeriodStarted(Timelocks timelocks, uint256 rescueDelay) internal view {
+        if (block.timestamp < rescueStart(timelocks, rescueDelay)) {
+            revert InvalidRescueTime();
+        }
+    }
+
+    function requireDstWithdrawalPeriodStarted(Timelocks timelocks) internal view {
+        if (block.timestamp < dstWithdrawalStart(timelocks) || block.timestamp >= dstCancellationStart(timelocks)) {
+            revert InvalidWithdrawalTime();
+        }
+    }
+
+    function requireSrcWithdrawalPeriodStarted(Timelocks timelocks) internal view {
+        if (block.timestamp < srcWithdrawalStart(timelocks) || block.timestamp >= srcCancellationStart(timelocks)) {
+            revert InvalidWithdrawalTime();
+        }
+    }
+
+    function isDstPubWithdrawalPeriodStarted(Timelocks timelocks) internal view returns (bool) {
+        return block.timestamp >= dstPubWithdrawalStart(timelocks);
+    }
+
+    function isSrcPubCancellationPeriodStarted(Timelocks timelocks) internal view returns (bool) {
+        return block.timestamp >= srcPubCancellationStart(timelocks);
+    }
 
     /**
      * @notice Sets the Escrow deployment timestamp.

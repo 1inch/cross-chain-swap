@@ -8,11 +8,8 @@ pragma solidity ^0.8.0;
  */
 interface IEscrow {
     error InvalidCaller();
-    error InvalidCancellationTime();
     error InvalidImmutables();
-    error InvalidRescueTime();
     error InvalidSecret();
-    error InvalidWithdrawalTime();
     error NativeTokenSendingFailure();
 
     /* solhint-disable func-name-mixedcase */

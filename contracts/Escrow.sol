@@ -50,7 +50,7 @@ abstract contract Escrow is IEscrow {
     }
 
     function _rescueFunds(Timelocks timelocks, address token, uint256 amount) internal {
-        if (block.timestamp < timelocks.rescueStart(RESCUE_DELAY)) revert InvalidRescueTime();
+        timelocks.requireRescuePeriodStarted(RESCUE_DELAY);
         _uniTransfer(token, msg.sender, amount);
     }
 
