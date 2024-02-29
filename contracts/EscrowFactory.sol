@@ -114,7 +114,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      */
     function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable {
         uint256 nativeAmount = dstImmutables.args.safetyDeposit;
-        address token = dstImmutables.args.dstToken.get();
+        address token = dstImmutables.args.token.get();
         // If the destination token is native, add its amount to the safety deposit.
         if (token == address(0)) {
             nativeAmount += dstImmutables.args.amount;

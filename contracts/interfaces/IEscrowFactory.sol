@@ -5,9 +5,6 @@ pragma solidity ^0.8.0;
 import { IEscrowDst } from "./IEscrowDst.sol";
 
 interface IEscrowFactory {
-    /**
-     * token, amount and safetyDeposit are related to the destination chain.
-     */
     struct EscrowImmutablesCreation {
         IEscrowDst.Immutables args;
         // Start of the cancellation period for the source chain.

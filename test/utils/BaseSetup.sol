@@ -360,7 +360,7 @@ contract BaseSetup is Test {
             hashlock: hashlock,
             maker: Address.wrap(uint160(maker)),
             taker: Address.wrap(uint160(taker)),
-            dstToken: Address.wrap(uint160(token)),
+            token: Address.wrap(uint160(token)),
             amount: amount,
             safetyDeposit: safetyDeposit,
             timelocks: timelocksDst

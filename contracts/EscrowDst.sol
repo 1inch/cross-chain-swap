@@ -51,7 +51,7 @@ contract EscrowDst is Escrow, IEscrowDst {
             secret,
             immutables.hashlock,
             immutables.maker.get(),
-            immutables.dstToken.get(),
+            immutables.token.get(),
             immutables.amount
         );
 
@@ -72,7 +72,7 @@ contract EscrowDst is Escrow, IEscrowDst {
         // Check that it's a cancellation period.
         if (block.timestamp < immutables.timelocks.dstCancellationStart()) revert InvalidCancellationTime();
 
-        IERC20(immutables.dstToken.get()).safeTransfer(taker, immutables.amount);
+        IERC20(immutables.token.get()).safeTransfer(taker, immutables.amount);
 
         // Send the safety deposit to the caller.
         (bool success,) = msg.sender.call{ value: immutables.safetyDeposit }("");

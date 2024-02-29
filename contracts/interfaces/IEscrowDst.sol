@@ -19,7 +19,7 @@ interface IEscrowDst {
         bytes32 hashlock;  // Hash of the secret.
         Address maker;
         Address taker;
-        Address dstToken;
+        Address token;
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
