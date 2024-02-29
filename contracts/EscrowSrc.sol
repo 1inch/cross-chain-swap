@@ -3,6 +3,7 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
@@ -114,7 +115,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     }
 
     function _validateImmutables(Immutables calldata immutables) private view {
-        if (_predictDeterministicAddress(keccak256(abi.encode(immutables))) != address(this)) {
+        bytes32 salt = keccak256(abi.encode(immutables));
+        if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
             revert InvalidImmutables();
         }
     }

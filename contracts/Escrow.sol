@@ -35,21 +35,6 @@ abstract contract Escrow is Clone, IEscrow {
         PROXY_BYTECODE_HASH = bytecodeHash;
     }
 
-    function _predictDeterministicAddress(
-        bytes32 salt
-    ) internal view returns (address predicted) {
-        bytes32 bytecodeHash = PROXY_BYTECODE_HASH;
-        address deployer = FACTORY;
-        assembly ("memory-safe") {
-            let ptr := mload(0x40)
-            mstore(add(ptr, 0x38), deployer)
-            mstore(add(ptr, 0x24), 0xff)
-            mstore(add(ptr, 0x58), salt)
-            mstore(add(ptr, 0x78), bytecodeHash)
-            predicted := keccak256(add(ptr, 0x43), 0x55)
-        }
-    }
-
     function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
         return keccak256(abi.encode(secret)) == hashlock;
     }
