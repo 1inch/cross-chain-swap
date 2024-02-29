@@ -3,7 +3,6 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { Clone } from "clones-with-immutable-args/Clone.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
@@ -13,7 +12,7 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
 /**
  * @title Base Escrow contract for cross-chain atomic swap.
  */
-abstract contract Escrow is Clone, IEscrow {
+abstract contract Escrow is IEscrow {
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
