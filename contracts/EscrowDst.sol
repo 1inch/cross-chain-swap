@@ -56,8 +56,7 @@ contract EscrowDst is Escrow, IEscrowDst {
         );
 
         // Send the safety deposit to the caller.
-        (bool success,) = msg.sender.call{ value: immutables.safetyDeposit }("");
-        if (!success) revert NativeTokenSendingFailure();
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
     /**
@@ -75,8 +74,7 @@ contract EscrowDst is Escrow, IEscrowDst {
         IERC20(immutables.token.get()).safeTransfer(taker, immutables.amount);
 
         // Send the safety deposit to the caller.
-        (bool success,) = msg.sender.call{ value: immutables.safetyDeposit }("");
-        if (!success) revert NativeTokenSendingFailure();
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
     /**

@@ -65,8 +65,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         IERC20(immutables.srcToken.get()).safeTransfer(immutables.maker.get(), immutables.srcAmount);
 
         // Send the safety deposit to the caller.
-        (bool success,) = msg.sender.call{ value: immutables.safetyDeposit }("");
-        if (!success) revert NativeTokenSendingFailure();
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
     /**
@@ -96,8 +95,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         );
 
         // Send the safety deposit to the caller.
-        (bool success,) = msg.sender.call{ value: immutables.safetyDeposit }("");
-        if (!success) revert NativeTokenSendingFailure();
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
     function _validateImmutables(Immutables calldata immutables) private view {

@@ -56,10 +56,14 @@ abstract contract Escrow is IEscrow {
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
         if (token == address(0)) {
-            (bool success,) = to.call{ value: amount }("");
-            if (!success) revert NativeTokenSendingFailure();
+            _ethTransfer(to, amount);
         } else {
             IERC20(token).safeTransfer(to, amount);
         }
+    }
+
+    function _ethTransfer(address to, uint256 amount) internal {
+        (bool success,) = to.call{ value: amount }("");
+        if (!success) revert NativeTokenSendingFailure();
     }
 }
