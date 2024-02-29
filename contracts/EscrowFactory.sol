@@ -80,7 +80,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         );
 
         ExtraDataImmutables calldata extraDataImmutables;
-        // solhint-disa
+        // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             extraDataImmutables := extraData.offset
         }
