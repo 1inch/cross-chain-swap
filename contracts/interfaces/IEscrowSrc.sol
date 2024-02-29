@@ -10,7 +10,7 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
  * @notice Interface implies locking funds initially and then unlocking them with verification of the secret presented.
  */
 interface IEscrowSrc {
-    // Data for the order immutables.
+    // Immutables for Escrow on the source chain
     struct Immutables {
         bytes32 orderHash;
         uint256 srcAmount;
@@ -18,14 +18,14 @@ interface IEscrowSrc {
         Address maker;
         Address taker;
         Address srcToken;
-        // --- Extra data ---
+        // --- ExtraDataImmutables ---
         bytes32 hashlock;  // Hash of the secret.
         uint256 dstChainId;
         Address dstToken;
-        // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
-        uint256 deposits;
+        uint256 deposits;  // (uint128(srcSafetyDeposit) << 128) | uint128(dstSafetyDeposit)
         Timelocks timelocks;
     }
+
     /**
      * @notice Withdraws funds to a predetermined recipient.
      * @dev Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.

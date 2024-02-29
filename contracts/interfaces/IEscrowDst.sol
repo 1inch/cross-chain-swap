@@ -11,7 +11,7 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
  */
 interface IEscrowDst {
     /**
-     * Data for the order immutables.
+     * Immutables for Escrow on the destination chain
      * token, amount and safetyDeposit are related to the destination chain.
      */
     struct Immutables {
