@@ -198,9 +198,9 @@ contract BaseSetup is Test {
 
         escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
         vm.label(address(escrowFactory), "EscrowFactory");
-        escrowSrc = EscrowSrc(escrowFactory.IMPL_SRC());
+        escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
         vm.label(address(escrowSrc), "EscrowSrc");
-        escrowDst = EscrowDst(escrowFactory.IMPL_DST());
+        escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
         vm.label(address(escrowDst), "EscrowDst");
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
