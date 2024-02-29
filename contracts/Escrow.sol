@@ -19,7 +19,7 @@ abstract contract Escrow is Clone, IEscrow {
 
     uint256 public immutable RESCUE_DELAY;
     address public immutable FACTORY = msg.sender;
-    bytes32 public immutable proxyBytecodeHash;
+    bytes32 public immutable PROXY_BYTECODE_HASH;
 
     constructor(uint256 rescueDelay) {
         if (rescueDelay > type(uint32).max) revert InvalidRescueDelay();
@@ -32,13 +32,13 @@ abstract contract Escrow is Clone, IEscrow {
             mstore(40, 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
             bytecodeHash := keccak256(0, 55)
         }
-        proxyBytecodeHash = bytecodeHash;
+        PROXY_BYTECODE_HASH = bytecodeHash;
     }
 
     function _predictDeterministicAddress(
         bytes32 salt
     ) internal view returns (address predicted) {
-        bytes32 bytecodeHash = proxyBytecodeHash;
+        bytes32 bytecodeHash = PROXY_BYTECODE_HASH;
         address deployer = FACTORY;
         assembly ("memory-safe") {
             let ptr := mload(0x40)
