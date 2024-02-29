@@ -35,9 +35,9 @@ contract BaseSetup is Test {
      * cancel: The duration of the period when escrow can only be cancelled by the taker.
      */
     struct SrcTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 cancel;
+        uint32 finality;
+        uint32 withdrawal;
+        uint32 cancel;
     }
 
     /**
@@ -47,9 +47,9 @@ contract BaseSetup is Test {
      * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
      */
     struct DstTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 publicWithdrawal;
+        uint32 finality;
+        uint32 withdrawal;
+        uint32 publicWithdrawal;
     }
 
     struct InteractionParams {
@@ -121,8 +121,8 @@ contract BaseSetup is Test {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 900, cancel: 110 });
-    DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 240, publicWithdrawal: 360 });
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 1020, cancel: 1130 });
+    DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 540, publicWithdrawal: 900 });
     bytes internal auctionPoints = abi.encodePacked(
         uint24(800000), uint16(100),
         uint24(700000), uint16(100),
@@ -180,12 +180,17 @@ contract BaseSetup is Test {
             dstTimelocks.finality,
             dstTimelocks.withdrawal,
             dstTimelocks.publicWithdrawal,
-            block.timestamp
+            uint32(block.timestamp)
         );
-        timelocksDst = timelocks
-            .setSrcFinalityDuration(0)
-            .setSrcWithdrawalDuration(0)
-            .setSrcCancellationDuration(0);
+        timelocksDst = TimelocksSettersLib.init(
+            0,
+            0,
+            0,
+            dstTimelocks.finality,
+            dstTimelocks.withdrawal,
+            dstTimelocks.publicWithdrawal,
+            uint32(block.timestamp)
+        );
     }
 
     function _deployContracts() internal {

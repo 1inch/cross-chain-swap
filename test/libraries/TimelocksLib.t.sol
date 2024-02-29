@@ -26,22 +26,16 @@ contract TimelocksLibTest is BaseSetup {
             dstTimelocks.finality,
             dstTimelocks.withdrawal,
             dstTimelocks.publicWithdrawal,
-            timestamp
+            uint32(timestamp)
         );
 
         assertEq(timelocksLibMock.rescueStart(timelocksTest, RESCUE_DELAY), timestamp + RESCUE_DELAY);
         assertEq(timelocksLibMock.srcWithdrawalStart(timelocksTest), timestamp + srcTimelocks.finality);
-        assertEq(timelocksLibMock.srcCancellationStart(timelocksTest), timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        assertEq(
-            timelocksLibMock.srcPubCancellationStart(timelocksTest),
-            timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel
-        );
+        assertEq(timelocksLibMock.srcCancellationStart(timelocksTest), timestamp + srcTimelocks.withdrawal);
+        assertEq(timelocksLibMock.srcPubCancellationStart(timelocksTest), timestamp + srcTimelocks.cancel);
         assertEq(timelocksLibMock.dstWithdrawalStart(timelocksTest), timestamp + dstTimelocks.finality);
-        assertEq(timelocksLibMock.dstPubWithdrawalStart(timelocksTest), timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        assertEq(
-            timelocksLibMock.dstCancellationStart(timelocksTest),
-            timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
-        );
+        assertEq(timelocksLibMock.dstPubWithdrawalStart(timelocksTest), timestamp + dstTimelocks.withdrawal);
+        assertEq(timelocksLibMock.dstCancellationStart(timelocksTest), timestamp + dstTimelocks.publicWithdrawal);
     }
 
     function test_setDeployedAt() public {

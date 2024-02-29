@@ -645,7 +645,7 @@ contract EscrowTest is BaseSetup {
         uint256 balanceEscrowNative = address(dstClone).balance;
 
         // withdraw
-        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 100);
+        vm.warp(block.timestamp + dstTimelocks.withdrawal + 100);
         dstClone.withdraw(SECRET, immutables.args);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -670,7 +670,7 @@ contract EscrowTest is BaseSetup {
         uint256 balanceEscrowNative = address(dstClone).balance;
 
         // withdraw
-        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 100);
+        vm.warp(block.timestamp + dstTimelocks.withdrawal + 100);
         dstClone.withdraw(SECRET, immutables.args);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -932,7 +932,7 @@ contract EscrowTest is BaseSetup {
         );
 
         // cancel
-        vm.warp(block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + 10);
+        vm.warp(block.timestamp + srcTimelocks.withdrawal + 10);
         vm.expectRevert(IEscrow.InvalidCaller.selector);
         srcClone.cancel(immutables);
     }
@@ -1002,7 +1002,7 @@ contract EscrowTest is BaseSetup {
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables);
 
         // cancel
-        vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 100);
+        vm.warp(block.timestamp + dstTimelocks.withdrawal + 100);
         vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
         dstClone.cancel(immutables.args);
     }
