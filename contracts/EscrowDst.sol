@@ -6,9 +6,9 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
+import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
 import { Escrow } from "./Escrow.sol";
-import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
 
@@ -19,7 +19,7 @@ import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
  */
 contract EscrowDst is Escrow, IEscrowDst {
     using SafeERC20 for IERC20;
-    using PackedAddressesLib for PackedAddresses;
+    using AddressLib for Address;
     using TimelocksLib for Timelocks;
 
     constructor(uint256 rescueDelay) Escrow(rescueDelay) {}
@@ -43,15 +43,15 @@ contract EscrowDst is Escrow, IEscrowDst {
         }
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < timelocks.dstPubWithdrawalStart() && msg.sender != immutables.packedAddresses.taker()) {
+        if (block.timestamp < timelocks.dstPubWithdrawalStart() && msg.sender != immutables.taker.get()) {
             revert InvalidCaller();
         }
 
         _checkSecretAndTransfer(
             secret,
             immutables.hashlock,
-            immutables.packedAddresses.maker(),
-            immutables.packedAddresses.token(),
+            immutables.maker.get(),
+            immutables.dstToken.get(),
             immutables.amount
         );
 
@@ -66,13 +66,13 @@ contract EscrowDst is Escrow, IEscrowDst {
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCELLATION ----
      */
     function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        address taker = immutables.packedAddresses.taker();
+        address taker = immutables.taker.get();
         if (msg.sender != taker) revert InvalidCaller();
 
         // Check that it's a cancellation period.
         if (block.timestamp < immutables.timelocks.dstCancellationStart()) revert InvalidCancellationTime();
 
-        IERC20(immutables.packedAddresses.token()).safeTransfer(taker, immutables.amount);
+        IERC20(immutables.dstToken.get()).safeTransfer(taker, immutables.amount);
 
         // Send the safety deposit to the caller.
         (bool success,) = msg.sender.call{ value: immutables.safetyDeposit }("");
@@ -83,19 +83,9 @@ contract EscrowDst is Escrow, IEscrowDst {
      * @notice See {IEscrow-rescueFunds}.
      */
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.packedAddresses.taker()) revert InvalidCaller();
+        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
         _rescueFunds(immutables.timelocks, token, amount);
     }
-
-    /**
-     * @notice See {IEscrowDst-escrowImmutables}.
-     */
-    // function escrowImmutables() public pure returns (Immutables calldata data) {
-    //     // Get the offset of the immutable args in calldata.
-    //     uint256 offset = _getImmutableArgsOffset();
-    //     // solhint-disable-next-line no-inline-assembly
-    //     assembly ("memory-safe") { data := offset }
-    // }
 
     function _validateImmutables(Immutables calldata immutables) private view {
         bytes32 salt = keccak256(abi.encode(immutables));

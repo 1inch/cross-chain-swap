@@ -18,7 +18,6 @@ import { IEscrowSrc, EscrowSrc } from "contracts/EscrowSrc.sol";
 import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { PackedAddresses, PackedAddressesMemLib } from "./libraries/PackedAddressesMemLib.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
@@ -27,7 +26,6 @@ import { Utils, VmSafe } from "./Utils.sol";
 contract BaseSetup is Test {
     using AddressLib for Address;
     using MakerTraitsLib for MakerTraits;
-    using PackedAddressesMemLib for PackedAddresses;
     using TimelocksSettersLib for Timelocks;
 
     /**
@@ -258,7 +256,6 @@ contract BaseSetup is Test {
         IEscrowSrc.Immutables memory immutables
     ) {
         address maker = receiver == address(0) ? alice.addr: receiver;
-        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, bob.addr, address(usdc));
         extraData = _buidDynamicData(
             secret,
             block.chainid,
@@ -318,8 +315,8 @@ contract BaseSetup is Test {
             dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, bob.addr, srcAmount, srcAmount, auctionDetails);
         }
         orderHash = limitOrderProtocol.hashOrder(order);
-        bytes memory interactionParams = abi.encode(orderHash, srcAmount, dstAmount);
-        bytes memory data = abi.encodePacked(interactionParams, packedAddresses.addressesPart1, packedAddresses.addressesPart2, extraData);
+        bytes memory interactionParams = abi.encodePacked(orderHash, srcAmount, dstAmount);
+        bytes memory data = abi.encodePacked(interactionParams, abi.encode(maker, bob.addr, address(usdc)), extraData);
         assembly ("memory-safe") {
             immutables := add(data, 0x20)
         }
@@ -352,12 +349,13 @@ contract BaseSetup is Test {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
-        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, taker, token);
 
         IEscrowDst.Immutables memory args = IEscrowDst.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
-            packedAddresses: packedAddresses,
+            maker: Address.wrap(uint160(maker)),
+            taker: Address.wrap(uint160(taker)),
+            dstToken: Address.wrap(uint160(token)),
             amount: amount,
             safetyDeposit: safetyDeposit,
             timelocks: timelocksDst

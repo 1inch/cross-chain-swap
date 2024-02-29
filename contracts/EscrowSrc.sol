@@ -6,9 +6,9 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
+import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
 import { Escrow } from "./Escrow.sol";
-import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowSrc } from "./interfaces/IEscrowSrc.sol";
 
@@ -19,8 +19,8 @@ import { IEscrowSrc } from "./interfaces/IEscrowSrc.sol";
  * calls the `EscrowFactory.postInteraction` function.
  */
 contract EscrowSrc is Escrow, IEscrowSrc {
+    using AddressLib for Address;
     using SafeERC20 for IERC20;
-    using PackedAddressesLib for PackedAddresses;
     using TimelocksLib for Timelocks;
 
     constructor(uint256 rescueDelay) Escrow(rescueDelay) {}
@@ -53,18 +53,18 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----
      */
-    function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
+    function cancel(Immutables memory immutables) external {
         Timelocks timelocks = immutables.timelocks;
 
         // Check that it's a cancellation period.
         if (block.timestamp < timelocks.srcCancellationStart()) revert InvalidCancellationTime();
 
         // Check that the caller is a taker if it's the private cancellation period.
-        if (block.timestamp < timelocks.srcPubCancellationStart() && msg.sender != immutables.packedAddresses.taker()) {
+        if (block.timestamp < timelocks.srcPubCancellationStart() && msg.sender != immutables.taker.get()) {
             revert InvalidCaller();
         }
 
-        IERC20(immutables.packedAddresses.token()).safeTransfer(immutables.packedAddresses.maker(), immutables.srcAmount);
+        IERC20(immutables.srcToken.get()).safeTransfer(immutables.maker.get(), immutables.srcAmount);
 
         // Send the safety deposit to the caller.
         (bool success,) = msg.sender.call{ value: immutables.deposits >> 128 }("");
@@ -75,23 +75,12 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @notice See {IEscrow-rescueFunds}.
      */
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.packedAddresses.taker()) revert InvalidCaller();
+        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
         _rescueFunds(immutables.timelocks, token, amount);
     }
 
-    /**
-     * @notice See {IEscrowSrc-escrowImmutables}.
-     */
-    // function escrowImmutables() public pure returns (Immutables calldata data) {
-    //     // Get the offset of the immutable args in calldata.
-    //     uint256 offset = _getImmutableArgsOffset();
-    //     // solhint-disable-next-line no-inline-assembly
-    //     assembly ("memory-safe") { data := offset }
-    // }
-
     function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables) internal {
-        address taker = immutables.packedAddresses.taker();
-        if (msg.sender != taker) revert InvalidCaller();
+        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
 
         Timelocks timelocks = immutables.timelocks;
 
@@ -104,7 +93,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
             secret,
             immutables.hashlock,
             target,
-            immutables.packedAddresses.token(),
+            immutables.srcToken.get(),
             immutables.srcAmount
         );
 

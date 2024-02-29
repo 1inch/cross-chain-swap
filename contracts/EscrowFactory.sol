@@ -4,9 +4,7 @@ pragma solidity 0.8.23;
 
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-// import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
-// import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
@@ -16,7 +14,6 @@ import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { EscrowDst } from "./EscrowDst.sol";
 import { EscrowSrc } from "./EscrowSrc.sol";
 import { Clones } from "./libraries/Clones.sol";
-import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 
@@ -26,8 +23,6 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
  */
 contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
     using AddressLib for Address;
-    // using ClonesWithImmutableArgs for address;
-    using PackedAddressesLib for PackedAddresses;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
@@ -82,31 +77,29 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         ).setDeployedAt(block.timestamp);
 
         // Prepare immutables for the escrow contract.
-        // 10 * 32 bytes
-        bytes memory data = new bytes(0x140);
+        // 11 * 32 bytes
+        bytes memory data = new bytes(0x160);
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             mstore(add(data, 0x20), orderHash)
             mstore(add(data, 0x40), makingAmount) // srcAmount
             mstore(add(data, 0x60), takingAmount) // dstAmount
             // receiver offset in order: 2 * 32 bytes
-            let receiver := shl(0x60, calldataload(add(order, 0x40)))
+            let receiver := calldataload(add(order, 0x40))
             switch iszero(receiver)
             case 1 {
-                // maker offset in order: 32 bytes for salt + 12 unused bytes of maker slot
-                calldatacopy(add(data, 0x80), add(order, 0x2c), 0x14)
+                // maker offset in order: 32 bytes for salt
+                calldatacopy(add(data, 0x80), add(order, 0x20), 0x20)
             }
             default {
                 mstore(add(data, 0x80), receiver)
             }
-            // 0x96 = 0x80 + 20 bytes for maker + 2 empty bytes
-            mstore(add(data, 0x96), shl(0x60, taker))
-            // 0xac = 0x96 + 20 bytes for taker + 2 empty bytes
-            // makerAsset offset in order: 3 * 32 bytes + 12 unused bytes of makerAsset slot
-            calldatacopy(add(data, 0xac), add(order, 0x6c), 0x14)
+            mstore(add(data, 0xa0), taker)
+            // makerAsset offset in order: 3 * 32 bytes
+            calldatacopy(add(data, 0xc0), add(order, 0x60), 0x20)
             // Copy hashlock, dstChainId, dstToken, deposits: 4 * 32 bytes
-            calldatacopy(add(data, 0xc0), extraData.offset, 0x80)
-            mstore(add(data, 0x140), timelocks)
+            calldatacopy(add(data, 0xe0), extraData.offset, 0x80)
+            mstore(add(data, 0x160), timelocks)
         }
 
         address escrow = _createEscrow(IMPL_SRC, data, 0);
@@ -121,15 +114,15 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      */
     function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable {
         uint256 nativeAmount = dstImmutables.args.safetyDeposit;
-        address token = dstImmutables.args.packedAddresses.token();
+        address token = dstImmutables.args.dstToken.get();
         // If the destination token is native, add its amount to the safety deposit.
         if (token == address(0)) {
             nativeAmount += dstImmutables.args.amount;
         }
         if (msg.value < nativeAmount) revert InsufficientEscrowBalance();
 
-        // 7 * 32 bytes for EscrowImmutablesCreation
-        bytes memory data = new bytes(0xe0);
+        // 8 * 32 bytes for EscrowImmutablesCreation
+        bytes memory data = new bytes(0x100);
         Timelocks timelocks = dstImmutables.args.timelocks.setDeployedAt(block.timestamp);
 
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
@@ -138,8 +131,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             // Copy EscrowImmutablesCreation excluding timelocks
-            calldatacopy(add(data, 0x20), dstImmutables, 0xc0)
-            mstore(add(data, 0xe0), timelocks)
+            calldatacopy(add(data, 0x20), dstImmutables, 0x100)
+            mstore(add(data, 0x100), timelocks)
         }
 
         address escrow = _createEscrow(IMPL_DST, data, msg.value);
@@ -152,7 +145,6 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
     function addressOfEscrowSrc(bytes memory data) external view returns (address) {
-        // return ClonesWithImmutableArgs.addressOfClone2(IMPL_SRC, data);
         return Clones.predictDeterministicAddress(IMPL_SRC, keccak256(data));
     }
 
@@ -160,7 +152,6 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
     function addressOfEscrowDst(bytes memory data) external view returns (address) {
-        // return ClonesWithImmutableArgs.addressOfClone2(IMPL_DST, data);
         return Clones.predictDeterministicAddress(IMPL_DST, keccak256(data));
     }
 
@@ -176,7 +167,6 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         bytes memory data,
         uint256 value
     ) private returns (address clone) {
-        // clone = implementation.clone2(data, value);
         clone = Clones.cloneDeterministic(implementation, keccak256(data), value);
     }
 }

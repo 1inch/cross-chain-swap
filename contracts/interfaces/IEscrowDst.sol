@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { PackedAddresses } from "../libraries/PackedAddressesLib.sol";
+import { Address } from "solidity-utils/libraries/AddressLib.sol";
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 /**
@@ -16,10 +16,10 @@ interface IEscrowDst {
      */
     struct Immutables {
         bytes32 orderHash;
-        // Hash of the secret.
-        bytes32 hashlock;
-        // maker, taker, token in two 32-byte slots
-        PackedAddresses packedAddresses;
+        bytes32 hashlock;  // Hash of the secret.
+        Address maker;
+        Address taker;
+        Address dstToken;
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
@@ -47,12 +47,4 @@ interface IEscrowDst {
      * @param amount The amount of tokens to rescue.
      */
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external;
-
-    /**
-     * @notice Returns the immutable parameters of the escrow contract.
-     * @dev The immutables are stored at the end of the proxy clone contract bytecode and
-     * are added to the calldata each time the proxy clone function is called.
-     * @return The immutables of the escrow contract.
-     */
-    // function escrowImmutables() external pure returns (Immutables calldata);
 }
