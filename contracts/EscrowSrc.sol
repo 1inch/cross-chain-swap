@@ -3,6 +3,7 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
@@ -24,13 +25,18 @@ contract EscrowSrc is Escrow, IEscrowSrc {
 
     constructor(uint256 rescueDelay) Escrow(rescueDelay) {}
 
+    modifier onlyValidImmutables(Immutables calldata immutables) {
+        _validateImmutables(immutables);
+        _;
+    }
+
     /**
      * @notice See {IEscrow-withdraw}.
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
-    function withdraw(bytes32 secret) external {
-        _withdrawTo(secret, msg.sender);
+    function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
+        _withdrawTo(secret, msg.sender, immutables);
     }
 
     /**
@@ -38,8 +44,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
-    function withdrawTo(bytes32 secret, address target) external {
-        _withdrawTo(secret, target);
+    function withdrawTo(bytes32 secret, address target, Immutables calldata immutables) external onlyValidImmutables(immutables) {
+        _withdrawTo(secret, target, immutables);
     }
 
     /**
@@ -47,8 +53,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----
      */
-    function cancel() external {
-        EscrowImmutables calldata immutables = escrowImmutables();
+    function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
         Timelocks timelocks = immutables.timelocks;
 
         // Check that it's a cancellation period.
@@ -69,8 +74,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     /**
      * @notice See {IEscrow-rescueFunds}.
      */
-    function rescueFunds(address token, uint256 amount) external {
-        EscrowImmutables calldata immutables = escrowImmutables();
+    function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         if (msg.sender != immutables.packedAddresses.taker()) revert InvalidCaller();
         _rescueFunds(immutables.timelocks, token, amount);
     }
@@ -78,15 +82,14 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     /**
      * @notice See {IEscrowSrc-escrowImmutables}.
      */
-    function escrowImmutables() public pure returns (EscrowImmutables calldata data) {
-        // Get the offset of the immutable args in calldata.
-        uint256 offset = _getImmutableArgsOffset();
-        // solhint-disable-next-line no-inline-assembly
-        assembly ("memory-safe") { data := offset }
-    }
+    // function escrowImmutables() public pure returns (Immutables calldata data) {
+    //     // Get the offset of the immutable args in calldata.
+    //     uint256 offset = _getImmutableArgsOffset();
+    //     // solhint-disable-next-line no-inline-assembly
+    //     assembly ("memory-safe") { data := offset }
+    // }
 
-    function _withdrawTo(bytes32 secret, address target) internal {
-        EscrowImmutables calldata immutables = escrowImmutables();
+    function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables) internal {
         address taker = immutables.packedAddresses.taker();
         if (msg.sender != taker) revert InvalidCaller();
 
@@ -108,5 +111,11 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         // Send the safety deposit to the caller.
         (bool success,) = msg.sender.call{ value: immutables.deposits >> 128 }("");
         if (!success) revert NativeTokenSendingFailure();
+    }
+
+    function _validateImmutables(Immutables calldata immutables) private view {
+        if (_predictDeterministicAddress(keccak256(abi.encode(immutables))) != address(this)) {
+            revert InvalidImmutables();
+        }
     }
 }

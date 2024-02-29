@@ -4,14 +4,18 @@ pragma solidity 0.8.23;
 
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+// import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
-import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+// import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
+import { EscrowDst } from "./EscrowDst.sol";
+import { EscrowSrc } from "./EscrowSrc.sol";
+import { Clones } from "./libraries/Clones.sol";
 import { PackedAddresses, PackedAddressesLib } from "./libraries/PackedAddressesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
@@ -22,7 +26,7 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
  */
 contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
     using AddressLib for Address;
-    using ClonesWithImmutableArgs for address;
+    // using ClonesWithImmutableArgs for address;
     using PackedAddressesLib for PackedAddresses;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
@@ -38,13 +42,13 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     address public immutable IMPL_DST;
 
     constructor(
-        address implSrc,
-        address implDst,
         address limitOrderProtocol,
-        IERC20 token
+        IERC20 token,
+        uint256 rescueDelaySrc,
+        uint256 rescueDelayDst
     ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
-        IMPL_SRC = implSrc;
-        IMPL_DST = implDst;
+        IMPL_SRC = address(new EscrowSrc(rescueDelaySrc));
+        IMPL_DST = address(new EscrowDst(rescueDelayDst));
     }
 
     /**
@@ -148,14 +152,16 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
     function addressOfEscrowSrc(bytes memory data) external view returns (address) {
-        return ClonesWithImmutableArgs.addressOfClone2(IMPL_SRC, data);
+        // return ClonesWithImmutableArgs.addressOfClone2(IMPL_SRC, data);
+        return Clones.predictDeterministicAddress(IMPL_SRC, keccak256(data));
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
     function addressOfEscrowDst(bytes memory data) external view returns (address) {
-        return ClonesWithImmutableArgs.addressOfClone2(IMPL_DST, data);
+        // return ClonesWithImmutableArgs.addressOfClone2(IMPL_DST, data);
+        return Clones.predictDeterministicAddress(IMPL_DST, keccak256(data));
     }
 
     /**
@@ -170,6 +176,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         bytes memory data,
         uint256 value
     ) private returns (address clone) {
-        clone = implementation.clone2(data, value);
+        // clone = implementation.clone2(data, value);
+        clone = Clones.cloneDeterministic(implementation, keccak256(data), value);
     }
 }

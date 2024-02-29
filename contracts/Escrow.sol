@@ -18,10 +18,38 @@ abstract contract Escrow is Clone, IEscrow {
     using TimelocksLib for Timelocks;
 
     uint256 public immutable RESCUE_DELAY;
+    address public immutable FACTORY = msg.sender;
+    bytes32 public immutable proxyBytecodeHash;
 
     constructor(uint256 rescueDelay) {
-        RESCUE_DELAY = rescueDelay;
         if (rescueDelay > type(uint32).max) revert InvalidRescueDelay();
+        RESCUE_DELAY = rescueDelay;
+
+        bytes32 bytecodeHash;
+
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
+            mstore(add(ptr, 0x14), address())
+            mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
+            bytecodeHash := keccak256(add(ptr, 0x0c), 0x37)
+        }
+        proxyBytecodeHash = bytecodeHash;
+    }
+
+    function _predictDeterministicAddress(
+        bytes32 salt
+    ) internal view returns (address predicted) {
+        bytes32 bytecodeHash = proxyBytecodeHash;
+        address deployer = FACTORY;
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            mstore(add(ptr, 0x38), deployer)
+            mstore(add(ptr, 0x24), 0xff)
+            mstore(add(ptr, 0x58), salt)
+            mstore(add(ptr, 0x78), bytecodeHash)
+            predicted := keccak256(add(ptr, 0x43), 0x55)
+        }
     }
 
     function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {

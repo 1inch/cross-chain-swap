@@ -14,7 +14,7 @@ import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimal
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
+import { IEscrowSrc, EscrowSrc } from "contracts/EscrowSrc.sol";
 import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
@@ -193,12 +193,13 @@ contract BaseSetup is Test {
     function _deployContracts() internal {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
 
-        escrowSrc = new EscrowSrc(RESCUE_DELAY);
-        vm.label(address(escrowSrc), "EscrowSrc");
-        escrowDst = new EscrowDst(RESCUE_DELAY);
-        vm.label(address(escrowDst), "EscrowDst");
-        escrowFactory = new EscrowFactory(address(escrowSrc), address(escrowDst), address(limitOrderProtocol), inch);
+        escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
         vm.label(address(escrowFactory), "EscrowFactory");
+        escrowSrc = EscrowSrc(escrowFactory.IMPL_SRC());
+        vm.label(address(escrowSrc), "EscrowSrc");
+        escrowDst = EscrowDst(escrowFactory.IMPL_DST());
+        vm.label(address(escrowDst), "EscrowDst");
+
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
         vm.label(address(feeBank), "FeeBank");
     }
@@ -253,7 +254,8 @@ contract BaseSetup is Test {
         bytes32 orderHash,
         bytes memory extraData,
         bytes memory extension,
-        EscrowSrc srcClone
+        EscrowSrc srcClone,
+        IEscrowSrc.Immutables memory immutables
     ) {
         address maker = receiver == address(0) ? alice.addr: receiver;
         PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, bob.addr, address(usdc));
@@ -318,6 +320,9 @@ contract BaseSetup is Test {
         orderHash = limitOrderProtocol.hashOrder(order);
         bytes memory interactionParams = abi.encode(orderHash, srcAmount, dstAmount);
         bytes memory data = abi.encodePacked(interactionParams, packedAddresses.addressesPart1, packedAddresses.addressesPart2, extraData);
+        assembly ("memory-safe") {
+            immutables := add(data, 0x20)
+        }
 
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(data));
         // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
@@ -349,7 +354,7 @@ contract BaseSetup is Test {
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
         PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, taker, token);
 
-        IEscrowDst.EscrowImmutables memory args = IEscrowDst.EscrowImmutables({
+        IEscrowDst.Immutables memory args = IEscrowDst.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
             packedAddresses: packedAddresses,

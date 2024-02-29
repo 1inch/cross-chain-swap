@@ -23,13 +23,17 @@ contract EscrowDst is Escrow, IEscrowDst {
 
     constructor(uint256 rescueDelay) Escrow(rescueDelay) {}
 
+    modifier onlyValidImmutables(Immutables calldata immutables) {
+        _validateImmutables(immutables);
+        _;
+    }
+
     /**
      * @notice See {IEscrow-withdraw}.
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancellation ----
      */
-    function withdraw(bytes32 secret) external {
-        EscrowImmutables calldata immutables = escrowImmutables();
+    function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         Timelocks timelocks = immutables.timelocks;
 
         // Check that it's a withdrawal period.
@@ -60,8 +64,7 @@ contract EscrowDst is Escrow, IEscrowDst {
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCELLATION ----
      */
-    function cancel() external {
-        EscrowImmutables calldata immutables = escrowImmutables();
+    function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
         address taker = immutables.packedAddresses.taker();
         if (msg.sender != taker) revert InvalidCaller();
 
@@ -78,8 +81,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     /**
      * @notice See {IEscrow-rescueFunds}.
      */
-    function rescueFunds(address token, uint256 amount) external {
-        EscrowImmutables calldata immutables = escrowImmutables();
+    function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         if (msg.sender != immutables.packedAddresses.taker()) revert InvalidCaller();
         _rescueFunds(immutables.timelocks, token, amount);
     }
@@ -87,10 +89,16 @@ contract EscrowDst is Escrow, IEscrowDst {
     /**
      * @notice See {IEscrowDst-escrowImmutables}.
      */
-    function escrowImmutables() public pure returns (EscrowImmutables calldata data) {
-        // Get the offset of the immutable args in calldata.
-        uint256 offset = _getImmutableArgsOffset();
-        // solhint-disable-next-line no-inline-assembly
-        assembly ("memory-safe") { data := offset }
+    // function escrowImmutables() public pure returns (Immutables calldata data) {
+    //     // Get the offset of the immutable args in calldata.
+    //     uint256 offset = _getImmutableArgsOffset();
+    //     // solhint-disable-next-line no-inline-assembly
+    //     assembly ("memory-safe") { data := offset }
+    // }
+
+    function _validateImmutables(Immutables calldata immutables) private view {
+        if (_predictDeterministicAddress(keccak256(abi.encode(immutables))) != address(this)) {
+            revert InvalidImmutables();
+        }
     }
 }

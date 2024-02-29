@@ -5,6 +5,7 @@ libs = ['lib']
 test = 'test'
 optimizer_runs = 1000000
 via-ir = true
+evm_version = 'shanghai'
 gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory"]
 
 [profile.lite.optimizer_details.yulDetails]
