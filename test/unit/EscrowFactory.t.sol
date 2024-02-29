@@ -30,7 +30,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            /* IEscrowSrc.Immutables memory immutables */
         ) = _prepareDataSrc(secret, srcAmount, dstAmount, srcSafetyDeposit, dstSafetyDeposit, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: srcSafetyDeposit }("");
@@ -51,26 +51,6 @@ contract EscrowFactoryTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone)), srcAmount);
         assertEq(address(srcClone).balance, srcSafetyDeposit);
-        // IEscrowSrc.Immutables memory returnedImmutables = srcClone.escrowImmutables();
-        // assertEq(returnedImmutables.orderHash, orderHash);
-        // assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
-        // assertEq(returnedImmutables.srcAmount, srcAmount);
-        // assertEq(returnedImmutables.dstToken.get(), address(dai));
-        // assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
-        // assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
-        // assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
-        // assertEq(returnedImmutables.timelocks.srcWithdrawalStart(), block.timestamp + srcTimelocks.finality);
-        // assertEq(returnedImmutables.timelocks.srcCancellationStart(), block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal);
-        // assertEq(
-        //     returnedImmutables.timelocks.srcPubCancellationStart(),
-        //     block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel
-        // );
-        // assertEq(returnedImmutables.timelocks.dstWithdrawalStart(), block.timestamp + dstTimelocks.finality);
-        // assertEq(returnedImmutables.timelocks.dstPubWithdrawalStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        // assertEq(
-        //     returnedImmutables.timelocks.dstCancellationStart(),
-        //     block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
-        // );
     }
 
     function testFuzz_DeployCloneForMakerWithReceiver() public {
@@ -81,7 +61,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            /* IEscrowSrc.Immutables memory immutables */
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -102,14 +82,6 @@ contract EscrowFactoryTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
         assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
-        // IEscrowSrc.Immutables memory returnedImmutables = srcClone.escrowImmutables();
-        // assertEq(returnedImmutables.orderHash, orderHash);
-        // assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(SECRET)));
-        // assertEq(returnedImmutables.srcAmount, MAKING_AMOUNT);
-        // assertEq(returnedImmutables.dstToken.get(), address(dai));
-        // assertEq(returnedImmutables.packedAddresses.maker(), receiver);
-        // assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
-        // assertEq(returnedImmutables.packedAddresses.token(), address(usdc));
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
@@ -130,20 +102,6 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount);
         assertEq(address(dstClone).balance, balanceEscrowNative + safetyDeposit);
-
-        // IEscrowDst.Immutables memory returnedImmutables = dstClone.escrowImmutables();
-        // assertEq(returnedImmutables.orderHash, bytes32(block.timestamp));
-        // assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
-        // assertEq(returnedImmutables.amount, amount);
-        // assertEq(returnedImmutables.packedAddresses.maker(), alice.addr);
-        // assertEq(returnedImmutables.packedAddresses.taker(), bob.addr);
-        // assertEq(returnedImmutables.packedAddresses.token(), address(dai));
-        // assertEq(returnedImmutables.timelocks.dstWithdrawalStart(), block.timestamp + dstTimelocks.finality);
-        // assertEq(returnedImmutables.timelocks.dstPubWithdrawalStart(), block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal);
-        // assertEq(
-        //     returnedImmutables.timelocks.dstCancellationStart(),
-        //     block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal
-        // );
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
@@ -153,7 +111,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            /* IEscrowSrc.Immutables memory immutables */
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
@@ -179,7 +137,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            /* IEscrowSrc.Immutables memory immutables */
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -207,7 +165,7 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            /* IEscrowSrc.Immutables memory immutables */
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
