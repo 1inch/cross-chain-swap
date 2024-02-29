@@ -319,14 +319,24 @@ contract BaseSetup is Test {
 
             dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, bob.addr, srcAmount, srcAmount, auctionDetails);
         }
-        orderHash = limitOrderProtocol.hashOrder(order);
-        bytes memory interactionParams = abi.encodePacked(orderHash, srcAmount, dstAmount);
-        bytes memory data = abi.encodePacked(interactionParams, abi.encode(maker, bob.addr, address(usdc)), extraData);
-        assembly ("memory-safe") {
-            immutables := add(data, 0x20)
-        }
 
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(data));
+        orderHash = limitOrderProtocol.hashOrder(order);
+
+        immutables = IEscrowSrc.Immutables({
+            orderHash: orderHash,
+            srcAmount: srcAmount,
+            dstAmount: dstAmount,
+            maker: Address.wrap(uint160(maker)),
+            taker: Address.wrap(uint160(bob.addr)),
+            srcToken: Address.wrap(uint160(address(usdc))),
+            hashlock: keccak256(abi.encodePacked(secret)),
+            dstChainId: block.chainid,
+            dstToken: Address.wrap(uint160(address(dai))),
+            deposits: (srcSafetyDeposit << 128) | dstSafetyDeposit,
+            timelocks: timelocks
+        });
+
+        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
         // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
         extraData = abi.encodePacked(extraData, RESOLVER_FEE, whitelist, bytes1(0x08) | bytes1(0x01));
     }
@@ -337,11 +347,11 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrowFactory.EscrowImmutablesCreation memory, EscrowDst) {
-        (IEscrowFactory.EscrowImmutablesCreation memory escrowImmutables, bytes memory data) = _buildDstEscrowImmutables(
+    ) internal view returns (IEscrowDst.Immutables memory, uint256, EscrowDst) {
+        (IEscrowDst.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
             secret, amount, maker, taker, token
         );
-        return (escrowImmutables, EscrowDst(escrowFactory.addressOfEscrowDst(data)));
+        return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
     }
 
     function _buildDstEscrowImmutables(
@@ -350,12 +360,12 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrowFactory.EscrowImmutablesCreation memory immutables, bytes memory data) {
+    ) internal view returns (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
-        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
+        srcCancellationTimestamp = block.timestamp + srcTimelocks.withdrawal;
 
-        IEscrowDst.Immutables memory args = IEscrowDst.Immutables({
+        immutables = IEscrowDst.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
             maker: Address.wrap(uint160(maker)),
@@ -365,8 +375,6 @@ contract BaseSetup is Test {
             safetyDeposit: safetyDeposit,
             timelocks: timelocksDst
         });
-        immutables = IEscrowFactory.EscrowImmutablesCreation(args, srcCancellationTimestamp);
-        data = abi.encode(args);
     }
 
     function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns (MakerTraits) {

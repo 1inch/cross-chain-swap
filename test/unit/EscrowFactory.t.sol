@@ -113,7 +113,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
-        (IEscrowFactory.EscrowImmutablesCreation memory immutables, EscrowDst dstClone) = _prepareDataDst(
+        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDst(
             secret, amount, alice.addr, bob.addr, address(dai)
         );
         uint256 balanceBobNative = bob.addr.balance;
@@ -124,9 +124,9 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
-        escrowFactory.createDstEscrow{ value: safetyDeposit }(immutables);
+        escrowFactory.createDstEscrow{ value: safetyDeposit }(immutables, srcCancellationTimestamp);
 
-        assertEq(bob.addr.balance, balanceBobNative - immutables.args.safetyDeposit);
+        assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);
         assertEq(dai.balanceOf(bob.addr), balanceBob - amount);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow + amount);
         assertEq(address(dstClone).balance, balanceEscrowNative + safetyDeposit);
@@ -235,38 +235,38 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IEscrowFactory.EscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
-        vm.warp(immutables.srcCancellationTimestamp + 1);
+        vm.warp(srcCancellationTimestamp + 1);
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InvalidCreationTime.selector);
-        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IEscrowFactory.EscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
-        escrowFactory.createDstEscrow(immutables);
+        escrowFactory.createDstEscrow(immutables, srcCancellationTimestamp);
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
-        (IEscrowFactory.EscrowImmutablesCreation memory immutables,) = _prepareDataDst(
+        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
         );
 
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
-        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
     }
 
     /* solhint-enable func-name-mixedcase */

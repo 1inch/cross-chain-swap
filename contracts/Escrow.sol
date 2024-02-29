@@ -6,6 +6,7 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
+import { Clones } from "./libraries/Clones.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 
@@ -18,20 +19,11 @@ abstract contract Escrow is IEscrow {
 
     uint256 public immutable RESCUE_DELAY;
     address public immutable FACTORY = msg.sender;
-    bytes32 public immutable PROXY_BYTECODE_HASH;
+    bytes32 public immutable PROXY_BYTECODE_HASH = Clones.computeProxyBytecodeHash(address(this));
 
     constructor(uint256 rescueDelay) {
         if (rescueDelay > type(uint32).max) revert InvalidRescueDelay();
         RESCUE_DELAY = rescueDelay;
-
-        bytes32 bytecodeHash;
-        assembly ("memory-safe") {
-            mstore(0, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
-            mstore(20, shl(96, address()))
-            mstore(40, 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
-            bytecodeHash := keccak256(0, 55)
-        }
-        PROXY_BYTECODE_HASH = bytecodeHash;
     }
 
     function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
