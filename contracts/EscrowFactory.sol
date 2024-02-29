@@ -85,8 +85,6 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             extraDataImmutables := extraData.offset
         }
 
-        Timelocks timelocks = extraDataImmutables.timelocks.setDeployedAt(block.timestamp);
-
         IEscrowSrc.Immutables memory immutables = IEscrowSrc.Immutables({
             orderHash: orderHash,
             srcAmount: makingAmount,
@@ -98,7 +96,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             dstChainId: extraDataImmutables.dstChainId,
             dstToken: extraDataImmutables.dstToken,
             deposits: extraDataImmutables.deposits,
-            timelocks: timelocks
+            timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
         });
 
         bytes32 salt;
@@ -107,7 +105,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         }
 
         address escrow = _createEscrow(IMPL_SRC, salt, 0);
-        uint256 safetyDeposit = uint128(bytes16(extraData[_SRC_DEPOSIT_OFFSET:_DST_DEPOSIT_OFFSET]));
+        uint256 safetyDeposit = extraDataImmutables.deposits >> 128;
         if (escrow.balance < safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
         }
