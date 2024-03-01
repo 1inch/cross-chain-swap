@@ -28,7 +28,7 @@ interface IEscrowFactory {
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
 
-    event CrosschainSwap(IEscrowSrc.Immutables srcImmutables, DstImmutablesComplement srcImmutablesComplement);
+    event CrosschainSwap(IEscrowSrc.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.
