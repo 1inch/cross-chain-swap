@@ -40,7 +40,8 @@ abstract contract Escrow is IEscrow {
      */
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         if (msg.sender != immutables.taker.get()) revert InvalidCaller();
-        _rescueFunds(immutables.timelocks, token, amount);
+        if (block.timestamp < immutables.timelocks.rescueStart(RESCUE_DELAY)) revert InvalidRescueTime();
+        _uniTransfer(token, msg.sender, amount);
     }
 
     function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
@@ -65,11 +66,6 @@ abstract contract Escrow is IEscrow {
     ) internal {
         if (!_isValidSecret(secret, hashlock)) revert InvalidSecret();
         _uniTransfer(token, recipient, amount);
-    }
-
-    function _rescueFunds(Timelocks timelocks, address token, uint256 amount) internal {
-        if (block.timestamp < timelocks.rescueStart(RESCUE_DELAY)) revert InvalidRescueTime();
-        _uniTransfer(token, msg.sender, amount);
     }
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
