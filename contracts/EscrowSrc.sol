@@ -38,7 +38,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
     function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        withdrawTo(secret, msg.sender, immutables);
+        _withdrawTo(secret, msg.sender, immutables);
     }
 
     /**
@@ -46,26 +46,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
-    function withdrawTo(bytes32 secret, address target, Immutables calldata immutables) public onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
-
-        Timelocks timelocks = immutables.timelocks;
-
-        // Check that it's a withdrawal period.
-        if (block.timestamp < timelocks.srcWithdrawalStart() || block.timestamp >= timelocks.srcCancellationStart()) {
-            revert InvalidWithdrawalTime();
-        }
-
-        _checkSecretAndTransfer(
-            secret,
-            immutables.hashlock,
-            target,
-            immutables.srcToken.get(),
-            immutables.srcAmount
-        );
-
-        // Send the safety deposit to the caller.
-        _ethTransfer(msg.sender, immutables.safetyDeposit);
+    function withdrawTo(bytes32 secret, address target, Immutables calldata immutables) external onlyValidImmutables(immutables) {
+        _withdrawTo(secret, target, immutables);
     }
 
     /**
@@ -94,6 +76,28 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         if (msg.sender != immutables.taker.get()) revert InvalidCaller();
         _rescueFunds(immutables.timelocks, token, amount);
+    }
+
+    function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables) internal {
+        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
+
+        Timelocks timelocks = immutables.timelocks;
+
+        // Check that it's a withdrawal period.
+        if (block.timestamp < timelocks.srcWithdrawalStart() || block.timestamp >= timelocks.srcCancellationStart()) {
+            revert InvalidWithdrawalTime();
+        }
+
+        _checkSecretAndTransfer(
+            secret,
+            immutables.hashlock,
+            target,
+            immutables.srcToken.get(),
+            immutables.srcAmount
+        );
+
+        // Send the safety deposit to the caller.
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
     function _validateImmutables(Immutables calldata immutables) private view {
