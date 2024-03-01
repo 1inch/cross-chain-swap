@@ -14,10 +14,10 @@ import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimal
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
-import { IEscrowSrc, EscrowSrc } from "contracts/EscrowSrc.sol";
+import { EscrowSrc } from "contracts/EscrowSrc.sol";
 import { EscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
@@ -258,7 +258,7 @@ contract BaseSetup is Test {
         bytes memory extraData,
         bytes memory extension,
         EscrowSrc srcClone,
-        IEscrowSrc.Immutables memory immutables
+        IEscrow.Immutables memory immutables
     ) {
         address maker = receiver == address(0) ? alice.addr: receiver;
         extraData = _buidDynamicData(
@@ -322,7 +322,7 @@ contract BaseSetup is Test {
 
         orderHash = limitOrderProtocol.hashOrder(order);
 
-        immutables = IEscrowSrc.Immutables({
+        immutables = IEscrow.Immutables({
             orderHash: orderHash,
             amount: srcAmount,
             maker: Address.wrap(uint160(maker)),
@@ -344,8 +344,8 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrowDst.Immutables memory, uint256, EscrowDst) {
-        (IEscrowDst.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
+    ) internal view returns (IEscrow.Immutables memory, uint256, EscrowDst) {
+        (IEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
             secret, amount, maker, taker, token
         );
         return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
@@ -357,12 +357,12 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp) {
+    ) internal view returns (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         srcCancellationTimestamp = block.timestamp + srcTimelocks.withdrawal;
 
-        immutables = IEscrowDst.Immutables({
+        immutables = IEscrow.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
             maker: Address.wrap(uint160(maker)),

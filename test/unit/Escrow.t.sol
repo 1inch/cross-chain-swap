@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import { IEscrow } from "contracts/Escrow.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
@@ -24,8 +23,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -56,8 +55,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -83,7 +82,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoWithdrawalDuringFinalityLockDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -103,8 +102,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -145,7 +144,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -189,8 +188,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
@@ -238,8 +237,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
@@ -288,8 +287,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
@@ -338,8 +337,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
@@ -382,7 +381,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_WithdrawByResolverDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -406,7 +405,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_WithdrawByResolverDstNative() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
         );
 
@@ -428,7 +427,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_RescueFundsDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -462,7 +461,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_RescueFundsDstNative() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -495,7 +494,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoRescueFundsEarlierDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -529,7 +528,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoRescueFundsByAnyoneDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -570,8 +569,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -598,7 +597,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoWithdrawalWithWrongSecretDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -614,7 +613,7 @@ contract EscrowTest is BaseSetup {
 
     // During non-public withdrawal period
     function test_NoWithdrawalByNonResolverDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -630,7 +629,7 @@ contract EscrowTest is BaseSetup {
 
     // During public withdrawal period
     function test_WithdrawByAnyoneDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -655,7 +654,7 @@ contract EscrowTest is BaseSetup {
 
     // During public withdrawal period
     function test_WithdrawByResolverPublicDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -685,8 +684,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -714,7 +713,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -730,7 +729,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDstNative() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, address(escrowFactory), bob.addr, address(0x00)
         );
 
@@ -751,8 +750,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -793,8 +792,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -836,8 +835,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -876,8 +875,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -910,8 +909,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -937,7 +936,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_CancelDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -962,7 +961,7 @@ contract EscrowTest is BaseSetup {
 
     // Only resolver can cancel
     function test_NoCancelByAnyoneDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -977,7 +976,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoCancelDuringResolverWithdrawalDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -992,7 +991,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoCancelDuringPublicWithdrawalDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -1013,8 +1012,8 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IEscrowSrc.Immutables memory immutables
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -1041,7 +1040,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoFailedNativeTokenTransferCancelDst() public {
-        (IEscrowDst.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 

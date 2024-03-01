@@ -3,7 +3,6 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
@@ -27,11 +26,6 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     using TimelocksLib for Timelocks;
 
     constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
-
-    modifier onlyValidImmutables(Immutables calldata immutables) {
-        _validateImmutables(immutables);
-        _;
-    }
 
     /**
      * @notice See {IEscrow-withdraw}.
@@ -99,12 +93,5 @@ contract EscrowSrc is Escrow, IEscrowSrc {
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
-    }
-
-    function _validateImmutables(Immutables calldata immutables) private view {
-        bytes32 salt = immutables.hash();
-        if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
-            revert InvalidImmutables();
-        }
     }
 }

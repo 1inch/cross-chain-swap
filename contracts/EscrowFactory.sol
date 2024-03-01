@@ -17,8 +17,9 @@ import { Clones } from "./libraries/Clones.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { IEscrowDst, EscrowDst } from "./EscrowDst.sol";
-import { IEscrowSrc, EscrowSrc } from "./EscrowSrc.sol";
+import { IEscrow } from "./interfaces/IEscrow.sol";
+import { EscrowDst } from "./EscrowDst.sol";
+import { EscrowSrc } from "./EscrowSrc.sol";
 
 /**
  * @title Escrow Factory contract
@@ -26,11 +27,10 @@ import { IEscrowSrc, EscrowSrc } from "./EscrowSrc.sol";
  */
 contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
     using AddressLib for Address;
+    using Clones for address;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
-    using ImmutablesLib for IEscrowDst.Immutables;
-    using ImmutablesLib for IEscrowSrc.Immutables;
-    using Clones for address;
+    using ImmutablesLib for IEscrow.Immutables;
 
     uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 
@@ -82,7 +82,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             extraDataImmutables := extraData.offset
         }
 
-        IEscrowSrc.Immutables memory immutables = IEscrowSrc.Immutables({
+        IEscrow.Immutables memory immutables = IEscrow.Immutables({
             orderHash: orderHash,
             amount: makingAmount,
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
@@ -112,7 +112,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     /**
      * @notice See {IEscrowFactory-createDstEscrow}.
      */
-    function createDstEscrow(IEscrowDst.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
+    function createDstEscrow(IEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
         address token = dstImmutables.token.get();
         uint256 nativeAmount = dstImmutables.safetyDeposit;
         if (token == address(0)) {
@@ -120,7 +120,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
-        IEscrowDst.Immutables memory immutables = dstImmutables;
+        IEscrow.Immutables memory immutables = dstImmutables;
         immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (immutables.timelocks.dstCancellationStart() > srcCancellationTimestamp) revert InvalidCreationTime();
@@ -135,14 +135,14 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     /**
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
-    function addressOfEscrowSrc(IEscrowSrc.Immutables calldata immutables) external view returns (address) {
+    function addressOfEscrowSrc(IEscrow.Immutables calldata immutables) external view returns (address) {
         return Create2.computeAddress(immutables.hash(), _PROXY_SRC_BYTECODE_HASH);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
-    function addressOfEscrowDst(IEscrowDst.Immutables calldata immutables) external view returns (address) {
+    function addressOfEscrowDst(IEscrow.Immutables calldata immutables) external view returns (address) {
         return Create2.computeAddress(immutables.hash(), _PROXY_DST_BYTECODE_HASH);
     }
 }

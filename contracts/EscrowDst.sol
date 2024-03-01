@@ -3,14 +3,11 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
-import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 
-import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
 import { Escrow } from "./Escrow.sol";
 
 /**
@@ -19,18 +16,12 @@ import { Escrow } from "./Escrow.sol";
  * @dev Funds are locked in at the time of contract deployment. For this taker calls the `EscrowFactory.createDstEscrow` function.
  * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
  */
-contract EscrowDst is Escrow, IEscrowDst {
+contract EscrowDst is Escrow {
     using SafeERC20 for IERC20;
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
-    using ImmutablesLib for Immutables;
 
     constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
-
-    modifier onlyValidImmutables(Immutables calldata immutables) {
-        _validateImmutables(immutables);
-        _;
-    }
 
     /**
      * @notice See {IEscrow-withdraw}.
@@ -86,12 +77,5 @@ contract EscrowDst is Escrow, IEscrowDst {
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
         if (msg.sender != immutables.taker.get()) revert InvalidCaller();
         _rescueFunds(immutables.timelocks, token, amount);
-    }
-
-    function _validateImmutables(Immutables calldata immutables) private view {
-        bytes32 salt = immutables.hash();
-        if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
-            revert InvalidImmutables();
-        }
     }
 }

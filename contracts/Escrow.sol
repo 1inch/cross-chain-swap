@@ -3,9 +3,11 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
 import { Clones } from "./libraries/Clones.sol";
+import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrow } from "./interfaces/IEscrow.sol";
@@ -16,6 +18,7 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
 abstract contract Escrow is IEscrow {
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
+    using ImmutablesLib for Immutables;
 
     uint256 public immutable RESCUE_DELAY;
     address public immutable FACTORY = msg.sender;
@@ -23,6 +26,11 @@ abstract contract Escrow is IEscrow {
 
     constructor(uint32 rescueDelay) {
         RESCUE_DELAY = rescueDelay;
+    }
+
+    modifier onlyValidImmutables(Immutables calldata immutables) {
+        _validateImmutables(immutables);
+        _;
     }
 
     function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
@@ -65,5 +73,12 @@ abstract contract Escrow is IEscrow {
     function _ethTransfer(address to, uint256 amount) internal {
         (bool success,) = to.call{ value: amount }("");
         if (!success) revert NativeTokenSendingFailure();
+    }
+
+    function _validateImmutables(Immutables calldata immutables) private view {
+        bytes32 salt = immutables.hash();
+        if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
+            revert InvalidImmutables();
+        }
     }
 }
