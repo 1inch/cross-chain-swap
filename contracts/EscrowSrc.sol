@@ -50,7 +50,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----
      */
-    function cancel(Immutables calldata immutables) external {
+    function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
         // Check that it's a cancellation period.
         if (block.timestamp < immutables.timelocks.srcCancellationStart()) revert InvalidCancellationTime();
 

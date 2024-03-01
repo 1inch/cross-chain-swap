@@ -1055,5 +1055,73 @@ contract EscrowTest is BaseSetup {
         dstClone.cancel(immutables);
     }
 
+    function test_NoCallsWithInvalidImmutables() public {
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutablesSrc
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+
+        (IEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
+        );
+
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        // deploy src escrow
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        // deploy dst escrow
+        vm.startPrank(bob.addr);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutablesDst, srcCancellationTimestamp);
+
+        vm.warp(block.timestamp + dstTimelocks.finality + 10);
+
+        // withdraw src
+        immutablesSrc.amount = TAKING_AMOUNT;
+        vm.expectRevert(IEscrow.InvalidImmutables.selector);
+        srcClone.withdraw(SECRET, immutablesSrc);
+
+        // withdraw dst
+        immutablesDst.amount = MAKING_AMOUNT;
+        vm.expectRevert(IEscrow.InvalidImmutables.selector);
+        dstClone.withdraw(SECRET, immutablesDst);
+
+        vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
+
+        // cancel src
+        vm.expectRevert(IEscrow.InvalidImmutables.selector);
+        srcClone.cancel(immutablesSrc);
+
+        // cancel dst
+        vm.expectRevert(IEscrow.InvalidImmutables.selector);
+        dstClone.cancel(immutablesDst);
+
+        vm.warp(block.timestamp + RESCUE_DELAY);
+
+        // rescue src
+        vm.expectRevert(IEscrow.InvalidImmutables.selector);
+        srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutablesSrc);
+
+        // rescue dst
+        vm.expectRevert(IEscrow.InvalidImmutables.selector);
+        dstClone.rescueFunds(address(dai), DST_SAFETY_DEPOSIT, immutablesDst);
+    }
+
     /* solhint-enable func-name-mixedcase */
 }
