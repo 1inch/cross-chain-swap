@@ -18,12 +18,13 @@ import { Escrow } from "./Escrow.sol";
  * @notice Contract to initially lock funds and then unlock them with verification of the secret presented.
  * @dev Funds are locked in at the time of contract deployment. For this Limit Order Protocol
  * calls the `EscrowFactory.postInteraction` function.
+ * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
  */
 contract EscrowSrc is Escrow, IEscrowSrc {
     using AddressLib for Address;
+    using ImmutablesLib for Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
-    using ImmutablesLib for Immutables;
 
     constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
 

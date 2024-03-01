@@ -9,6 +9,10 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
 import { IEscrowSrc } from "./IEscrowSrc.sol";
 import { IEscrowDst } from "./IEscrowDst.sol";
 
+/**
+ * @title Escrow Factory interface contract for cross-chain atomic swap.
+ * @notice Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
+ */
 interface IEscrowFactory {
     struct ExtraDataImmutables {
         bytes32 hashlock;
@@ -28,6 +32,7 @@ interface IEscrowFactory {
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
 
+    // Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain
     event CrosschainSwap(IEscrowSrc.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
 
     /**
@@ -41,14 +46,14 @@ interface IEscrowFactory {
 
     /**
      * @notice Returns the deterministic address of the source escrow based on the salt.
-     * @param immutables The immutable arguments used to deploy escrow.
+     * @param immutables The immutable arguments used to compute salt for escrow deployment.
      * @return The computed address of the escrow.
      */
     function addressOfEscrowSrc(IEscrowSrc.Immutables calldata immutables) external view returns (address);
 
     /**
      * @notice Returns the deterministic address of the destination escrow based on the salt.
-     * @param immutables The immutable arguments used to deploy escrow.
+     * @param immutables The immutable arguments used to compute salt for escrow deployment.
      * @return The computed address of the escrow.
      */
     function addressOfEscrowDst(IEscrowDst.Immutables calldata immutables) external view returns (address);
