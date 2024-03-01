@@ -1,38 +1,45 @@
 # EscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/EscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/953335457652894d3aa7caf6353d8c55f2e2a675/contracts/EscrowFactory.sol)
 
 **Inherits:**
-[IEscrowFactory](/contracts/interfaces/IEscrowFactory.sol/interface.IEscrowFactory.md), SimpleSettlementExtension
+[IEscrowFactory](/contracts/interfaces/IEscrowFactory.sol/interface.IEscrowFactory.md), WhitelistExtension, ResolverFeeExtension
 
 Contract to create escrow contracts for cross-chain atomic swap.
 
 
 ## State Variables
-### _EXTRA_DATA_PARAMS_OFFSET
+### _SRC_IMMUTABLES_LENGTH
 
 ```solidity
-uint256 internal constant _EXTRA_DATA_PARAMS_OFFSET = 4;
+uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 ```
 
 
-### _WHITELIST_OFFSET
+### ESCROW_SRC_IMPLEMENTATION
 
 ```solidity
-uint256 internal constant _WHITELIST_OFFSET = 228;
+address public immutable ESCROW_SRC_IMPLEMENTATION;
 ```
 
 
-### IMPL_SRC
+### ESCROW_DST_IMPLEMENTATION
 
 ```solidity
-address public immutable IMPL_SRC;
+address public immutable ESCROW_DST_IMPLEMENTATION;
 ```
 
 
-### IMPL_DST
+### _PROXY_SRC_BYTECODE_HASH
 
 ```solidity
-address public immutable IMPL_DST;
+bytes32 private immutable _PROXY_SRC_BYTECODE_HASH;
+```
+
+
+### _PROXY_DST_BYTECODE_HASH
+
+```solidity
+bytes32 private immutable _PROXY_DST_BYTECODE_HASH;
 ```
 
 
@@ -41,8 +48,12 @@ address public immutable IMPL_DST;
 
 
 ```solidity
-constructor(address implSrc, address implDst, address limitOrderProtocol, IERC20 token)
-    SimpleSettlementExtension(limitOrderProtocol, token);
+constructor(
+    address limitOrderProtocol,
+    IERC20 token,
+    uint32 rescueDelaySrc,
+    uint32 rescueDelayDst
+) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token);
 ```
 
 ### _postInteraction
@@ -54,22 +65,23 @@ to a pre-computed deterministic address of the created escrow.
 The external postInteraction function call will be made from the Limit Order Protocol
 after all funds have been transferred. See [IPostInteraction-postInteraction](/lib/limit-order-protocol/contracts/mocks/InteractionMock.sol/contract.InteractionMock.md#postinteraction).
 `extraData` consists of:
-- 4 bytes for the fee
-- 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
-- whitelist*
+- ExtraDataImmutables struct
+- whitelist
+- 0 / 4 bytes for the fee
+- 1 byte for the bitmap*
 
 
 ```solidity
 function _postInteraction(
     IOrderMixin.Order calldata order,
-    bytes calldata,
+    bytes calldata extension,
     bytes32 orderHash,
     address taker,
     uint256 makingAmount,
     uint256 takingAmount,
-    uint256,
+    uint256 remainingMakingAmount,
     bytes calldata extraData
-) internal override;
+) internal override(WhitelistExtension, ResolverFeeExtension);
 ```
 
 ### createDstEscrow
@@ -78,7 +90,7 @@ See [IEscrowFactory-createDstEscrow](/contracts/interfaces/IEscrowFactory.sol/in
 
 
 ```solidity
-function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable;
+function createDstEscrow(IEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 ```
 
 ### addressOfEscrowSrc
@@ -87,7 +99,7 @@ See [IEscrowFactory-addressOfEscrowSrc](/contracts/interfaces/IEscrowFactory.sol
 
 
 ```solidity
-function addressOfEscrowSrc(bytes memory data) public view returns (address);
+function addressOfEscrowSrc(IEscrow.Immutables calldata immutables) external view returns (address);
 ```
 
 ### addressOfEscrowDst
@@ -96,31 +108,6 @@ See [IEscrowFactory-addressOfEscrowDst](/contracts/interfaces/IEscrowFactory.sol
 
 
 ```solidity
-function addressOfEscrowDst(bytes memory data) public view returns (address);
+function addressOfEscrowDst(IEscrow.Immutables calldata immutables) external view returns (address);
 ```
-
-### _createEscrow
-
-Creates a new escrow contract with immutable arguments.
-
-*The escrow contract is a proxy clone created using the create2 pattern.*
-
-
-```solidity
-function _createEscrow(address implementation, bytes memory data, uint256 value) private returns (address clone);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`implementation`|`address`|The address of the escrow contract implementation.|
-|`data`|`bytes`|Encoded immutable args.|
-|`value`|`uint256`||
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`clone`|`address`|The address of the created escrow contract.|
-
 

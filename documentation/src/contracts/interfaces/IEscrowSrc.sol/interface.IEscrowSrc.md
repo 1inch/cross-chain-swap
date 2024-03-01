@@ -1,42 +1,27 @@
 # IEscrowSrc
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/interfaces/IEscrowSrc.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/953335457652894d3aa7caf6353d8c55f2e2a675/contracts/interfaces/IEscrowSrc.sol)
 
 Interface implies locking funds initially and then unlocking them with verification of the secret presented.
 
 
 ## Functions
-### escrowImmutables
+### withdrawTo
 
-Returns the immutable parameters of the escrow contract.
+Withdraws funds to a specified target.
 
-*The immutables are stored at the end of the proxy clone contract bytecode and
-are added to the calldata each time the proxy clone function is called.*
+*Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
+The safety deposit is sent to the caller.*
 
 
 ```solidity
-function escrowImmutables() external pure returns (EscrowImmutables calldata);
+function withdrawTo(bytes32 secret, address target, IEscrow.Immutables calldata immutables) external;
 ```
-**Returns**
+**Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`<none>`|`EscrowImmutables`|The immutables of the escrow contract.|
+|`secret`|`bytes32`|The secret that unlocks the escrow.|
+|`target`|`address`||
+|`immutables`|`IEscrow.Immutables`||
 
-
-## Structs
-### EscrowImmutables
-
-```solidity
-struct EscrowImmutables {
-    bytes32 orderHash;
-    uint256 srcAmount;
-    uint256 dstAmount;
-    bytes32 hashlock;
-    PackedAddresses packedAddresses;
-    uint256 dstChainId;
-    Address dstToken;
-    uint256 deposits;
-    Timelocks timelocks;
-}
-```
 

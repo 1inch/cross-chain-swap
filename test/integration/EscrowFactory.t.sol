@@ -2,8 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
-import { EscrowSrc, IEscrowSrc } from "contracts/EscrowSrc.sol";
-import { PackedAddressesMemLib } from "../utils/libraries/PackedAddressesMemLib.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 import { Address, AddressLib, BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
@@ -18,16 +17,17 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
 
     function testFuzz_DeployCloneForMakerInt(bytes32 secret, uint56 srcAmount, uint56 dstAmount) public {
         vm.assume(srcAmount > 0 && dstAmount > 0);
-        // uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
-        // uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
-        
+        uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
+        uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
+
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            EscrowSrc srcClone
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount, uint256(srcAmount) * 10 / 100, uint256(dstAmount) * 10 / 100, address(0), false);
+            IEscrow srcClone,
+            /* IEscrow.Immutables memory immutables */
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount, srcSafetyDeposit, dstSafetyDeposit, address(0), false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
@@ -62,12 +62,8 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
         }
 
-        // assertEq(usdc.balanceOf(address(srcClone)), srcAmount2);
-        // assertEq(address(srcClone).balance, uint256(srcAmount) * 10 / 100);
-        IEscrowSrc.EscrowImmutables memory returnedImmutables = srcClone.escrowImmutables();
-        assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
-        assertEq(PackedAddressesMemLib.taker(returnedImmutables.packedAddresses), bob.addr);
-        assertEq(returnedImmutables.dstToken.get(), address(dai));
+        assertEq(usdc.balanceOf(address(srcClone)), srcAmount);
+        assertEq(address(srcClone).balance, srcSafetyDeposit);
     }
 
     function test_NoInsufficientBalanceDeploymentForMakerInt() public {
@@ -76,7 +72,8 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            EscrowSrc srcClone
+            IEscrow srcClone,
+            /* IEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);

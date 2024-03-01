@@ -1,8 +1,8 @@
 # Escrow
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/Escrow.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/953335457652894d3aa7caf6353d8c55f2e2a675/contracts/Escrow.sol)
 
 **Inherits:**
-Clone, [IEscrow](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md)
+[IEscrow](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md)
 
 
 ## State Variables
@@ -13,12 +13,42 @@ uint256 public immutable RESCUE_DELAY;
 ```
 
 
+### FACTORY
+
+```solidity
+address public immutable FACTORY = msg.sender;
+```
+
+
+### PROXY_BYTECODE_HASH
+
+```solidity
+bytes32 public immutable PROXY_BYTECODE_HASH = Clones.computeProxyBytecodeHash(address(this));
+```
+
+
 ## Functions
 ### constructor
 
 
 ```solidity
-constructor(uint256 rescueDelay);
+constructor(uint32 rescueDelay);
+```
+
+### onlyValidImmutables
+
+
+```solidity
+modifier onlyValidImmutables(Immutables calldata immutables);
+```
+
+### rescueFunds
+
+See [IEscrow-rescueFunds](/contracts/interfaces/IEscrow.sol/interface.IEscrow.md#rescuefunds).
+
+
+```solidity
+function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables);
 ```
 
 ### _isValidSecret
@@ -36,8 +66,7 @@ Checks the secret and transfers tokens to the recipient.
 
 
 ```solidity
-function _checkSecretAndTransfer(bytes32 secret, bytes32 hashlock, address recipient, address token, uint256 amount)
-    internal;
+function _checkSecretAndTransfer(bytes32 secret, bytes32 hashlock, address recipient, address token, uint256 amount) internal;
 ```
 **Parameters**
 
@@ -62,5 +91,19 @@ function _rescueFunds(Timelocks timelocks, address token, uint256 amount) intern
 
 ```solidity
 function _uniTransfer(address token, address to, uint256 amount) internal;
+```
+
+### _ethTransfer
+
+
+```solidity
+function _ethTransfer(address to, uint256 amount) internal;
+```
+
+### _validateImmutables
+
+
+```solidity
+function _validateImmutables(Immutables calldata immutables) private view;
 ```
 

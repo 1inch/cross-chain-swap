@@ -15,10 +15,9 @@ import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
 import { EscrowSrc } from "contracts/EscrowSrc.sol";
-import { EscrowFactory, IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { EscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { PackedAddresses, PackedAddressesMemLib } from "./libraries/PackedAddressesMemLib.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
@@ -27,7 +26,6 @@ import { Utils, VmSafe } from "./Utils.sol";
 contract BaseSetup is Test {
     using AddressLib for Address;
     using MakerTraitsLib for MakerTraits;
-    using PackedAddressesMemLib for PackedAddresses;
     using TimelocksSettersLib for Timelocks;
 
     /**
@@ -37,9 +35,9 @@ contract BaseSetup is Test {
      * cancel: The duration of the period when escrow can only be cancelled by the taker.
      */
     struct SrcTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 cancel;
+        uint32 finality;
+        uint32 withdrawal;
+        uint32 cancel;
     }
 
     /**
@@ -49,9 +47,9 @@ contract BaseSetup is Test {
      * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
      */
     struct DstTimelocks {
-        uint256 finality;
-        uint256 withdrawal;
-        uint256 publicWithdrawal;
+        uint32 finality;
+        uint32 withdrawal;
+        uint32 publicWithdrawal;
     }
 
     struct InteractionParams {
@@ -102,7 +100,7 @@ contract BaseSetup is Test {
     uint256 internal constant SRC_SAFETY_DEPOSIT = 0.03 ether;
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
-    uint256 internal constant RESCUE_DELAY = 604800; // 7 days
+    uint32 internal constant RESCUE_DELAY = 604800; // 7 days
 
     VmSafe.Wallet[] internal users;
 
@@ -123,8 +121,8 @@ contract BaseSetup is Test {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 900, cancel: 110 });
-    DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 240, publicWithdrawal: 360 });
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 1020, cancel: 1130 });
+    DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 540, publicWithdrawal: 900 });
     bytes internal auctionPoints = abi.encodePacked(
         uint24(800000), uint16(100),
         uint24(700000), uint16(100),
@@ -182,23 +180,29 @@ contract BaseSetup is Test {
             dstTimelocks.finality,
             dstTimelocks.withdrawal,
             dstTimelocks.publicWithdrawal,
-            block.timestamp
+            uint32(block.timestamp)
         );
-        timelocksDst = timelocks
-            .setSrcFinalityDuration(0)
-            .setSrcWithdrawalDuration(0)
-            .setSrcCancellationDuration(0);
+        timelocksDst = TimelocksSettersLib.init(
+            0,
+            0,
+            0,
+            dstTimelocks.finality,
+            dstTimelocks.withdrawal,
+            dstTimelocks.publicWithdrawal,
+            uint32(block.timestamp)
+        );
     }
 
     function _deployContracts() internal {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
 
-        escrowSrc = new EscrowSrc(RESCUE_DELAY);
-        vm.label(address(escrowSrc), "EscrowSrc");
-        escrowDst = new EscrowDst(RESCUE_DELAY);
-        vm.label(address(escrowDst), "EscrowDst");
-        escrowFactory = new EscrowFactory(address(escrowSrc), address(escrowDst), address(limitOrderProtocol), inch);
+        escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
         vm.label(address(escrowFactory), "EscrowFactory");
+        escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
+        vm.label(address(escrowSrc), "EscrowSrc");
+        escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
+        vm.label(address(escrowDst), "EscrowDst");
+
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
         vm.label(address(feeBank), "FeeBank");
     }
@@ -253,10 +257,10 @@ contract BaseSetup is Test {
         bytes32 orderHash,
         bytes memory extraData,
         bytes memory extension,
-        EscrowSrc srcClone
+        EscrowSrc srcClone,
+        IEscrow.Immutables memory immutables
     ) {
         address maker = receiver == address(0) ? alice.addr: receiver;
-        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, bob.addr, address(usdc));
         extraData = _buidDynamicData(
             secret,
             block.chainid,
@@ -315,11 +319,21 @@ contract BaseSetup is Test {
 
             dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, bob.addr, srcAmount, srcAmount, auctionDetails);
         }
-        orderHash = limitOrderProtocol.hashOrder(order);
-        bytes memory interactionParams = abi.encode(orderHash, srcAmount, dstAmount);
-        bytes memory data = abi.encodePacked(interactionParams, packedAddresses.addressesPart1, packedAddresses.addressesPart2, extraData);
 
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(data));
+        orderHash = limitOrderProtocol.hashOrder(order);
+
+        immutables = IEscrow.Immutables({
+            orderHash: orderHash,
+            amount: srcAmount,
+            maker: Address.wrap(uint160(maker)),
+            taker: Address.wrap(uint160(bob.addr)),
+            token: Address.wrap(uint160(address(usdc))),
+            hashlock: keccak256(abi.encodePacked(secret)),
+            safetyDeposit: srcSafetyDeposit,
+            timelocks: timelocks
+        });
+
+        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
         // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
         extraData = abi.encodePacked(extraData, RESOLVER_FEE, whitelist, bytes1(0x08) | bytes1(0x01));
     }
@@ -330,11 +344,11 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrowFactory.EscrowImmutablesCreation memory, EscrowDst) {
-        (IEscrowFactory.EscrowImmutablesCreation memory escrowImmutables, bytes memory data) = _buildDstEscrowImmutables(
+    ) internal view returns (IEscrow.Immutables memory, uint256, EscrowDst) {
+        (IEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
             secret, amount, maker, taker, token
         );
-        return (escrowImmutables, EscrowDst(escrowFactory.addressOfEscrowDst(data)));
+        return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
     }
 
     function _buildDstEscrowImmutables(
@@ -343,22 +357,21 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrowFactory.EscrowImmutablesCreation memory immutables, bytes memory data) {
+    ) internal view returns (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
-        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal;
-        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, taker, token);
+        srcCancellationTimestamp = block.timestamp + srcTimelocks.withdrawal;
 
-        IEscrowDst.EscrowImmutables memory args = IEscrowDst.EscrowImmutables({
+        immutables = IEscrow.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
-            packedAddresses: packedAddresses,
+            maker: Address.wrap(uint160(maker)),
+            taker: Address.wrap(uint160(taker)),
+            token: Address.wrap(uint160(token)),
             amount: amount,
             safetyDeposit: safetyDeposit,
             timelocks: timelocksDst
         });
-        immutables = IEscrowFactory.EscrowImmutablesCreation(args, srcCancellationTimestamp);
-        data = abi.encode(args);
     }
 
     function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns (MakerTraits) {
