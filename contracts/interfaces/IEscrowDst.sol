@@ -11,10 +11,6 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
  * @notice Interface implies locking funds initially and then unlocking them with verification of the secret presented.
  */
 interface IEscrowDst {
-    /**
-     * Immutables for Escrow on the destination chain
-     * token, amount and safetyDeposit are related to the destination chain.
-     */
     struct Immutables {
         bytes32 orderHash;
         bytes32 hashlock;  // Hash of the secret.

@@ -28,10 +28,10 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     using AddressLib for Address;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
-    using ImmutablesLib for IEscrowSrc.Immutables;
     using ImmutablesLib for IEscrowDst.Immutables;
+    using ImmutablesLib for IEscrowSrc.Immutables;
+    using Clones for address;
 
-    // TODO: do we really need this?
     uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 
     address public immutable ESCROW_SRC_IMPLEMENTATION;
@@ -102,7 +102,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
 
         emit CrosschainSwap(immutables, immutablesComplement);
 
-        address escrow = Clones.cloneDeterministic(ESCROW_SRC_IMPLEMENTATION, immutables.hashMem(), 0);
+        bytes32 salt = immutables.hashMem();
+        address escrow = ESCROW_SRC_IMPLEMENTATION.cloneDeterministic(salt, 0);
         if (escrow.balance < immutables.safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
         }
@@ -113,15 +114,19 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      */
     function createDstEscrow(IEscrowDst.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
         address token = dstImmutables.token.get();
-        if (msg.value < dstImmutables.safetyDeposit + (token == address(0) ? dstImmutables.amount : 0)) revert InsufficientEscrowBalance();
+        uint256 nativeAmount = dstImmutables.safetyDeposit;
+        if (token == address(0)) {
+            nativeAmount += dstImmutables.amount;
+        }
+        if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
         IEscrowDst.Immutables memory immutables = dstImmutables;
-        immutables.timelocks = dstImmutables.timelocks.setDeployedAt(block.timestamp);
+        immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (immutables.timelocks.dstCancellationStart() > srcCancellationTimestamp) revert InvalidCreationTime();
-        // TODO: maybe we need to make sure some distance exist to prevent block duration gaming?
 
-        address escrow = Clones.cloneDeterministic(ESCROW_DST_IMPLEMENTATION, immutables.hashMem(), msg.value);
+        bytes32 salt = immutables.hashMem();
+        address escrow = ESCROW_DST_IMPLEMENTATION.cloneDeterministic(salt, msg.value);
         if (token != address(0)) {
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }

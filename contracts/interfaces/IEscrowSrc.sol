@@ -11,7 +11,6 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
  * @notice Interface implies locking funds initially and then unlocking them with verification of the secret presented.
  */
 interface IEscrowSrc {
-    // Immutables for Escrow on the source chain
     struct Immutables {
         bytes32 orderHash;
         uint256 amount;

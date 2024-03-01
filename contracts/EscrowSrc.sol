@@ -101,7 +101,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     }
 
     function _validateImmutables(Immutables calldata immutables) private view {
-        if (Create2.computeAddress(immutables.hash(), PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
+        bytes32 salt = immutables.hash();
+        if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
             revert InvalidImmutables();
         }
     }
