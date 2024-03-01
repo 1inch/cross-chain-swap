@@ -70,12 +70,4 @@ contract EscrowDst is Escrow {
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
-
-    /**
-     * @notice See {IEscrow-rescueFunds}.
-     */
-    function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
-        _rescueFunds(immutables.timelocks, token, amount);
-    }
 }

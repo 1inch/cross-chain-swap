@@ -65,14 +65,6 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
-    /**
-     * @notice See {IEscrow-rescueFunds}.
-     */
-    function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
-        _rescueFunds(immutables.timelocks, token, amount);
-    }
-
     function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables) internal {
         if (msg.sender != immutables.taker.get()) revert InvalidCaller();
 
