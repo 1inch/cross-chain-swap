@@ -1,5 +1,5 @@
 # Timelocks
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/libraries/TimelocksLib.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/dc0ae325b453eb92201e3de6c74cc1cd6558cced/contracts/libraries/TimelocksLib.sol)
 
 *Timelocks for the source and the destination chains plus the deployment timestamp.
 For illustrative purposes, it is possible to describe timelocks by two structures:

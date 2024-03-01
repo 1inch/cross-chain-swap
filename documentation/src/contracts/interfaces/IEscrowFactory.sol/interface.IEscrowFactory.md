@@ -1,5 +1,7 @@
 # IEscrowFactory
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/interfaces/IEscrowFactory.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/dc0ae325b453eb92201e3de6c74cc1cd6558cced/contracts/interfaces/IEscrowFactory.sol)
+
+Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
 
 
 ## Functions
@@ -12,13 +14,14 @@ and approve the destination token to be transferred to the created escrow.*
 
 
 ```solidity
-function createDstEscrow(EscrowImmutablesCreation calldata dstImmutables) external payable;
+function createDstEscrow(IEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`dstImmutables`|`EscrowImmutablesCreation`|The immutables of the escrow contract that are used in deployment.|
+|`dstImmutables`|`IEscrow.Immutables`|The immutables of the escrow contract that are used in deployment.|
+|`srcCancellationTimestamp`|`uint256`|The start of the cancellation period for the source chain.|
 
 
 ### addressOfEscrowSrc
@@ -27,13 +30,13 @@ Returns the deterministic address of the source escrow based on the salt.
 
 
 ```solidity
-function addressOfEscrowSrc(bytes memory data) external view returns (address);
+function addressOfEscrowSrc(IEscrow.Immutables calldata immutables) external view returns (address);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`data`|`bytes`|The immutable arguments used to deploy escrow.|
+|`immutables`|`IEscrow.Immutables`|The immutable arguments used to compute salt for escrow deployment.|
 
 **Returns**
 
@@ -48,13 +51,13 @@ Returns the deterministic address of the destination escrow based on the salt.
 
 
 ```solidity
-function addressOfEscrowDst(bytes memory data) external view returns (address);
+function addressOfEscrowDst(IEscrow.Immutables calldata immutables) external view returns (address);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`data`|`bytes`|The immutable arguments used to deploy escrow.|
+|`immutables`|`IEscrow.Immutables`|The immutable arguments used to compute salt for escrow deployment.|
 
 **Returns**
 
@@ -62,6 +65,13 @@ function addressOfEscrowDst(bytes memory data) external view returns (address);
 |----|----|-----------|
 |`<none>`|`address`|The computed address of the escrow.|
 
+
+## Events
+### CrosschainSwap
+
+```solidity
+event CrosschainSwap(IEscrow.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
+```
 
 ## Errors
 ### InsufficientEscrowBalance
@@ -77,14 +87,26 @@ error InvalidCreationTime();
 ```
 
 ## Structs
-### EscrowImmutablesCreation
-token, amount and safetyDeposit are related to the destination chain.
-
+### ExtraDataImmutables
 
 ```solidity
-struct EscrowImmutablesCreation {
-    IEscrowDst.EscrowImmutables args;
-    uint256 srcCancellationTimestamp;
+struct ExtraDataImmutables {
+    bytes32 hashlock;
+    uint256 dstChainId;
+    Address dstToken;
+    uint256 deposits;
+    Timelocks timelocks;
+}
+```
+
+### DstImmutablesComplement
+
+```solidity
+struct DstImmutablesComplement {
+    uint256 amount;
+    Address token;
+    uint256 safetyDeposit;
+    uint256 chainId;
 }
 ```
 

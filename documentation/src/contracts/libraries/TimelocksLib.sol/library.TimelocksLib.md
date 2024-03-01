@@ -1,5 +1,5 @@
 # TimelocksLib
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/ebb85c41907258c27b301dda207e13dd189a6048/contracts/libraries/TimelocksLib.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/dc0ae325b453eb92201e3de6c74cc1cd6558cced/contracts/libraries/TimelocksLib.sol)
 
 
 ## State Variables
@@ -222,4 +222,11 @@ function dstCancellationStart(Timelocks timelocks) internal pure returns (uint25
 |----|----|-----------|
 |`<none>`|`uint256`|The start of the private cancellation period.|
 
+
+### _get
+
+
+```solidity
+function _get(Timelocks timelocks, uint256 offset) private pure returns (uint256);
+```
 
