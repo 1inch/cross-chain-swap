@@ -14,15 +14,11 @@ interface IEscrowSrc {
     // Immutables for Escrow on the source chain
     struct Immutables {
         bytes32 orderHash;
-        uint256 srcAmount;
-        uint256 dstAmount;
+        uint256 amount;
         Address maker;
         Address taker;
-        Address srcToken;
-        // --- Almost ExtraDataImmutables (except safetyDeposit = deposits >> 128) ---
+        Address token;
         bytes32 hashlock;  // Hash of the secret.
-        uint256 dstChainId;
-        Address dstToken;
         uint256 safetyDeposit;
         Timelocks timelocks;
     }

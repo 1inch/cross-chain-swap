@@ -6,7 +6,7 @@ import { IEscrowSrc } from "../interfaces/IEscrowSrc.sol";
 import { IEscrowDst } from "../interfaces/IEscrowDst.sol";
 
 library ImmutablesLib {
-    uint256 internal constant ESCROW_SRC_IMMUTABLES_SIZE = 0x160;
+    uint256 internal constant ESCROW_SRC_IMMUTABLES_SIZE = 0x100;
     uint256 internal constant ESCROW_DST_IMMUTABLES_SIZE = 0x100;
 
     function hash(IEscrowSrc.Immutables calldata immutables) internal pure returns(bytes32 ret) {

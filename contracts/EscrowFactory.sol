@@ -84,17 +84,23 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
 
         IEscrowSrc.Immutables memory immutables = IEscrowSrc.Immutables({
             orderHash: orderHash,
-            srcAmount: makingAmount,
-            dstAmount: takingAmount,
+            amount: makingAmount,
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
             taker: Address.wrap(uint160(taker)),
-            srcToken: order.makerAsset,
+            token: order.makerAsset,
             hashlock: extraDataImmutables.hashlock,
-            dstChainId: extraDataImmutables.dstChainId,
-            dstToken: extraDataImmutables.dstToken,
             safetyDeposit: extraDataImmutables.deposits >> 128,
             timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
         });
+
+        DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
+            amount: takingAmount,
+            token: extraDataImmutables.dstToken,
+            safetyDeposit: extraDataImmutables.deposits & type(uint128).max,
+            chainId: extraDataImmutables.dstChainId
+        });
+
+        emit CrosschainSwap(immutables, immutablesComplement);
 
         address escrow = Clones.cloneDeterministic(ESCROW_SRC_IMPLEMENTATION, immutables.hashMem(), 0);
         if (escrow.balance < immutables.safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
