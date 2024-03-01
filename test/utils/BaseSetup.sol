@@ -324,14 +324,11 @@ contract BaseSetup is Test {
 
         immutables = IEscrowSrc.Immutables({
             orderHash: orderHash,
-            srcAmount: srcAmount,
-            dstAmount: dstAmount,
+            amount: srcAmount,
             maker: Address.wrap(uint160(maker)),
             taker: Address.wrap(uint160(bob.addr)),
-            srcToken: Address.wrap(uint160(address(usdc))),
+            token: Address.wrap(uint160(address(usdc))),
             hashlock: keccak256(abi.encodePacked(secret)),
-            dstChainId: block.chainid,
-            dstToken: Address.wrap(uint160(address(dai))),
             safetyDeposit: srcSafetyDeposit,
             timelocks: timelocks
         });

@@ -18,8 +18,17 @@ interface IEscrowFactory {
         Timelocks timelocks;
     }
 
+    struct DstImmutablesComplement {
+        uint256 amount;
+        Address token;
+        uint256 safetyDeposit;
+        uint256 chainId;
+    }
+
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
+
+    event CrosschainSwap(IEscrowSrc.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.

@@ -64,7 +64,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
             revert InvalidCaller();
         }
 
-        IERC20(immutables.srcToken.get()).safeTransfer(immutables.maker.get(), immutables.srcAmount);
+        IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -92,8 +92,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
             secret,
             immutables.hashlock,
             target,
-            immutables.srcToken.get(),
-            immutables.srcAmount
+            immutables.token.get(),
+            immutables.amount
         );
 
         // Send the safety deposit to the caller.
