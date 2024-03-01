@@ -30,28 +30,16 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
     function withdraw(bytes32 secret) external {
-        EscrowImmutables calldata immutables = escrowImmutables();
-        address taker = immutables.packedAddresses.taker();
-        if (msg.sender != taker) revert InvalidCaller();
+        _withdrawTo(secret, msg.sender);
+    }
 
-        Timelocks timelocks = immutables.timelocks;
-
-        // Check that it's a withdrawal period.
-        if (block.timestamp < timelocks.srcWithdrawalStart() || block.timestamp >= timelocks.srcCancellationStart()) {
-            revert InvalidWithdrawalTime();
-        }
-
-        _checkSecretAndTransfer(
-            secret,
-            immutables.hashlock,
-            taker,
-            immutables.packedAddresses.token(),
-            immutables.srcAmount
-        );
-
-        // Send the safety deposit to the caller.
-        (bool success,) = msg.sender.call{ value: immutables.deposits >> 128 }("");
-        if (!success) revert NativeTokenSendingFailure();
+    /**
+     * @notice See {IEscrowSrc-withdrawTo}.
+     * @dev The function works on the time interval highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
+     */
+    function withdrawTo(bytes32 secret, address target) external {
+        _withdrawTo(secret, target);
     }
 
     /**
@@ -95,5 +83,30 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         uint256 offset = _getImmutableArgsOffset();
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") { data := offset }
+    }
+
+    function _withdrawTo(bytes32 secret, address target) internal {
+        EscrowImmutables calldata immutables = escrowImmutables();
+        address taker = immutables.packedAddresses.taker();
+        if (msg.sender != taker) revert InvalidCaller();
+
+        Timelocks timelocks = immutables.timelocks;
+
+        // Check that it's a withdrawal period.
+        if (block.timestamp < timelocks.srcWithdrawalStart() || block.timestamp >= timelocks.srcCancellationStart()) {
+            revert InvalidWithdrawalTime();
+        }
+
+        _checkSecretAndTransfer(
+            secret,
+            immutables.hashlock,
+            target,
+            immutables.packedAddresses.token(),
+            immutables.srcAmount
+        );
+
+        // Send the safety deposit to the caller.
+        (bool success,) = msg.sender.call{ value: immutables.deposits >> 128 }("");
+        if (!success) revert NativeTokenSendingFailure();
     }
 }

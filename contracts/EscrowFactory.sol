@@ -27,10 +27,10 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    uint256 private constant _SRC_DEPOSIT_OFFSET = 100;
-    uint256 private constant _DST_DEPOSIT_OFFSET = 116;
-    uint256 private constant _TIMELOCKS_OFFSET = 192;
-    uint256 private constant _SRC_IMMUTABLES_LENGTH = 224;
+    uint256 private constant _SRC_DEPOSIT_OFFSET = 96;
+    uint256 private constant _DST_DEPOSIT_OFFSET = 112;
+    uint256 private constant _TIMELOCKS_OFFSET = 128;
+    uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 
     // Address of the source escrow contract implementation to clone.
     address public immutable IMPL_SRC;
@@ -54,7 +54,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * The external postInteraction function call will be made from the Limit Order Protocol
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
      * `extraData` consists of:
-     *   - 7 * 32 bytes for hashlock, packedAddresses (2 * 32), dstChainId, dstToken, deposits and timelocks
+     *   - 5 * 32 bytes for hashlock, dstChainId, dstToken, deposits and timelocks
      *   - whitelist
      *   - 0 / 4 bytes for the fee
      *   - 1 byte for the bitmap
@@ -85,8 +85,23 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             mstore(add(data, 0x20), orderHash)
             mstore(add(data, 0x40), makingAmount) // srcAmount
             mstore(add(data, 0x60), takingAmount) // dstAmount
-            // Copy hashlock, packedAddresses, dstChainId, dstToken, deposits: 6 * 32 bytes
-            calldatacopy(add(data, 0x80), extraData.offset, 0xc0)
+            // receiver offset in order: 2 * 32 bytes
+            let receiver := shl(0x60, calldataload(add(order, 0x40)))
+            switch iszero(receiver)
+            case 1 {
+                // maker offset in order: 32 bytes for salt + 12 unused bytes of maker slot
+                calldatacopy(add(data, 0x80), add(order, 0x2c), 0x14)
+            }
+            default {
+                mstore(add(data, 0x80), receiver)
+            }
+            // 0x96 = 0x80 + 20 bytes for maker + 2 empty bytes
+            mstore(add(data, 0x96), shl(0x60, taker))
+            // 0xac = 0x96 + 20 bytes for taker + 2 empty bytes
+            // makerAsset offset in order: 3 * 32 bytes + 12 unused bytes of makerAsset slot
+            calldatacopy(add(data, 0xac), add(order, 0x6c), 0x14)
+            // Copy hashlock, dstChainId, dstToken, deposits: 4 * 32 bytes
+            calldatacopy(add(data, 0xc0), extraData.offset, 0x80)
             mstore(add(data, 0x140), timelocks)
         }
 

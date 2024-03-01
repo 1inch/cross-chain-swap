@@ -138,7 +138,7 @@ contract BaseSetup is Test {
 
     function setUp() public virtual {
         Utils utils = new Utils();
-        users = utils.createUsers(2);
+        users = utils.createUsers(3);
 
         alice = users[0];
         vm.label(alice.addr, "Alice");
@@ -205,7 +205,6 @@ contract BaseSetup is Test {
 
     function _buidDynamicData(
         bytes32 secret,
-        PackedAddresses memory packedAddresses,
         uint256 chainId,
         address token,
         uint256 srcSafetyDeposit,
@@ -215,7 +214,6 @@ contract BaseSetup is Test {
         return (
             abi.encode(
                 hashlock,
-                packedAddresses,
                 chainId,
                 token,
                 (srcSafetyDeposit << 128) | dstSafetyDeposit,
@@ -246,6 +244,9 @@ contract BaseSetup is Test {
         bytes32 secret,
         uint256 srcAmount,
         uint256 dstAmount,
+        uint256 srcSafetyDeposit,
+        uint256 dstSafetyDeposit,
+        address receiver,
         bool fakeOrder
     ) internal returns(
         IOrderMixin.Order memory order,
@@ -254,14 +255,14 @@ contract BaseSetup is Test {
         bytes memory extension,
         EscrowSrc srcClone
     ) {
-        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(alice.addr, bob.addr, address(usdc));
+        address maker = receiver == address(0) ? alice.addr: receiver;
+        PackedAddresses memory packedAddresses = PackedAddressesMemLib.packAddresses(maker, bob.addr, address(usdc));
         extraData = _buidDynamicData(
             secret,
-            packedAddresses,
             block.chainid,
             address(dai),
-            srcAmount * 10 / 100,
-            dstAmount * 10 / 100
+            srcSafetyDeposit,
+            dstSafetyDeposit
         );
 
         bytes memory whitelist = abi.encodePacked(
@@ -274,7 +275,7 @@ contract BaseSetup is Test {
             order = IOrderMixin.Order({
                 salt: 0,
                 maker: Address.wrap(uint160(alice.addr)),
-                receiver: Address.wrap(uint160(bob.addr)),
+                receiver: Address.wrap(uint160(receiver)),
                 makerAsset: Address.wrap(uint160(address(usdc))),
                 takerAsset: Address.wrap(uint160(address(dai))),
                 makingAmount: srcAmount,
@@ -302,7 +303,7 @@ contract BaseSetup is Test {
 
             (order, extension) = _buildOrder(
                 alice.addr,
-                address(0),
+                receiver,
                 address(usdc),
                 address(new ERC20True()),
                 srcAmount,
@@ -316,7 +317,7 @@ contract BaseSetup is Test {
         }
         orderHash = limitOrderProtocol.hashOrder(order);
         bytes memory interactionParams = abi.encode(orderHash, srcAmount, dstAmount);
-        bytes memory data = abi.encodePacked(interactionParams, extraData);
+        bytes memory data = abi.encodePacked(interactionParams, packedAddresses.addressesPart1, packedAddresses.addressesPart2, extraData);
 
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(data));
         // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee

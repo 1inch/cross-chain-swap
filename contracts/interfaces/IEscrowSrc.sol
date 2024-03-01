@@ -17,17 +17,25 @@ interface IEscrowSrc {
         bytes32 orderHash;
         uint256 srcAmount;
         uint256 dstAmount;
+        // maker, taker, token in two 32-byte slots
+        PackedAddresses packedAddresses;
         // --- Extra data ---
         // Hash of the secret.
         bytes32 hashlock;
-        // maker, taker, token in two 32-byte slots
-        PackedAddresses packedAddresses;
         uint256 dstChainId;
         Address dstToken;
         // 16 bytes for srcSafetyDeposit and 16 bytes for dstSafetyDeposit.
         uint256 deposits;
         Timelocks timelocks;
     }
+
+    /**
+     * @notice Withdraws funds to a specified target.
+     * @dev Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
+     * The safety deposit is sent to the caller.
+     * @param secret The secret that unlocks the escrow.
+     */
+    function withdrawTo(bytes32 secret, address target) external;
 
     /**
      * @notice Returns the immutable parameters of the escrow contract.

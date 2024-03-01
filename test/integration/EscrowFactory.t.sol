@@ -18,13 +18,16 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
 
     function testFuzz_DeployCloneForMakerInt(bytes32 secret, uint56 srcAmount, uint56 dstAmount) public {
         vm.assume(srcAmount > 0 && dstAmount > 0);
+        // uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
+        // uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
+        
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
             EscrowSrc srcClone
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount, false);
+        ) = _prepareDataSrc(secret, srcAmount, dstAmount, uint256(srcAmount) * 10 / 100, uint256(dstAmount) * 10 / 100, address(0), false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
@@ -40,23 +43,27 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: uint64(srcAmount) * 10 / 100 }("");
-        assertEq(success, true);
+        {
+            (bool success,) = address(srcClone).call{ value: uint64(srcAmount) * 10 / 100 }("");
+            assertEq(success, true);
 
-        uint256 resolverCredit = feeBank.availableCredit(bob.addr);
+            uint256 resolverCredit = feeBank.availableCredit(bob.addr);
 
-        vm.prank(bob.addr);
-        limitOrderProtocol.fillOrderArgs(
-            order,
-            r,
-            vs,
-            srcAmount, // amount
-            takerTraits,
-            args
-        );
+            vm.prank(bob.addr);
+            limitOrderProtocol.fillOrderArgs(
+                order,
+                r,
+                vs,
+                srcAmount, // amount
+                takerTraits,
+                args
+            );
 
-        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+            assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+        }
 
+        // assertEq(usdc.balanceOf(address(srcClone)), srcAmount2);
+        // assertEq(address(srcClone).balance, uint256(srcAmount) * 10 / 100);
         IEscrowSrc.EscrowImmutables memory returnedImmutables = srcClone.escrowImmutables();
         assertEq(returnedImmutables.hashlock, keccak256(abi.encodePacked(secret)));
         assertEq(PackedAddressesMemLib.taker(returnedImmutables.packedAddresses), bob.addr);
@@ -70,7 +77,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             EscrowSrc srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, false);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;

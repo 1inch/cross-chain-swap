@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Escrow, IEscrow } from "contracts/Escrow.sol";
+import { IEscrowSrc } from "contracts/EscrowSrc.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
@@ -24,7 +25,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -55,7 +56,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -101,7 +102,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -133,6 +134,50 @@ contract EscrowTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
+    function test_WithdrawSrcTo() public {
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            IEscrowSrc srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        address target = users[2].addr;
+
+        uint256 balanceBob = usdc.balanceOf(bob.addr);
+        uint256 balanceTarget = usdc.balanceOf(target);
+        uint256 balanceBobNative = bob.addr.balance;
+        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+
+        // withdraw
+        vm.warp(block.timestamp + srcTimelocks.finality + 100);
+        vm.prank(bob.addr);
+        srcClone.withdrawTo(SECRET, target);
+
+        assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(bob.addr), balanceBob);
+        assertEq(usdc.balanceOf(target), balanceTarget + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+    }
+
     function test_RescueFundsSrc() public {
         // deploy escrow
         (
@@ -141,7 +186,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -189,7 +234,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -238,7 +283,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -287,7 +332,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -518,7 +563,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -632,7 +677,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -697,7 +742,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -729,6 +774,49 @@ contract EscrowTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
+    function test_CancelResolverSrcReceiver() public {
+        address receiver = users[2].addr;
+        // deploy escrow
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            Escrow srcClone
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true);
+
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+
+        uint256 balanceBob = bob.addr.balance;
+        uint256 balanceAlice = usdc.balanceOf(alice.addr);
+        uint256 balanceReceiver= usdc.balanceOf(receiver);
+        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+
+        // cancel
+        vm.warp(block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + 10);
+        vm.prank(bob.addr);
+        srcClone.cancel();
+
+        assertEq(bob.addr.balance, balanceBob + SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(alice.addr), balanceAlice);
+        assertEq(usdc.balanceOf(receiver), balanceReceiver + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+    }
+
     function test_CancelPublicSrc() public {
         // deploy escrow
         (
@@ -737,7 +825,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -776,7 +864,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -809,7 +897,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -911,7 +999,7 @@ contract EscrowTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             Escrow srcClone
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, true);
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
