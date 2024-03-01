@@ -1,5 +1,5 @@
 # Clones
-[Git Source](https://github.com/1inch/cross-chain-swap/blob/dc0ae325b453eb92201e3de6c74cc1cd6558cced/contracts/libraries/Clones.sol)
+[Git Source](https://github.com/1inch/cross-chain-swap/blob/953335457652894d3aa7caf6353d8c55f2e2a675/contracts/libraries/Clones.sol)
 
 *https://eips.ethereum.org/EIPS/eip-1167[ERC-1167] is a standard for
 deploying minimal proxy contracts, also known as "clones".
