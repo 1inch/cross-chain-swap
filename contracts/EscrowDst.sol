@@ -37,7 +37,7 @@ contract EscrowDst is Escrow {
         }
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < timelocks.dstPubWithdrawalStart() && msg.sender != immutables.taker.get()) {
+        if (msg.sender != immutables.taker.get() && block.timestamp < timelocks.dstPubWithdrawalStart()) {
             revert InvalidCaller();
         }
 
