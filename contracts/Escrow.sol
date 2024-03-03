@@ -44,10 +44,6 @@ abstract contract Escrow is IEscrow {
         _uniTransfer(token, msg.sender, amount);
     }
 
-    function _isValidSecret(bytes32 secret, bytes32 hashlock) internal pure returns (bool) {
-        return keccak256(abi.encode(secret)) == hashlock;
-    }
-
     /**
      * @notice Checks the secret and transfers tokens to the recipient.
      * @dev The secret is valid if its hash matches the hashlock.
@@ -56,8 +52,15 @@ abstract contract Escrow is IEscrow {
      * @param immutables Immutable values of the escrow.
      */
     function _checkSecretAndTransferTo(bytes32 secret, address to, Immutables calldata immutables) internal {
-        if (!_isValidSecret(secret, immutables.hashlock)) revert InvalidSecret();
+        if (_keccakBytes32(secret) != immutables.hashlock) revert InvalidSecret();
         _uniTransfer(immutables.token.get(), to, immutables.amount);
+    }
+
+    function _keccakBytes32(bytes32 secret) internal pure returns (bytes32 ret) {
+        assembly ("memory-safe") {
+            mstore(0, secret)
+            ret := keccak256(0, 0x20)
+        }
     }
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
