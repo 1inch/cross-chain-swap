@@ -75,13 +75,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
             revert InvalidWithdrawalTime();
         }
 
-        _checkSecretAndTransfer(
-            secret,
-            immutables.hashlock,
-            target,
-            immutables.token.get(),
-            immutables.amount
-        );
+        _checkSecretAndTransferTo(secret, target, immutables);
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);

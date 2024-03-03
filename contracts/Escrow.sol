@@ -51,21 +51,13 @@ abstract contract Escrow is IEscrow {
     /**
      * @notice Checks the secret and transfers tokens to the recipient.
      * @dev The secret is valid if its hash matches the hashlock.
-     * @param secret Provided secret to verify.
-     * @param hashlock Hashlock to compare with.
-     * @param recipient Address to transfer tokens to.
-     * @param token Address of the token to transfer.
-     * @param amount Amount of tokens to transfer.
+     * @param secret Secret to compare with.
+     * @param to Address to transfer tokens to.
+     * @param immutables Immutable values of the escrow.
      */
-    function _checkSecretAndTransfer(
-        bytes32 secret,
-        bytes32 hashlock,
-        address recipient,
-        address token,
-        uint256 amount
-    ) internal {
-        if (!_isValidSecret(secret, hashlock)) revert InvalidSecret();
-        _uniTransfer(token, recipient, amount);
+    function _checkSecretAndTransferTo(bytes32 secret, address to, Immutables calldata immutables) internal {
+        if (!_isValidSecret(secret, immutables.hashlock)) revert InvalidSecret();
+        _uniTransfer(immutables.token.get(), to, immutables.amount);
     }
 
     function _uniTransfer(address token, address to, uint256 amount) internal {

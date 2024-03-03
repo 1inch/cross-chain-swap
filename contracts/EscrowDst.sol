@@ -41,13 +41,7 @@ contract EscrowDst is Escrow {
             revert InvalidCaller();
         }
 
-        _checkSecretAndTransfer(
-            secret,
-            immutables.hashlock,
-            immutables.maker.get(),
-            immutables.token.get(),
-            immutables.amount
-        );
+        _checkSecretAndTransferTo(secret, immutables.maker.get(), immutables);
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
