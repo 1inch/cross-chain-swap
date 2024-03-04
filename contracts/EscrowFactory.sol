@@ -84,11 +84,11 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
 
         IEscrow.Immutables memory immutables = IEscrow.Immutables({
             orderHash: orderHash,
-            amount: makingAmount,
+            hashlock: extraDataImmutables.hashlock,
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
             taker: Address.wrap(uint160(taker)),
             token: order.makerAsset,
-            hashlock: extraDataImmutables.hashlock,
+            amount: makingAmount,
             safetyDeposit: extraDataImmutables.deposits >> 128,
             timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
         });
