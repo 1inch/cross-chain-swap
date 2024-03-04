@@ -959,6 +959,26 @@ contract EscrowTest is BaseSetup {
         assertEq(address(dstClone).balance, balanceEscrowNative - DST_SAFETY_DEPOSIT);
     }
 
+    function test_CancelDstWithNativeToken() public {
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0)
+        );
+
+        // deploy escrow
+        vm.startPrank(bob.addr);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT + TAKING_AMOUNT }(immutables, srcCancellationTimestamp);
+
+        uint256 balanceBob = bob.addr.balance;
+        uint256 balanceEscrow = address(dstClone).balance;
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 100);
+        dstClone.cancel(immutables);
+
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT + TAKING_AMOUNT);
+        assertEq(address(dstClone).balance, balanceEscrow - DST_SAFETY_DEPOSIT - TAKING_AMOUNT);
+    }
+
     // Only resolver can cancel
     function test_NoCancelByAnyoneDst() public {
         (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
