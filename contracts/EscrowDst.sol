@@ -41,13 +41,7 @@ contract EscrowDst is Escrow {
             revert InvalidCaller();
         }
 
-        _checkSecretAndTransfer(
-            secret,
-            immutables.hashlock,
-            immutables.maker.get(),
-            immutables.token.get(),
-            immutables.amount
-        );
+        _checkSecretAndTransferTo(secret, immutables.maker.get(), immutables);
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -64,7 +58,7 @@ contract EscrowDst is Escrow {
         // Check that it's a cancellation period.
         if (block.timestamp < immutables.timelocks.dstCancellationStart()) revert InvalidCancellationTime();
 
-        IERC20(immutables.token.get()).safeTransfer(immutables.taker.get(), immutables.amount);
+        _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
