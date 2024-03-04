@@ -29,15 +29,15 @@ contract EscrowDst is Escrow {
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancellation ----
      */
     function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        Timelocks timelocks = immutables.timelocks;
-
         // Check that it's a withdrawal period.
-        if (block.timestamp < timelocks.dstWithdrawalStart() || block.timestamp >= timelocks.dstCancellationStart()) {
+        if (block.timestamp < immutables.timelocks.dstWithdrawalStart()
+            || block.timestamp >= immutables.timelocks.dstCancellationStart()) {
             revert InvalidWithdrawalTime();
         }
 
         // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < timelocks.dstPubWithdrawalStart() && msg.sender != immutables.taker.get()) {
+        if (block.timestamp < immutables.timelocks.dstPubWithdrawalStart()
+            && msg.sender != immutables.taker.get()) {
             revert InvalidCaller();
         }
 
@@ -53,13 +53,12 @@ contract EscrowDst is Escrow {
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCELLATION ----
      */
     function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        address taker = immutables.taker.get();
-        if (msg.sender != taker) revert InvalidCaller();
+        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
 
         // Check that it's a cancellation period.
         if (block.timestamp < immutables.timelocks.dstCancellationStart()) revert InvalidCancellationTime();
 
-        _uniTransfer(immutables.token.get(), taker, immutables.amount);
+        _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
 
         // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
