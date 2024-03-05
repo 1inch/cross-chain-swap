@@ -24,10 +24,12 @@ interface IEscrow {
 
     error InvalidCaller();
     error InvalidCancellationTime();
+    error InvalidPublicCancellationTime();
     error InvalidImmutables();
     error InvalidRescueTime();
     error InvalidSecret();
     error InvalidWithdrawalTime();
+    error InvalidPublicWithdrawalTime();
     error NativeTokenSendingFailure();
 
     /* solhint-disable func-name-mixedcase */

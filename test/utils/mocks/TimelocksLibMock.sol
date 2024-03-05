@@ -5,6 +5,8 @@ pragma solidity 0.8.23;
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 contract TimelocksLibMock {
+    using TimelocksLib for Timelocks;
+
     function setDeployedAt(Timelocks timelocks, uint256 value) external pure returns (Timelocks) {
         return TimelocksLib.setDeployedAt(timelocks, value);
     }
@@ -14,26 +16,26 @@ contract TimelocksLibMock {
     }
 
     function srcWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.srcWithdrawalStart(timelocks);
+        return timelocks.get(TimelocksLib.Start.SrcWithdrawal);
     }
 
     function srcCancellationStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.srcCancellationStart(timelocks);
+        return timelocks.get(TimelocksLib.Start.SrcCancellation);
     }
 
-    function srcPubCancellationStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.srcPubCancellationStart(timelocks);
+    function srcPublicCancellationStart(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Start.SrcPublicCancellation);
     }
 
     function dstWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.dstWithdrawalStart(timelocks);
+        return timelocks.get(TimelocksLib.Start.DstWithdrawal);
     }
 
-    function dstPubWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.dstPubWithdrawalStart(timelocks);
+    function dstPublicWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Start.DstPublicWithdrawal);
     }
 
     function dstCancellationStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.dstCancellationStart(timelocks);
+        return timelocks.get(TimelocksLib.Start.DstCancellation);
     }
 }

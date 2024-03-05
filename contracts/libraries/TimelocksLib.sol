@@ -30,14 +30,17 @@ type Timelocks is uint256;
  * @title Timelocks library for compact storage of timelocks in a uint256.
  */
 library TimelocksLib {
+    enum Start {
+        DeployedAt,
+        SrcWithdrawal,
+        SrcCancellation,
+        SrcPublicCancellation,
+        DstWithdrawal,
+        DstPublicWithdrawal,
+        DstCancellation
+    }
+
     uint256 internal constant _TIMELOCK_MASK = type(uint32).max;
-    // 6 variables 32 bits each
-    uint256 internal constant _SRC_WITHDRAWAL_START_OFFSET = 224;
-    uint256 internal constant _SRC_CANCELLATION_START_OFFSET = 192;
-    uint256 internal constant _SRC_PUBLIC_CANCELLATION_START_OFFSET = 160;
-    uint256 internal constant _DST_WITHDRAWAL_START_OFFSET = 128;
-    uint256 internal constant _DST_PUBLIC_WITHDRAWAL_START_OFFSET = 96;
-    uint256 internal constant _DST_CANCELLATION_START_OFFSET = 64;
 
     /**
      * @notice Sets the Escrow deployment timestamp.
@@ -60,68 +63,17 @@ library TimelocksLib {
         }
     }
 
-    // ----- Source chain timelocks ----- //
-
     /**
-     * @notice Returns the start of the private withdrawal period on the source chain.
-     * @param timelocks The timelocks to get the finality duration from.
-     * @return The start of the private withdrawal period.
+     * @notice Returns the timelock value for the given epoch.
+     * @param timelocks The timelocks to get the value from.
+     * @param epoch The epoch to get the value for.
+     * @return The timelock value for the given epoch.
      */
-    function srcWithdrawalStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _SRC_WITHDRAWAL_START_OFFSET);
-    }
-
-    /**
-     * @notice Returns the start of the private cancellation period on the source chain.
-     * @param timelocks The timelocks to get the private withdrawal duration from.
-     * @return The start of the private cancellation period.
-     */
-    function srcCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _SRC_CANCELLATION_START_OFFSET);
-    }
-
-    /**
-     * @notice Returns the start of the public cancellation period on the source chain.
-     * @param timelocks The timelocks to get the private cancellation duration from.
-     * @return The start of the public cancellation period.
-     */
-    function srcPubCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _SRC_PUBLIC_CANCELLATION_START_OFFSET);
-    }
-
-    // ----- Destination chain timelocks ----- //
-
-    /**
-     * @notice Returns the start of the private withdrawal period on the destination chain.
-     * @param timelocks The timelocks to get the finality duration from.
-     * @return The start of the private withdrawal period.
-     */
-    function dstWithdrawalStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _DST_WITHDRAWAL_START_OFFSET);
-    }
-
-    /**
-     * @notice Returns the start of the public withdrawal period on the destination chain.
-     * @param timelocks The timelocks to get the private withdrawal duration from.
-     * @return The start of the public withdrawal period.
-     */
-    function dstPubWithdrawalStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _DST_PUBLIC_WITHDRAWAL_START_OFFSET);
-    }
-
-    /**
-     * @notice Returns the start of the private cancellation period on the destination chain.
-     * @param timelocks The timelocks to get the public withdrawal duration from.
-     * @return The start of the private cancellation period.
-     */
-    function dstCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _DST_CANCELLATION_START_OFFSET);
-    }
-
-    function _get(Timelocks timelocks, uint256 offset) private pure returns (uint256) {
+    function get(Timelocks timelocks, Start epoch) internal pure returns (uint256) {
         unchecked {
             uint256 data = Timelocks.unwrap(timelocks);
-            return (data + (data >> offset)) & _TIMELOCK_MASK;
+            uint256 bitShift = uint256(epoch) << 5;
+            return (data + (data >> bitShift)) & _TIMELOCK_MASK;
         }
     }
 }

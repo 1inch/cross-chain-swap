@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import { IEscrow } from "contracts/Escrow.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
@@ -644,7 +645,7 @@ contract EscrowTest is BaseSetup {
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawalStart + 100);
-        dstClone.withdraw(SECRET, immutables);
+        IEscrowDst(address(dstClone)).publicWithdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
         assertEq(address(this).balance, balanceThis + DST_SAFETY_DEPOSIT);
@@ -713,7 +714,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDst() public {
-        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -725,7 +726,7 @@ contract EscrowTest is BaseSetup {
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawalStart + 10);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
-        dstClone.withdraw(SECRET, immutables);
+        dstClone.publicWithdraw(SECRET, immutables);
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDstNative() public {
@@ -835,7 +836,7 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
+            IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
@@ -861,7 +862,7 @@ contract EscrowTest is BaseSetup {
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.publicCancellationStart + 100);
-        srcClone.cancel(immutables);
+        srcClone.publicCancel(immutables);
 
         assertEq(address(this).balance, balanceThis + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(alice.addr), balanceAlice + MAKING_AMOUNT);
@@ -896,6 +897,7 @@ contract EscrowTest is BaseSetup {
         );
 
         // cancel
+        vm.prank(bob.addr);
         vm.warp(block.timestamp + srcTimelocks.withdrawalStart + 100);
         vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
         srcClone.cancel(immutables);
@@ -1032,7 +1034,7 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
+            IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
 
@@ -1056,7 +1058,7 @@ contract EscrowTest is BaseSetup {
         vm.warp(block.timestamp + srcTimelocks.publicCancellationStart + 100);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
-        srcClone.cancel(immutables);
+        srcClone.publicCancel(immutables);
     }
 
     function test_NoFailedNativeTokenTransferCancelDst() public {

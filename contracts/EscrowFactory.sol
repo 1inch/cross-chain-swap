@@ -123,7 +123,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         IEscrow.Immutables memory immutables = dstImmutables;
         immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (immutables.timelocks.dstCancellationStart() > srcCancellationTimestamp) revert InvalidCreationTime();
+        if (immutables.timelocks.get(TimelocksLib.Start.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
 
         bytes32 salt = immutables.hashMem();
         address escrow = ESCROW_DST_IMPLEMENTATION.cloneDeterministic(salt, msg.value);

@@ -10,12 +10,12 @@ import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 library TimelocksSettersLib {
     /**
      * @notice Initializes the timelocks.
-     * @param srcWithdrawalStart Seconds between `deplyedAt` and the start of the withdrawal period on the source chain.
-     * @param srcCancellationStart Seconds between `deplyedAt` and the start of the cancellation period on the source chain.
-     * @param srcPublicCancellationStart Seconds between `deplyedAt` and the start of the public cancellation period on the source chain.
-     * @param dstWithdrawalStart Seconds between `deplyedAt` and the start of the withdrawal period on the destination chain.
-     * @param dstPublicWithdrawalStart Seconds between `deplyedAt` and the start of the public withdrawal period on the destination chain.
-     * @param dstCancellationStart Seconds between `deplyedAt` and the start of the cancellation period on the destination chain.
+     * @param srcWithdrawalStart Seconds between `deployedAt` and the start of the withdrawal period on the source chain.
+     * @param srcCancellationStart Seconds between `deployedAt` and the start of the cancellation period on the source chain.
+     * @param srcPublicCancellationStart Seconds between `deployedAt` and the start of the public cancellation period on the source chain.
+     * @param dstWithdrawalStart Seconds between `deployedAt` and the start of the withdrawal period on the destination chain.
+     * @param dstPublicWithdrawalStart Seconds between `deployedAt` and the start of the public withdrawal period on the destination chain.
+     * @param dstCancellationStart Seconds between `deployedAt` and the start of the cancellation period on the destination chain.
      * @param deployedAt Deployment timestamp.
      * @return The initialized Timelocks.
      */
@@ -30,12 +30,12 @@ library TimelocksSettersLib {
     ) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             deployedAt
-                | (uint256(srcWithdrawalStart) << TimelocksLib._SRC_WITHDRAWAL_START_OFFSET)
-                | (uint256(srcCancellationStart) << TimelocksLib._SRC_CANCELLATION_START_OFFSET)
-                | (uint256(srcPublicCancellationStart) << TimelocksLib._SRC_PUBLIC_CANCELLATION_START_OFFSET)
-                | (uint256(dstWithdrawalStart) << TimelocksLib._DST_WITHDRAWAL_START_OFFSET)
-                | (uint256(dstPublicWithdrawalStart) << TimelocksLib._DST_PUBLIC_WITHDRAWAL_START_OFFSET)
-                | (uint256(dstCancellationStart) << TimelocksLib._DST_CANCELLATION_START_OFFSET)
+                | (uint256(srcWithdrawalStart) << (uint256(TimelocksLib.Start.SrcWithdrawal) * 32))
+                | (uint256(srcCancellationStart) << (uint256(TimelocksLib.Start.SrcCancellation) * 32))
+                | (uint256(srcPublicCancellationStart) << (uint256(TimelocksLib.Start.SrcPublicCancellation) * 32))
+                | (uint256(dstWithdrawalStart) << (uint256(TimelocksLib.Start.DstWithdrawal) * 32))
+                | (uint256(dstPublicWithdrawalStart) << (uint256(TimelocksLib.Start.DstPublicWithdrawal) * 32))
+                | (uint256(dstCancellationStart) << (uint256(TimelocksLib.Start.DstCancellation) * 32))
         );
     }
 }
