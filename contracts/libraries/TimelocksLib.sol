@@ -32,12 +32,12 @@ type Timelocks is uint256;
 library TimelocksLib {
     uint256 internal constant _TIMELOCK_MASK = type(uint32).max;
     // 6 variables 32 bits each
-    uint256 internal constant _SRC_FINALITY_OFFSET = 224;
-    uint256 internal constant _SRC_WITHDRAWAL_OFFSET = 192;
-    uint256 internal constant _SRC_CANCELLATION_OFFSET = 160;
-    uint256 internal constant _DST_FINALITY_OFFSET = 128;
-    uint256 internal constant _DST_WITHDRAWAL_OFFSET = 96;
-    uint256 internal constant _DST_PUB_WITHDRAWAL_OFFSET = 64;
+    uint256 internal constant _SRC_WITHDRAWAL_START_OFFSET = 224;
+    uint256 internal constant _SRC_CANCELLATION_START_OFFSET = 192;
+    uint256 internal constant _SRC_PUBLIC_CANCELLATION_START_OFFSET = 160;
+    uint256 internal constant _DST_WITHDRAWAL_START_OFFSET = 128;
+    uint256 internal constant _DST_PUBLIC_WITHDRAWAL_START_OFFSET = 96;
+    uint256 internal constant _DST_CANCELLATION_START_OFFSET = 64;
 
     /**
      * @notice Sets the Escrow deployment timestamp.
@@ -68,7 +68,7 @@ library TimelocksLib {
      * @return The start of the private withdrawal period.
      */
     function srcWithdrawalStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _SRC_FINALITY_OFFSET);
+        return _get(timelocks, _SRC_WITHDRAWAL_START_OFFSET);
     }
 
     /**
@@ -77,7 +77,7 @@ library TimelocksLib {
      * @return The start of the private cancellation period.
      */
     function srcCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _SRC_WITHDRAWAL_OFFSET);
+        return _get(timelocks, _SRC_CANCELLATION_START_OFFSET);
     }
 
     /**
@@ -86,7 +86,7 @@ library TimelocksLib {
      * @return The start of the public cancellation period.
      */
     function srcPubCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _SRC_CANCELLATION_OFFSET);
+        return _get(timelocks, _SRC_PUBLIC_CANCELLATION_START_OFFSET);
     }
 
     // ----- Destination chain timelocks ----- //
@@ -97,7 +97,7 @@ library TimelocksLib {
      * @return The start of the private withdrawal period.
      */
     function dstWithdrawalStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _DST_FINALITY_OFFSET);
+        return _get(timelocks, _DST_WITHDRAWAL_START_OFFSET);
     }
 
     /**
@@ -106,7 +106,7 @@ library TimelocksLib {
      * @return The start of the public withdrawal period.
      */
     function dstPubWithdrawalStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _DST_WITHDRAWAL_OFFSET);
+        return _get(timelocks, _DST_PUBLIC_WITHDRAWAL_START_OFFSET);
     }
 
     /**
@@ -115,7 +115,7 @@ library TimelocksLib {
      * @return The start of the private cancellation period.
      */
     function dstCancellationStart(Timelocks timelocks) internal pure returns (uint256) {
-        return _get(timelocks, _DST_PUB_WITHDRAWAL_OFFSET);
+        return _get(timelocks, _DST_CANCELLATION_START_OFFSET);
     }
 
     function _get(Timelocks timelocks, uint256 offset) private pure returns (uint256) {
