@@ -30,9 +30,9 @@ contract BaseSetup is Test {
 
     /**
      * Timelocks for the source chain.
-     * withdrawalStart: Seconds between `deplyedAt` and the start of the withdrawal period on the source chain.
-     * cancellationStart: Seconds between `deplyedAt` and the start of the cancellation period on the source chain.
-     * publicCancellationStart: Seconds between `deplyedAt` and the start of the public cancellation period on the source chain.
+     * withdrawalStart: Seconds between `deplyedAt` and the start of the withdrawal period.
+     * cancellationStart: Seconds between `deplyedAt` and the start of the cancellation period.
+     * publicCancellationStart: Seconds between `deplyedAt` and the start of the public cancellation period.
      */
     struct SrcTimelocks {
         uint32 withdrawalStart;
@@ -42,9 +42,9 @@ contract BaseSetup is Test {
 
     /**
      * Timelocks for the destination chain.
-     * withdrawalStart: Seconds between `deplyedAt` and the start of the withdrawal period on the destination chain.
-     * publicWithdrawalStart: Seconds between `deplyedAt` and the start of the public withdrawal period on the destination chain.
-     * cancellationStart: Seconds between `deplyedAt` and the start of the cancellation period on the destination chain.
+     * withdrawalStart: Seconds between `deplyedAt` and the start of the withdrawal period.
+     * publicWithdrawalStart: Seconds between `deplyedAt` and the start of the public withdrawal period.
+     * cancellationStart: Seconds between `deplyedAt` and the start of the cancellation period.
      */
     struct DstTimelocks {
         uint32 withdrawalStart;
