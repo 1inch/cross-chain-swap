@@ -56,7 +56,7 @@ To deploy a proxy contract on the source chain the order signed by the user must
 
 
 #### Cancel escrows
-2. `Escrow.cancelSrc`.
+2. `Escrow.cancel`.
 
 ## Security considerations
 The security of protocol transactions is affected by the off-chain distribution of the user's secret. It is recommended to pay proper attention to the implementation of this process.
