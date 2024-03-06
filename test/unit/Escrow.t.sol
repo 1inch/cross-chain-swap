@@ -323,7 +323,6 @@ contract EscrowTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
 
         // rescue
-        vm.warp(block.timestamp + srcTimelocks.withdrawalStart + 100);
         vm.expectRevert(IEscrow.InvalidRescueTime.selector);
         srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutables);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
@@ -520,7 +519,6 @@ contract EscrowTest is BaseSetup {
         assertEq(address(dstClone).balance, TAKING_AMOUNT);
 
         // rescue
-        vm.warp(block.timestamp + dstTimelocks.withdrawalStart + 10);
         vm.expectRevert(IEscrow.InvalidRescueTime.selector);
         dstClone.rescueFunds(address(0), TAKING_AMOUNT, immutables);
         assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
