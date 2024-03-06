@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
+import { Address as AddressOZ } from "openzeppelin-contracts/utils/Address.sol";
 import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
@@ -17,6 +18,7 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
  * @title Base Escrow contract for cross-chain atomic swap.
  */
 abstract contract Escrow is IEscrow {
+    using AddressOZ for address payable;
     using AddressLib for Address;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
@@ -65,15 +67,10 @@ abstract contract Escrow is IEscrow {
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
         if (token == address(0)) {
-            _ethTransfer(to, amount);
+            payable(to).sendValue(amount);
         } else {
             IERC20(token).safeTransfer(to, amount);
         }
-    }
-
-    function _ethTransfer(address to, uint256 amount) internal {
-        (bool success,) = to.call{ value: amount }("");
-        if (!success) revert NativeTokenSendingFailure();
     }
 
     function _validateImmutables(Immutables calldata immutables) private view {

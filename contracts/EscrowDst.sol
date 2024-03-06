@@ -3,6 +3,7 @@
 pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { Address as AddressOZ } from "openzeppelin-contracts/utils/Address.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
@@ -17,6 +18,7 @@ import { Escrow } from "./Escrow.sol";
  * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
  */
 contract EscrowDst is Escrow {
+    using AddressOZ for address payable;
     using SafeERC20 for IERC20;
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
@@ -44,7 +46,7 @@ contract EscrowDst is Escrow {
         _checkSecretAndTransferTo(secret, immutables.maker.get(), immutables);
 
         // Send the safety deposit to the caller.
-        _ethTransfer(msg.sender, immutables.safetyDeposit);
+        payable(msg.sender).sendValue(immutables.safetyDeposit);
     }
 
     /**
@@ -61,6 +63,6 @@ contract EscrowDst is Escrow {
         _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
 
         // Send the safety deposit to the caller.
-        _ethTransfer(msg.sender, immutables.safetyDeposit);
+        payable(msg.sender).sendValue(immutables.safetyDeposit);
     }
 }

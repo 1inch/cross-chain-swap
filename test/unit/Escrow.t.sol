@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import { Address as AddressOZ } from "@openzeppelin/contracts/utils/Address.sol";
 import { IEscrow } from "contracts/Escrow.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 
@@ -708,7 +709,7 @@ contract EscrowTest is BaseSetup {
         vm.warp(block.timestamp + srcTimelocks.finality + 100);
         vm.prank(bob.addr);
         vm.mockCallRevert(bob.addr, SRC_SAFETY_DEPOSIT, "", "REVERTED");
-        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        vm.expectRevert(AddressOZ.FailedInnerCall.selector);
         srcClone.withdraw(SECRET, immutables);
     }
 
@@ -724,7 +725,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + 10);
         vm.prank(address(escrowFactory));
-        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        vm.expectRevert(AddressOZ.FailedInnerCall.selector);
         dstClone.withdraw(SECRET, immutables);
     }
 
@@ -739,7 +740,7 @@ contract EscrowTest is BaseSetup {
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.finality + 10);
-        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        vm.expectRevert(AddressOZ.FailedInnerCall.selector);
         dstClone.withdraw(SECRET, immutables);
     }
 
@@ -1055,7 +1056,7 @@ contract EscrowTest is BaseSetup {
         // cancel
         vm.warp(block.timestamp + srcTimelocks.finality + srcTimelocks.withdrawal + srcTimelocks.cancel + 100);
         vm.prank(address(escrowFactory));
-        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        vm.expectRevert(AddressOZ.FailedInnerCall.selector);
         srcClone.cancel(immutables);
     }
 
@@ -1071,7 +1072,7 @@ contract EscrowTest is BaseSetup {
         // cancel
         vm.warp(block.timestamp + dstTimelocks.finality + dstTimelocks.withdrawal + dstTimelocks.publicWithdrawal + 100);
         vm.mockCallRevert(bob.addr, DST_SAFETY_DEPOSIT, "", "REVERTED");
-        vm.expectRevert(IEscrow.NativeTokenSendingFailure.selector);
+        vm.expectRevert(AddressOZ.FailedInnerCall.selector);
         dstClone.cancel(immutables);
     }
 
