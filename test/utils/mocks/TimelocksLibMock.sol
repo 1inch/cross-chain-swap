@@ -5,6 +5,8 @@ pragma solidity 0.8.23;
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 contract TimelocksLibMock {
+    using TimelocksLib for Timelocks;
+
     function setDeployedAt(Timelocks timelocks, uint256 value) external pure returns (Timelocks) {
         return TimelocksLib.setDeployedAt(timelocks, value);
     }
@@ -13,27 +15,27 @@ contract TimelocksLibMock {
         return TimelocksLib.rescueStart(timelocks, rescueDelay);
     }
 
-    function srcWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.srcWithdrawalStart(timelocks);
+    function srcWithdrawal(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Stage.SrcWithdrawal);
     }
 
-    function srcCancellationStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.srcCancellationStart(timelocks);
+    function srcCancellation(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Stage.SrcCancellation);
     }
 
-    function srcPubCancellationStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.srcPubCancellationStart(timelocks);
+    function srcPublicCancellation(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Stage.SrcPublicCancellation);
     }
 
-    function dstWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.dstWithdrawalStart(timelocks);
+    function dstWithdrawal(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Stage.DstWithdrawal);
     }
 
-    function dstPubWithdrawalStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.dstPubWithdrawalStart(timelocks);
+    function dstPublicWithdrawal(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal);
     }
 
-    function dstCancellationStart(Timelocks timelocks) external pure returns (uint256) {
-        return TimelocksLib.dstCancellationStart(timelocks);
+    function dstCancellation(Timelocks timelocks) external pure returns (uint256) {
+        return timelocks.get(TimelocksLib.Stage.DstCancellation);
     }
 }

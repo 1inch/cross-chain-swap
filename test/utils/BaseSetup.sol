@@ -30,26 +30,26 @@ contract BaseSetup is Test {
 
     /**
      * Timelocks for the source chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the taker.
-     * cancel: The duration of the period when escrow can only be cancelled by the taker.
+     * withdrawal: Seconds between `deployedAt` and the start of the withdrawal period.
+     * cancellation: Seconds between `deployedAt` and the start of the cancellation period.
+     * publicCancellation: Seconds between `deployedAt` and the start of the public cancellation period.
      */
     struct SrcTimelocks {
-        uint32 finality;
         uint32 withdrawal;
-        uint32 cancel;
+        uint32 cancellation;
+        uint32 publicCancellation;
     }
 
     /**
      * Timelocks for the destination chain.
-     * finality: The duration of the chain finality period.
-     * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for the maker.
-     * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for the maker.
+     * withdrawal: Seconds between `deployedAt` and the start of the withdrawal period.
+     * publicWithdrawal: Seconds between `deployedAt` and the start of the public withdrawal period.
+     * cancellation: Seconds between `deployedAt` and the start of the cancellation period.
      */
     struct DstTimelocks {
-        uint32 finality;
         uint32 withdrawal;
         uint32 publicWithdrawal;
+        uint32 cancellation;
     }
 
     struct InteractionParams {
@@ -121,8 +121,8 @@ contract BaseSetup is Test {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({ finality: 120, withdrawal: 1020, cancel: 1130 });
-    DstTimelocks internal dstTimelocks = DstTimelocks({ finality: 300, withdrawal: 540, publicWithdrawal: 900 });
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({ withdrawal: 120, cancellation: 1020, publicCancellation: 1130 });
+    DstTimelocks internal dstTimelocks = DstTimelocks({ withdrawal: 300, publicWithdrawal: 540, cancellation: 900 });
     bytes internal auctionPoints = abi.encodePacked(
         uint24(800000), uint16(100),
         uint24(700000), uint16(100),
@@ -174,21 +174,21 @@ contract BaseSetup is Test {
 
     function _setTimelocks() internal {
         timelocks = TimelocksSettersLib.init(
-            srcTimelocks.finality,
             srcTimelocks.withdrawal,
-            srcTimelocks.cancel,
-            dstTimelocks.finality,
+            srcTimelocks.cancellation,
+            srcTimelocks.publicCancellation,
             dstTimelocks.withdrawal,
             dstTimelocks.publicWithdrawal,
+            dstTimelocks.cancellation,
             uint32(block.timestamp)
         );
         timelocksDst = TimelocksSettersLib.init(
             0,
             0,
             0,
-            dstTimelocks.finality,
             dstTimelocks.withdrawal,
             dstTimelocks.publicWithdrawal,
+            dstTimelocks.cancellation,
             uint32(block.timestamp)
         );
     }
@@ -360,7 +360,7 @@ contract BaseSetup is Test {
     ) internal view returns (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
-        srcCancellationTimestamp = block.timestamp + srcTimelocks.withdrawal;
+        srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
 
         immutables = IEscrow.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash

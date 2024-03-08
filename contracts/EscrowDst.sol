@@ -8,6 +8,7 @@ import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
+import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
 import { Escrow } from "./Escrow.sol";
 
 /**
@@ -16,7 +17,7 @@ import { Escrow } from "./Escrow.sol";
  * @dev Funds are locked in at the time of contract deployment. For this taker calls the `EscrowFactory.createDstEscrow` function.
  * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
  */
-contract EscrowDst is Escrow {
+contract EscrowDst is Escrow, IEscrowDst {
     using SafeERC20 for IERC20;
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
@@ -28,22 +29,32 @@ contract EscrowDst is Escrow {
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancellation ----
      */
-    function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        // Check that it's a withdrawal period.
-        if (block.timestamp < immutables.timelocks.dstWithdrawalStart()
-            || block.timestamp >= immutables.timelocks.dstCancellationStart()) {
-            revert InvalidWithdrawalTime();
-        }
+    function withdraw(bytes32 secret, Immutables calldata immutables)
+        external
+        onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
+        onlyBetween(
+            immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal),
+            immutables.timelocks.get(TimelocksLib.Stage.DstCancellation)
+        )
+    {
+        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
+    }
 
-        // Check that the caller is a taker if it's the private withdrawal period.
-        if (block.timestamp < immutables.timelocks.dstPubWithdrawalStart()
-            && msg.sender != immutables.taker.get()) {
-            revert InvalidCaller();
-        }
-
-        _checkSecretAndTransferTo(secret, immutables.maker.get(), immutables);
-
-        // Send the safety deposit to the caller.
+    /**
+     * @notice See {IEscrow-publicWithdraw}.
+     * @dev The function works on the time intervals highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PUBLIC WITHDRAWAL --/-- private cancellation ----
+     */
+    function publicWithdraw(bytes32 secret, Immutables calldata immutables)
+        external
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
+    {
+        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
@@ -52,15 +63,13 @@ contract EscrowDst is Escrow {
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCELLATION ----
      */
-    function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
-
-        // Check that it's a cancellation period.
-        if (block.timestamp < immutables.timelocks.dstCancellationStart()) revert InvalidCancellationTime();
-
+    function cancel(Immutables calldata immutables)
+        external
+        onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
+    {
         _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
-
-        // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 }

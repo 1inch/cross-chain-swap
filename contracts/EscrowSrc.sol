@@ -32,7 +32,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
-    function withdraw(bytes32 secret, Immutables calldata immutables) external onlyValidImmutables(immutables) {
+    function withdraw(bytes32 secret, Immutables calldata immutables) external {
         _withdrawTo(secret, msg.sender, immutables);
     }
 
@@ -41,7 +41,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- private cancellation --/-- public cancellation ----
      */
-    function withdrawTo(bytes32 secret, address target, Immutables calldata immutables) external onlyValidImmutables(immutables) {
+    function withdrawTo(bytes32 secret, address target, Immutables calldata immutables) external {
         _withdrawTo(secret, target, immutables);
     }
 
@@ -50,36 +50,41 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----
      */
-    function cancel(Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        // Check that it's a cancellation period.
-        if (block.timestamp < immutables.timelocks.srcCancellationStart()) {
-            revert InvalidCancellationTime();
-        }
-
-        // Check that the caller is a taker if it's the private cancellation period.
-        if (block.timestamp < immutables.timelocks.srcPubCancellationStart()
-            && msg.sender != immutables.taker.get()) {
-            revert InvalidCaller();
-        }
-
+    function cancel(Immutables calldata immutables)
+        external
+        onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
+    {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
-
-        // Send the safety deposit to the caller.
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
-    function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables) internal {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
+    /**
+     * @notice See {IEscrow-publicCancel}.
+     * @dev The function works on the time intervals highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- private cancellation --/-- PUBLIC CANCELLATION ----
+     */
+    function publicCancel(Immutables calldata immutables)
+        external
+        onlyValidImmutables(immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcPublicCancellation))
+    {
+        IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
+    }
 
-        // Check that it's a withdrawal period.
-        if (block.timestamp < immutables.timelocks.srcWithdrawalStart()
-            || block.timestamp >= immutables.timelocks.srcCancellationStart()) {
-            revert InvalidWithdrawalTime();
-        }
-
-        _checkSecretAndTransferTo(secret, target, immutables);
-
-        // Send the safety deposit to the caller.
+    function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
+        internal
+        onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
+        onlyBetween(
+            immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal),
+            immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation)
+        )
+    {
+        IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 }

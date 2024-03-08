@@ -10,32 +10,32 @@ import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 library TimelocksSettersLib {
     /**
      * @notice Initializes the timelocks.
-     * @param srcFinality Duration of the finality period on the source chain.
-     * @param srcWithdrawal Duration of the private withdrawal period on the source chain.
-     * @param srcCancellation Duration of the private cancellation period on the source chain.
-     * @param dstFinality Duration of the finality period on the destination chain.
-     * @param dstWithdrawal Duration of the private withdrawal period on the destination chain.
-     * @param dstPubWithdrawal Duration of the public withdrawal period on the destination chain.
-     * @param deployedAtVal Deployment timestamp.
+     * @param srcWithdrawal Seconds between `deployedAt` and the start of the withdrawal period on the source chain.
+     * @param srcCancellation Seconds between `deployedAt` and the start of the cancellation period on the source chain.
+     * @param srcPublicCancellation Seconds between `deployedAt` and the start of the public cancellation period on the source chain.
+     * @param dstWithdrawal Seconds between `deployedAt` and the start of the withdrawal period on the destination chain.
+     * @param dstPublicWithdrawal Seconds between `deployedAt` and the start of the public withdrawal period on the destination chain.
+     * @param dstCancellation Seconds between `deployedAt` and the start of the cancellation period on the destination chain.
+     * @param deployedAt Deployment timestamp.
      * @return The initialized Timelocks.
      */
     function init(
-        uint32 srcFinality,
         uint32 srcWithdrawal,
         uint32 srcCancellation,
-        uint32 dstFinality,
+        uint32 srcPublicCancellation,
         uint32 dstWithdrawal,
-        uint32 dstPubWithdrawal,
-        uint32 deployedAtVal
+        uint32 dstPublicWithdrawal,
+        uint32 dstCancellation,
+        uint32 deployedAt
     ) internal pure returns (Timelocks) {
         return Timelocks.wrap(
-            deployedAtVal
-                | (uint256(srcFinality) << TimelocksLib._SRC_FINALITY_OFFSET)
-                | (uint256(srcWithdrawal) << TimelocksLib._SRC_WITHDRAWAL_OFFSET)
-                | (uint256(srcCancellation) << TimelocksLib._SRC_CANCELLATION_OFFSET)
-                | (uint256(dstFinality) << TimelocksLib._DST_FINALITY_OFFSET)
-                | (uint256(dstWithdrawal) << TimelocksLib._DST_WITHDRAWAL_OFFSET)
-                | (uint256(dstPubWithdrawal) << TimelocksLib._DST_PUB_WITHDRAWAL_OFFSET)
+            deployedAt
+                | (uint256(srcWithdrawal) << (uint256(TimelocksLib.Stage.SrcWithdrawal) * 32))
+                | (uint256(srcCancellation) << (uint256(TimelocksLib.Stage.SrcCancellation) * 32))
+                | (uint256(srcPublicCancellation) << (uint256(TimelocksLib.Stage.SrcPublicCancellation) * 32))
+                | (uint256(dstWithdrawal) << (uint256(TimelocksLib.Stage.DstWithdrawal) * 32))
+                | (uint256(dstPublicWithdrawal) << (uint256(TimelocksLib.Stage.DstPublicWithdrawal) * 32))
+                | (uint256(dstCancellation) << (uint256(TimelocksLib.Stage.DstCancellation) * 32))
         );
     }
 }

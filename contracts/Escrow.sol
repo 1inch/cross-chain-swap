@@ -30,37 +30,41 @@ abstract contract Escrow is IEscrow {
         RESCUE_DELAY = rescueDelay;
     }
 
+    modifier onlyTaker(Immutables calldata immutables) {
+        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
+        _;
+    }
+
     modifier onlyValidImmutables(Immutables calldata immutables) {
         _validateImmutables(immutables);
+        _;
+    }
+
+    modifier onlyValidSecret(bytes32 secret, Immutables calldata immutables) {
+        if (_keccakBytes32(secret) != immutables.hashlock) revert InvalidSecret();
+        _;
+    }
+
+    modifier onlyAfter(uint256 start) {
+        if (block.timestamp < start) revert InvalidTime();
+        _;
+    }
+
+    modifier onlyBetween(uint256 start, uint256 stop) {
+        if (block.timestamp < start || block.timestamp >= stop) revert InvalidTime();
         _;
     }
 
     /**
      * @notice See {IEscrow-rescueFunds}.
      */
-    function rescueFunds(address token, uint256 amount, Immutables calldata immutables) external onlyValidImmutables(immutables) {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
-        if (block.timestamp < immutables.timelocks.rescueStart(RESCUE_DELAY)) revert InvalidRescueTime();
+    function rescueFunds(address token, uint256 amount, Immutables calldata immutables)
+        external
+        onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
+    {
         _uniTransfer(token, msg.sender, amount);
-    }
-
-    /**
-     * @notice Checks the secret and transfers tokens to the recipient.
-     * @dev The secret is valid if its hash matches the hashlock.
-     * @param secret Secret to compare with.
-     * @param to Address to transfer tokens to.
-     * @param immutables Immutable values of the escrow.
-     */
-    function _checkSecretAndTransferTo(bytes32 secret, address to, Immutables calldata immutables) internal {
-        if (_keccakBytes32(secret) != immutables.hashlock) revert InvalidSecret();
-        _uniTransfer(immutables.token.get(), to, immutables.amount);
-    }
-
-    function _keccakBytes32(bytes32 secret) internal pure returns (bytes32 ret) {
-        assembly ("memory-safe") {
-            mstore(0, secret)
-            ret := keccak256(0, 0x20)
-        }
     }
 
     function _uniTransfer(address token, address to, uint256 amount) internal {
@@ -80,6 +84,13 @@ abstract contract Escrow is IEscrow {
         bytes32 salt = immutables.hash();
         if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
             revert InvalidImmutables();
+        }
+    }
+
+    function _keccakBytes32(bytes32 secret) private pure returns (bytes32 ret) {
+        assembly ("memory-safe") {
+            mstore(0, secret)
+            ret := keccak256(0, 0x20)
         }
     }
 }

@@ -8,7 +8,7 @@ import { IEscrow } from "./IEscrow.sol";
  * @title Source Escrow interface for cross-chain atomic swap.
  * @notice Interface implies locking funds initially and then unlocking them with verification of the secret presented.
  */
-interface IEscrowSrc {
+interface IEscrowSrc is IEscrow {
     /**
      * @notice Withdraws funds to a specified target.
      * @dev Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
@@ -16,4 +16,11 @@ interface IEscrowSrc {
      * @param secret The secret that unlocks the escrow.
      */
     function withdrawTo(bytes32 secret, address target, IEscrow.Immutables calldata immutables) external;
+
+    /**
+     * @notice Cancels the escrow and returns tokens to the maker.
+     * @dev The escrow can only be cancelled during the public cancellation period.
+     * The safety deposit is sent to the caller.
+     */
+    function publicCancel(IEscrow.Immutables calldata immutables) external;
 }

@@ -20,22 +20,22 @@ contract TimelocksLibTest is BaseSetup {
     function test_getStartTimestamps() public {
         uint256 timestamp = block.timestamp;
         Timelocks timelocksTest = TimelocksSettersLib.init(
-            srcTimelocks.finality,
             srcTimelocks.withdrawal,
-            srcTimelocks.cancel,
-            dstTimelocks.finality,
+            srcTimelocks.cancellation,
+            srcTimelocks.publicCancellation,
             dstTimelocks.withdrawal,
             dstTimelocks.publicWithdrawal,
+            dstTimelocks.cancellation,
             uint32(timestamp)
         );
 
         assertEq(timelocksLibMock.rescueStart(timelocksTest, RESCUE_DELAY), timestamp + RESCUE_DELAY);
-        assertEq(timelocksLibMock.srcWithdrawalStart(timelocksTest), timestamp + srcTimelocks.finality);
-        assertEq(timelocksLibMock.srcCancellationStart(timelocksTest), timestamp + srcTimelocks.withdrawal);
-        assertEq(timelocksLibMock.srcPubCancellationStart(timelocksTest), timestamp + srcTimelocks.cancel);
-        assertEq(timelocksLibMock.dstWithdrawalStart(timelocksTest), timestamp + dstTimelocks.finality);
-        assertEq(timelocksLibMock.dstPubWithdrawalStart(timelocksTest), timestamp + dstTimelocks.withdrawal);
-        assertEq(timelocksLibMock.dstCancellationStart(timelocksTest), timestamp + dstTimelocks.publicWithdrawal);
+        assertEq(timelocksLibMock.srcWithdrawal(timelocksTest), timestamp + srcTimelocks.withdrawal);
+        assertEq(timelocksLibMock.srcCancellation(timelocksTest), timestamp + srcTimelocks.cancellation);
+        assertEq(timelocksLibMock.srcPublicCancellation(timelocksTest), timestamp + srcTimelocks.publicCancellation);
+        assertEq(timelocksLibMock.dstWithdrawal(timelocksTest), timestamp + dstTimelocks.withdrawal);
+        assertEq(timelocksLibMock.dstPublicWithdrawal(timelocksTest), timestamp + dstTimelocks.publicWithdrawal);
+        assertEq(timelocksLibMock.dstCancellation(timelocksTest), timestamp + dstTimelocks.cancellation);
     }
 
     function test_setDeployedAt() public {
