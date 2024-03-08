@@ -19,7 +19,7 @@ interface IEscrowSrc is IEscrow {
 
     /**
      * @notice Cancels the escrow and returns tokens to the maker.
-     * @dev The escrow can only be cancelled during the cancellation period.
+     * @dev The escrow can only be cancelled during the public cancellation period.
      * The safety deposit is sent to the caller.
      */
     function publicCancel(IEscrow.Immutables calldata immutables) external;
