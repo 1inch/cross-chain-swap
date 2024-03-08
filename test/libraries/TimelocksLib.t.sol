@@ -35,7 +35,7 @@ contract TimelocksLibTest is BaseSetup {
         assertEq(timelocksLibMock.srcPublicCancellation(timelocksTest), timestamp + srcTimelocks.publicCancellation);
         assertEq(timelocksLibMock.dstWithdrawal(timelocksTest), timestamp + dstTimelocks.withdrawal);
         assertEq(timelocksLibMock.dstPublicWithdrawal(timelocksTest), timestamp + dstTimelocks.publicWithdrawal);
-        assertEq(timelocksLibMock.dstCancellationStart(timelocksTest), timestamp + dstTimelocks.cancellation);
+        assertEq(timelocksLibMock.dstCancellation(timelocksTest), timestamp + dstTimelocks.cancellation);
     }
 
     function test_setDeployedAt() public {

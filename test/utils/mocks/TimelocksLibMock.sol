@@ -35,7 +35,7 @@ contract TimelocksLibMock {
         return timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal);
     }
 
-    function dstCancellationStart(Timelocks timelocks) external pure returns (uint256) {
+    function dstCancellation(Timelocks timelocks) external pure returns (uint256) {
         return timelocks.get(TimelocksLib.Stage.DstCancellation);
     }
 }

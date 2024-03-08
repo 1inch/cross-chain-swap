@@ -15,7 +15,7 @@ library TimelocksSettersLib {
      * @param srcPublicCancellation Seconds between `deployedAt` and the start of the public cancellation period on the source chain.
      * @param dstWithdrawal Seconds between `deployedAt` and the start of the withdrawal period on the destination chain.
      * @param dstPublicWithdrawal Seconds between `deployedAt` and the start of the public withdrawal period on the destination chain.
-     * @param dstCancellationStart Seconds between `deployedAt` and the start of the cancellation period on the destination chain.
+     * @param dstCancellation Seconds between `deployedAt` and the start of the cancellation period on the destination chain.
      * @param deployedAt Deployment timestamp.
      * @return The initialized Timelocks.
      */
@@ -25,7 +25,7 @@ library TimelocksSettersLib {
         uint32 srcPublicCancellation,
         uint32 dstWithdrawal,
         uint32 dstPublicWithdrawal,
-        uint32 dstCancellationStart,
+        uint32 dstCancellation,
         uint32 deployedAt
     ) internal pure returns (Timelocks) {
         return Timelocks.wrap(
@@ -35,7 +35,7 @@ library TimelocksSettersLib {
                 | (uint256(srcPublicCancellation) << (uint256(TimelocksLib.Stage.SrcPublicCancellation) * 32))
                 | (uint256(dstWithdrawal) << (uint256(TimelocksLib.Stage.DstWithdrawal) * 32))
                 | (uint256(dstPublicWithdrawal) << (uint256(TimelocksLib.Stage.DstPublicWithdrawal) * 32))
-                | (uint256(dstCancellationStart) << (uint256(TimelocksLib.Stage.DstCancellation) * 32))
+                | (uint256(dstCancellation) << (uint256(TimelocksLib.Stage.DstCancellation) * 32))
         );
     }
 }
