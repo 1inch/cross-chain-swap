@@ -8,7 +8,6 @@ import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
-import { TimelocksMixin } from "./libraries/TimelocksMixin.sol";
 
 import { IEscrowSrc } from "./interfaces/IEscrowSrc.sol";
 import { Escrow } from "./Escrow.sol";
@@ -20,7 +19,7 @@ import { Escrow } from "./Escrow.sol";
  * calls the `EscrowFactory.postInteraction` function.
  * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
  */
-contract EscrowSrc is Escrow, TimelocksMixin, IEscrowSrc {
+contract EscrowSrc is Escrow, IEscrowSrc {
     using AddressLib for Address;
     using ImmutablesLib for Immutables;
     using SafeERC20 for IERC20;
@@ -55,7 +54,7 @@ contract EscrowSrc is Escrow, TimelocksMixin, IEscrowSrc {
         external
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
-        onlyAfter(TimelocksLib.Start.SrcCancellation, InvalidCancellationTime.selector, immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -69,7 +68,7 @@ contract EscrowSrc is Escrow, TimelocksMixin, IEscrowSrc {
     function publicCancel(Immutables calldata immutables)
         external
         onlyValidImmutables(immutables)
-        onlyAfter(TimelocksLib.Start.SrcPublicCancellation, InvalidPublicCancellationTime.selector, immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcPublicCancellation))
     {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -80,7 +79,10 @@ contract EscrowSrc is Escrow, TimelocksMixin, IEscrowSrc {
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyBetween(TimelocksLib.Start.SrcWithdrawal, TimelocksLib.Start.SrcCancellation, InvalidWithdrawalTime.selector, immutables)
+        onlyBetween(
+            immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal),
+            immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation)
+        )
     {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);

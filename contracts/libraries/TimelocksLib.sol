@@ -30,7 +30,7 @@ type Timelocks is uint256;
  * @title Timelocks library for compact storage of timelocks in a uint256.
  */
 library TimelocksLib {
-    enum Start {
+    enum Stage {
         DeployedAt,
         SrcWithdrawal,
         SrcCancellation,
@@ -64,15 +64,15 @@ library TimelocksLib {
     }
 
     /**
-     * @notice Returns the timelock value for the given epoch.
+     * @notice Returns the timelock value for the given stage.
      * @param timelocks The timelocks to get the value from.
-     * @param epoch The epoch to get the value for.
-     * @return The timelock value for the given epoch.
+     * @param stage The stage to get the value for.
+     * @return The timelock value for the given stage.
      */
-    function get(Timelocks timelocks, Start epoch) internal pure returns (uint256) {
+    function get(Timelocks timelocks, Stage stage) internal pure returns (uint256) {
         unchecked {
             uint256 data = Timelocks.unwrap(timelocks);
-            uint256 bitShift = uint256(epoch) << 5;
+            uint256 bitShift = uint256(stage) << 5;
             return (data + (data >> bitShift)) & _TIMELOCK_MASK;
         }
     }

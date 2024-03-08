@@ -45,6 +45,16 @@ abstract contract Escrow is IEscrow {
         _;
     }
 
+    modifier onlyAfter(uint256 start) {
+        if (block.timestamp < start) revert InvalidTime();
+        _;
+    }
+
+    modifier onlyBetween(uint256 start, uint256 stop) {
+        if (block.timestamp < start || block.timestamp >= stop) revert InvalidTime();
+        _;
+    }
+
     /**
      * @notice See {IEscrow-rescueFunds}.
      */
@@ -52,8 +62,8 @@ abstract contract Escrow is IEscrow {
         external
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
+        onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
     {
-        if (block.timestamp < immutables.timelocks.rescueStart(RESCUE_DELAY)) revert InvalidRescueTime();
         _uniTransfer(token, msg.sender, amount);
     }
 

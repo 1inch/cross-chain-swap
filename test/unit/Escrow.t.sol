@@ -78,7 +78,7 @@ contract EscrowTest is BaseSetup {
 
         // withdraw
         vm.prank(bob.addr);
-        vm.expectRevert(IEscrow.InvalidWithdrawalTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         srcClone.withdraw(SECRET, immutables);
     }
 
@@ -92,7 +92,7 @@ contract EscrowTest is BaseSetup {
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
 
         // withdraw
-        vm.expectRevert(IEscrow.InvalidWithdrawalTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         dstClone.withdraw(SECRET, immutables);
     }
 
@@ -325,7 +325,7 @@ contract EscrowTest is BaseSetup {
 
         // rescue
         vm.warp(block.timestamp + srcTimelocks.withdrawalStart + 100);
-        vm.expectRevert(IEscrow.InvalidRescueTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutables);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
         assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
@@ -522,7 +522,7 @@ contract EscrowTest is BaseSetup {
 
         // rescue
         vm.warp(block.timestamp + dstTimelocks.withdrawalStart + 10);
-        vm.expectRevert(IEscrow.InvalidRescueTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         dstClone.rescueFunds(address(0), TAKING_AMOUNT, immutables);
         assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
         assertEq(address(dstClone).balance, TAKING_AMOUNT);
@@ -899,7 +899,7 @@ contract EscrowTest is BaseSetup {
         // cancel
         vm.prank(bob.addr);
         vm.warp(block.timestamp + srcTimelocks.withdrawalStart + 100);
-        vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         srcClone.cancel(immutables);
     }
 
@@ -1008,7 +1008,7 @@ contract EscrowTest is BaseSetup {
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.withdrawalStart + 100);
-        vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         dstClone.cancel(immutables);
     }
 
@@ -1023,7 +1023,7 @@ contract EscrowTest is BaseSetup {
 
         // cancel
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawalStart + 100);
-        vm.expectRevert(IEscrow.InvalidCancellationTime.selector);
+        vm.expectRevert(IEscrow.InvalidTime.selector);
         dstClone.cancel(immutables);
     }
 

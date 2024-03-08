@@ -30,12 +30,12 @@ library TimelocksSettersLib {
     ) internal pure returns (Timelocks) {
         return Timelocks.wrap(
             deployedAt
-                | (uint256(srcWithdrawalStart) << (uint256(TimelocksLib.Start.SrcWithdrawal) * 32))
-                | (uint256(srcCancellationStart) << (uint256(TimelocksLib.Start.SrcCancellation) * 32))
-                | (uint256(srcPublicCancellationStart) << (uint256(TimelocksLib.Start.SrcPublicCancellation) * 32))
-                | (uint256(dstWithdrawalStart) << (uint256(TimelocksLib.Start.DstWithdrawal) * 32))
-                | (uint256(dstPublicWithdrawalStart) << (uint256(TimelocksLib.Start.DstPublicWithdrawal) * 32))
-                | (uint256(dstCancellationStart) << (uint256(TimelocksLib.Start.DstCancellation) * 32))
+                | (uint256(srcWithdrawalStart) << (uint256(TimelocksLib.Stage.SrcWithdrawal) * 32))
+                | (uint256(srcCancellationStart) << (uint256(TimelocksLib.Stage.SrcCancellation) * 32))
+                | (uint256(srcPublicCancellationStart) << (uint256(TimelocksLib.Stage.SrcPublicCancellation) * 32))
+                | (uint256(dstWithdrawalStart) << (uint256(TimelocksLib.Stage.DstWithdrawal) * 32))
+                | (uint256(dstPublicWithdrawalStart) << (uint256(TimelocksLib.Stage.DstPublicWithdrawal) * 32))
+                | (uint256(dstCancellationStart) << (uint256(TimelocksLib.Stage.DstCancellation) * 32))
         );
     }
 }

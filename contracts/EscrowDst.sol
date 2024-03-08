@@ -7,7 +7,6 @@ import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
-import { TimelocksMixin } from "./libraries/TimelocksMixin.sol";
 
 import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
 import { Escrow } from "./Escrow.sol";
@@ -18,7 +17,7 @@ import { Escrow } from "./Escrow.sol";
  * @dev Funds are locked in at the time of contract deployment. For this taker calls the `EscrowFactory.createDstEscrow` function.
  * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
  */
-contract EscrowDst is Escrow, TimelocksMixin, IEscrowDst {
+contract EscrowDst is Escrow, IEscrowDst {
     using SafeERC20 for IERC20;
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
@@ -35,7 +34,10 @@ contract EscrowDst is Escrow, TimelocksMixin, IEscrowDst {
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyBetween(TimelocksLib.Start.DstWithdrawal, TimelocksLib.Start.DstCancellation, InvalidWithdrawalTime.selector, immutables)
+        onlyBetween(
+            immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal),
+            immutables.timelocks.get(TimelocksLib.Stage.DstCancellation)
+        )
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -50,7 +52,7 @@ contract EscrowDst is Escrow, TimelocksMixin, IEscrowDst {
         external
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyAfter(TimelocksLib.Start.DstPublicWithdrawal, InvalidPublicWithdrawalTime.selector, immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -65,7 +67,7 @@ contract EscrowDst is Escrow, TimelocksMixin, IEscrowDst {
         external
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
-        onlyAfter(TimelocksLib.Start.DstCancellation, InvalidCancellationTime.selector, immutables)
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
         _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
