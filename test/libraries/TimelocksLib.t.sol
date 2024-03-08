@@ -30,11 +30,11 @@ contract TimelocksLibTest is BaseSetup {
         );
 
         assertEq(timelocksLibMock.rescueStart(timelocksTest, RESCUE_DELAY), timestamp + RESCUE_DELAY);
-        assertEq(timelocksLibMock.srcWithdrawalStart(timelocksTest), timestamp + srcTimelocks.withdrawal);
-        assertEq(timelocksLibMock.srcCancellationStart(timelocksTest), timestamp + srcTimelocks.cancellation);
-        assertEq(timelocksLibMock.srcPublicCancellationStart(timelocksTest), timestamp + srcTimelocks.publicCancellation);
-        assertEq(timelocksLibMock.dstWithdrawalStart(timelocksTest), timestamp + dstTimelocks.withdrawal);
-        assertEq(timelocksLibMock.dstPublicWithdrawalStart(timelocksTest), timestamp + dstTimelocks.publicWithdrawal);
+        assertEq(timelocksLibMock.srcWithdrawal(timelocksTest), timestamp + srcTimelocks.withdrawal);
+        assertEq(timelocksLibMock.srcCancellation(timelocksTest), timestamp + srcTimelocks.cancellation);
+        assertEq(timelocksLibMock.srcPublicCancellation(timelocksTest), timestamp + srcTimelocks.publicCancellation);
+        assertEq(timelocksLibMock.dstWithdrawal(timelocksTest), timestamp + dstTimelocks.withdrawal);
+        assertEq(timelocksLibMock.dstPublicWithdrawal(timelocksTest), timestamp + dstTimelocks.publicWithdrawal);
         assertEq(timelocksLibMock.dstCancellationStart(timelocksTest), timestamp + dstTimelocks.cancellation);
     }
 
