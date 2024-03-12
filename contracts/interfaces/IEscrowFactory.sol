@@ -30,10 +30,10 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    event DstEscrowCreated(address escrow);
 
     // Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain
     event SrcEscrowCreated(IEscrow.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
+    event DstEscrowCreated(address escrow);
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.
