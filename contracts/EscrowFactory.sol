@@ -100,7 +100,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             chainId: extraDataImmutables.dstChainId
         });
 
-        emit CrosschainSwap(immutables, immutablesComplement);
+        emit SrcEscrowCreated(immutables, immutablesComplement);
 
         bytes32 salt = immutables.hashMem();
         address escrow = ESCROW_SRC_IMPLEMENTATION.cloneDeterministic(salt, 0);
@@ -130,6 +130,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         if (token != address(0)) {
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
+
+        emit DstEscrowCreated(escrow);
     }
 
     /**
