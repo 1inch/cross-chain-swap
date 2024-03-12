@@ -70,10 +70,8 @@ library TimelocksLib {
      * @return The timelock value for the given stage.
      */
     function get(Timelocks timelocks, Stage stage) internal pure returns (uint256) {
-        unchecked {
-            uint256 data = Timelocks.unwrap(timelocks);
-            uint256 bitShift = uint256(stage) << 5;
-            return (data + (data >> bitShift)) & _TIMELOCK_MASK;
-        }
+        uint256 data = Timelocks.unwrap(timelocks);
+        uint256 bitShift = uint256(stage) << 5;
+        return (uint32(data) + uint32(data >> bitShift)) & _TIMELOCK_MASK;
     }
 }
