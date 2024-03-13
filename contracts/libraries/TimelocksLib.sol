@@ -4,25 +4,24 @@ pragma solidity 0.8.23;
 
 /**
  * @dev Timelocks for the source and the destination chains plus the deployment timestamp.
+ * Timelocks store the number of seconds from the time the contract is deployed to the start of a specific period.
  * For illustrative purposes, it is possible to describe timelocks by two structures:
  * struct SrcTimelocks {
- *     uint256 finality;
  *     uint256 withdrawal;
  *     uint256 cancellation;
+ *     uint256 publicCancellation;
  * }
  *
  * struct DstTimelocks {
- *     uint256 finality;
  *     uint256 withdrawal;
  *     uint256 publicWithdrawal;
+ *     uint256 cancellation;
  * }
  *
- * finality: The duration of the chain finality period.
- * withdrawal: The duration of the period when only the taker with a secret can withdraw tokens for taker (source chain)
- * or maker (destination chain).
- * publicWithdrawal: The duration of the period when anyone with a secret can withdraw tokens for taker (source chain)
- * or maker (destination chain).
- * cancellation: The duration of the period when escrow can only be cancelled by the taker.
+ * withdrawal: Period when only the taker with a secret can withdraw tokens for taker (source chain) or maker (destination chain).
+ * publicWithdrawal: Period when anyone with a secret can withdraw tokens for maker (destination chain).
+ * cancellation: Period when escrow can only be cancelled by the taker.
+ * publicCancellation: Period when escrow can be cancelled by anyone.
  */
 type Timelocks is uint256;
 
@@ -39,8 +38,6 @@ library TimelocksLib {
         DstPublicWithdrawal,
         DstCancellation
     }
-
-    uint256 internal constant _TIMELOCK_MASK = type(uint32).max;
 
     /**
      * @notice Sets the Escrow deployment timestamp.
@@ -70,10 +67,8 @@ library TimelocksLib {
      * @return The timelock value for the given stage.
      */
     function get(Timelocks timelocks, Stage stage) internal pure returns (uint256) {
-        unchecked {
-            uint256 data = Timelocks.unwrap(timelocks);
-            uint256 bitShift = uint256(stage) << 5;
-            return (data + (data >> bitShift)) & _TIMELOCK_MASK;
-        }
+        uint256 data = Timelocks.unwrap(timelocks);
+        uint256 bitShift = uint256(stage) << 5;
+        return uint32(data) + uint32(data >> bitShift);
     }
 }
