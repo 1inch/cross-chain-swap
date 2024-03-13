@@ -53,13 +53,16 @@ To deploy a proxy contract on the source chain the order signed by the user must
 #### Withdraw tokens
 1. `Escrow.withdraw` to withdraw tokens.
 2. `Escrow.withdrawTo` to withdraw tokens to the specified address on the source chain.
+3. `EscrowDst.publicWithdraw` to withdraw tokens during the public withdrawal period.
 
 
 #### Cancel escrows
-2. `Escrow.cancel`.
+1. `Escrow.cancel` to cancel escrow.
+2. `EscrowSrc.publicCancel` to cancel escrow during the public cancellation period.
 
 ## Security considerations
 The security of protocol transactions is affected by the off-chain distribution of the user's secret. It is recommended to pay proper attention to the implementation of this process.
+Resolvers are recommended to watch for the event emitted in `EscrowDst.publicWithdraw` function. If the secret hasn't been received, it can be retrieved from the mentioned event. This will allow the Resolver to withdraw tokens on the source chain before escrow is cancelled.
 
 ## Local development
 
