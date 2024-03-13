@@ -32,7 +32,8 @@ interface IEscrowFactory {
     error InvalidCreationTime();
 
     // Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain
-    event CrosschainSwap(IEscrow.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
+    event SrcEscrowCreated(IEscrow.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
+    event DstEscrowCreated(address escrow);
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.

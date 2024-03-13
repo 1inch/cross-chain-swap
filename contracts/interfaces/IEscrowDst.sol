@@ -9,6 +9,9 @@ import { IEscrow } from "./IEscrow.sol";
  * @notice Interface implies withdrawing funds initially and then unlocking them with verification of the secret presented.
  */
 interface IEscrowDst is IEscrow {
+    // Emitted on successful public withdrawal
+    event SecretRevealed(bytes32 secret);
+
     /**
      * @notice Withdraws funds to maker
      * @dev Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
