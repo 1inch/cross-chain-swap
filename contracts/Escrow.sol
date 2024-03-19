@@ -50,8 +50,8 @@ abstract contract Escrow is IEscrow {
         _;
     }
 
-    modifier onlyBetween(uint256 start, uint256 stop) {
-        if (block.timestamp < start || block.timestamp >= stop) revert InvalidTime();
+    modifier onlyBefore(uint256 stop) {
+        if (block.timestamp >= stop) revert InvalidTime();
         _;
     }
 
