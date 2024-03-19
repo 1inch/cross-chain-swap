@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.23;
+pragma solidity ^0.8.20;
 
 /**
  * @dev Timelocks for the source and the destination chains plus the deployment timestamp.
