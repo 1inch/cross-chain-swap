@@ -74,6 +74,12 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 
+    /**
+     * @dev Transfers ERC20 tokens to the target and native tokens to the caller.
+     * @param secret The secret that unlocks the escrow.
+     * @param target The address to transfer ERC20 tokens to.
+     * @param immutables The immutable values used to deploy the clone contract.
+     */
     function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
         internal
         onlyTaker(immutables)

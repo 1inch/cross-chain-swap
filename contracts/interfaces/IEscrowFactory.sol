@@ -31,9 +31,24 @@ interface IEscrowFactory {
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
 
-    // Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain
+    /**
+     * @notice Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain.
+     * @param srcImmutables The immutables of the escrow contract that are used in deployment on the source chain.
+     * @param dstImmutablesComplement Additional immutables related to the escrow contract on the destination chain.
+     */
     event SrcEscrowCreated(IEscrow.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
+    /**
+     * @notice Emitted on EscrowDst deployment.
+     * @param escrow The address of the created escrow.
+     */
     event DstEscrowCreated(address escrow);
+
+    /* solhint-disable func-name-mixedcase */
+    /// @notice Returns the address of implementation on the source chain.
+    function ESCROW_SRC_IMPLEMENTATION() external view returns (address);
+    /// @notice Returns the address of implementation on the destination chain.
+    function ESCROW_DST_IMPLEMENTATION() external view returns (address);
+    /* solhint-enable func-name-mixedcase */
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.

@@ -22,8 +22,11 @@ abstract contract Escrow is IEscrow {
     using TimelocksLib for Timelocks;
     using ImmutablesLib for Immutables;
 
+    /// @notice See {IEscrow-RESCUE_DELAY}.
     uint256 public immutable RESCUE_DELAY;
+    /// @notice See {IEscrow-FACTORY}.
     address public immutable FACTORY = msg.sender;
+    /// @notice See {IEscrow-PROXY_BYTECODE_HASH}.
     bytes32 public immutable PROXY_BYTECODE_HASH = Clones.computeProxyBytecodeHash(address(this));
 
     constructor(uint32 rescueDelay) {
@@ -67,6 +70,9 @@ abstract contract Escrow is IEscrow {
         _uniTransfer(token, msg.sender, amount);
     }
 
+    /**
+     * @dev Transfers ERC20 or native tokens to the recipient.
+     */
     function _uniTransfer(address token, address to, uint256 amount) internal {
         if (token == address(0)) {
             _ethTransfer(to, amount);
@@ -75,11 +81,17 @@ abstract contract Escrow is IEscrow {
         }
     }
 
+    /**
+     * @dev Transfers native tokens to the recipient.
+     */
     function _ethTransfer(address to, uint256 amount) internal {
         (bool success,) = to.call{ value: amount }("");
         if (!success) revert NativeTokenSendingFailure();
     }
 
+    /**
+     * @dev Verifies that the computed escrow address matches the address of this contract.
+     */
     function _validateImmutables(Immutables calldata immutables) private view {
         bytes32 salt = immutables.hash();
         if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
@@ -87,6 +99,11 @@ abstract contract Escrow is IEscrow {
         }
     }
 
+    /**
+     * @dev Computes the Keccak-256 hash of the secret.
+     * @param secret The secret that unlocks the escrow.
+     * @return ret The computed hash.
+     */
     function _keccakBytes32(bytes32 secret) private pure returns (bytes32 ret) {
         assembly ("memory-safe") {
             mstore(0, secret)

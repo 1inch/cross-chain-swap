@@ -9,7 +9,10 @@ import { IEscrow } from "./IEscrow.sol";
  * @notice Interface implies withdrawing funds initially and then unlocking them with verification of the secret presented.
  */
 interface IEscrowDst is IEscrow {
-    // Emitted on successful public withdrawal
+    /**
+     * @notice Emitted on successful public withdrawal.
+     * @param secret The secret that unlocks the escrow.
+     */
     event SecretRevealed(bytes32 secret);
 
     /**

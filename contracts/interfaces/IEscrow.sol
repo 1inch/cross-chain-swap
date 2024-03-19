@@ -29,8 +29,11 @@ interface IEscrow {
     error NativeTokenSendingFailure();
 
     /* solhint-disable func-name-mixedcase */
+    /// @notice Returns the delay for rescuing funds from the escrow.
     function RESCUE_DELAY() external view returns (uint256);
+    /// @notice Returns the address of the factory that created the escrow.
     function FACTORY() external view returns (address);
+    /// @notice Returns the bytecode hash of the proxy contract.
     function PROXY_BYTECODE_HASH() external view returns (bytes32);
     /* solhint-enable func-name-mixedcase */
 
