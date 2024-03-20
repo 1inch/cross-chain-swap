@@ -260,7 +260,6 @@ contract BaseSetup is Test {
         EscrowSrc srcClone,
         IEscrow.Immutables memory immutables
     ) {
-        address maker = receiver == address(0) ? alice.addr: receiver;
         extraData = _buidDynamicData(
             secret,
             block.chainid,
@@ -325,7 +324,7 @@ contract BaseSetup is Test {
         immutables = IEscrow.Immutables({
             orderHash: orderHash,
             amount: srcAmount,
-            maker: Address.wrap(uint160(maker)),
+            maker: Address.wrap(uint160(alice.addr)),
             taker: Address.wrap(uint160(bob.addr)),
             token: Address.wrap(uint160(address(usdc))),
             hashlock: keccak256(abi.encodePacked(secret)),

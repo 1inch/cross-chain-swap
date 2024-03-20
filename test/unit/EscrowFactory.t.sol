@@ -62,14 +62,24 @@ contract EscrowFactoryTest is BaseSetup {
             bytes memory extraData,
             /* bytes memory extension */,
             IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IEscrow.Immutables memory immutables
         ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        IEscrowFactory.DstImmutablesComplement memory immutablesComplement = IEscrowFactory.DstImmutablesComplement({
+            maker: Address.wrap(uint160(receiver)),
+            amount: TAKING_AMOUNT,
+            token: Address.wrap(uint160(address(dai))),
+            safetyDeposit: DST_SAFETY_DEPOSIT,
+            chainId: block.chainid
+        });
+
         vm.prank(address(limitOrderProtocol));
+        vm.expectEmit();
+        emit IEscrowFactory.SrcEscrowCreated(immutables, immutablesComplement);
         escrowFactory.postInteraction(
             order,
             "", // extension
@@ -97,6 +107,8 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         // deploy escrow
         vm.prank(bob.addr);
+        vm.expectEmit();
+        emit IEscrowFactory.DstEscrowCreated(address(dstClone), Address.wrap(uint160(bob.addr)));
         escrowFactory.createDstEscrow{ value: safetyDeposit }(immutables, srcCancellationTimestamp);
 
         assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);

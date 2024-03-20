@@ -22,6 +22,7 @@ interface IEscrowFactory {
     }
 
     struct DstImmutablesComplement {
+        Address maker;
         uint256 amount;
         Address token;
         uint256 safetyDeposit;
@@ -33,7 +34,7 @@ interface IEscrowFactory {
 
     // Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain
     event SrcEscrowCreated(IEscrow.Immutables srcImmutables, DstImmutablesComplement dstImmutablesComplement);
-    event DstEscrowCreated(address escrow);
+    event DstEscrowCreated(address escrow, Address taker);
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.

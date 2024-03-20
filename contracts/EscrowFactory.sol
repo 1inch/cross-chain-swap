@@ -85,7 +85,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         IEscrow.Immutables memory immutables = IEscrow.Immutables({
             orderHash: orderHash,
             hashlock: extraDataImmutables.hashlock,
-            maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
+            maker: order.maker,
             taker: Address.wrap(uint160(taker)),
             token: order.makerAsset,
             amount: makingAmount,
@@ -94,6 +94,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
+            maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
             amount: takingAmount,
             token: extraDataImmutables.dstToken,
             safetyDeposit: extraDataImmutables.deposits & type(uint128).max,
@@ -131,7 +132,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
 
-        emit DstEscrowCreated(escrow);
+        emit DstEscrowCreated(escrow, dstImmutables.taker);
     }
 
     /**
