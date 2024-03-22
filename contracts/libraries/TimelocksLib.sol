@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.23;
+pragma solidity ^0.8.20;
 
 /**
  * @dev Timelocks for the source and the destination chains plus the deployment timestamp.
@@ -68,7 +68,7 @@ library TimelocksLib {
      */
     function get(Timelocks timelocks, Stage stage) internal pure returns (uint256) {
         uint256 data = Timelocks.unwrap(timelocks);
-        uint256 bitShift = uint256(stage) << 5;
+        uint256 bitShift = uint256(stage) * 32;
         return uint32(data) + uint32(data >> bitShift);
     }
 }

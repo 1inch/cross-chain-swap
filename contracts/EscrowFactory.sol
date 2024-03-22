@@ -34,7 +34,9 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
 
     uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 
+    /// @notice See {IEscrowFactory-ESCROW_SRC_IMPLEMENTATION}.
     address public immutable ESCROW_SRC_IMPLEMENTATION;
+    /// @notice See {IEscrowFactory-ESCROW_DST_IMPLEMENTATION}.
     address public immutable ESCROW_DST_IMPLEMENTATION;
     bytes32 private immutable _PROXY_SRC_BYTECODE_HASH;
     bytes32 private immutable _PROXY_DST_BYTECODE_HASH;
