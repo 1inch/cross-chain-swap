@@ -40,6 +40,11 @@ library Clones {
         }
     }
 
+    /**
+     * @notice Returns the hash of the proxy bytecode concatenated with the implementation address.
+     * @param implementation The address of the contract to clone.
+     * @return bytecodeHash The hash of the resulting bytecode.
+     */
     function computeProxyBytecodeHash(address implementation) internal pure returns (bytes32 bytecodeHash) {
         assembly ("memory-safe") {
             mstore(0, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
