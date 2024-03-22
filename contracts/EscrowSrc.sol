@@ -85,10 +85,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyBetween(
-            immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal),
-            immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation)
-        )
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal))
+        onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);

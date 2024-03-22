@@ -34,10 +34,8 @@ contract EscrowDst is Escrow, IEscrowDst {
         onlyTaker(immutables)
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyBetween(
-            immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal),
-            immutables.timelocks.get(TimelocksLib.Stage.DstCancellation)
-        )
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
+        onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
@@ -52,10 +50,8 @@ contract EscrowDst is Escrow, IEscrowDst {
         external
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyBetween(
-            immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal),
-            immutables.timelocks.get(TimelocksLib.Stage.DstCancellation)
-        )
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
+        onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
