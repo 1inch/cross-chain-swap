@@ -243,7 +243,6 @@ contract BaseSetup is Test {
             auctionPoints
         );
     }
-
     function _prepareDataSrc(
         bytes32 secret,
         uint256 srcAmount,
@@ -252,6 +251,37 @@ contract BaseSetup is Test {
         uint256 dstSafetyDeposit,
         address receiver,
         bool fakeOrder
+    ) internal returns(
+        IOrderMixin.Order memory order,
+        bytes32 orderHash,
+        bytes memory extraData,
+        bytes memory extension,
+        EscrowSrc srcClone,
+        IEscrow.Immutables memory immutables
+    ) {
+        address[] memory resolvers = new address[](1);
+        resolvers[0] = bob.addr;
+        (order, orderHash, extraData, extension, srcClone, immutables) = _prepareDataSrcCustomResolver(
+            secret,
+            srcAmount,
+            dstAmount,
+            srcSafetyDeposit,
+            dstSafetyDeposit,
+            receiver,
+            fakeOrder,
+            resolvers
+        );
+    }
+
+    function _prepareDataSrcCustomResolver(
+        bytes32 secret,
+        uint256 srcAmount,
+        uint256 dstAmount,
+        uint256 srcSafetyDeposit,
+        uint256 dstSafetyDeposit,
+        address receiver,
+        bool fakeOrder,
+        address[] memory resolvers
     ) internal returns(
         IOrderMixin.Order memory order,
         bytes32 orderHash,
@@ -269,11 +299,10 @@ contract BaseSetup is Test {
             dstSafetyDeposit
         );
 
-        bytes memory whitelist = abi.encodePacked(
-            uint32(block.timestamp), // auction start time
-            uint80(uint160(bob.addr)), // resolver address
-            uint16(0) // time delta
-        );
+        bytes memory whitelist = abi.encodePacked(uint32(block.timestamp)); // auction start time
+        for (uint256 i = 0; i < resolvers.length; i++) {
+            whitelist = abi.encodePacked(whitelist, uint80(uint160(resolvers[i])), uint16(0)); // resolver address, time delta
+        }
 
         if (fakeOrder) {
             order = IOrderMixin.Order({
@@ -317,7 +346,7 @@ contract BaseSetup is Test {
                 ""
             );
 
-            dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, bob.addr, srcAmount, srcAmount, auctionDetails);
+            dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, resolvers[0], srcAmount, srcAmount, auctionDetails);
         }
 
         orderHash = limitOrderProtocol.hashOrder(order);
@@ -326,7 +355,7 @@ contract BaseSetup is Test {
             orderHash: orderHash,
             amount: srcAmount,
             maker: Address.wrap(uint160(maker)),
-            taker: Address.wrap(uint160(bob.addr)),
+            taker: Address.wrap(uint160(resolvers[0])),
             token: Address.wrap(uint160(address(usdc))),
             hashlock: keccak256(abi.encodePacked(secret)),
             safetyDeposit: srcSafetyDeposit,
