@@ -26,7 +26,6 @@ contract ResolverMock is IResolverMock, Ownable {
     IEscrowFactory private immutable _FACTORY;
     IOrderMixin private immutable _LOP;
 
-
     constructor(IEscrowFactory factory, IOrderMixin lop, address initialOwner) Ownable(initialOwner) {
         _FACTORY = factory;
         _LOP = lop;
