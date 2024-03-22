@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import { Address } from "solidity-utils/libraries/AddressLib.sol";
+
 import { IEscrow } from "contracts/Escrow.sol";
+import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 
@@ -801,7 +804,17 @@ contract EscrowTest is BaseSetup {
         assertEq(success, true);
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
 
+        IEscrowFactory.DstImmutablesComplement memory immutablesComplement = IEscrowFactory.DstImmutablesComplement({
+            maker: Address.wrap(uint160(receiver)),
+            amount: TAKING_AMOUNT,
+            token: Address.wrap(uint160(address(dai))),
+            safetyDeposit: DST_SAFETY_DEPOSIT,
+            chainId: block.chainid
+        });
+
         vm.prank(address(limitOrderProtocol));
+        vm.expectEmit();
+        emit IEscrowFactory.SrcEscrowCreated(immutables, immutablesComplement);
         escrowFactory.postInteraction(
             order,
             "", // extension
@@ -815,7 +828,7 @@ contract EscrowTest is BaseSetup {
 
         uint256 balanceBob = bob.addr.balance;
         uint256 balanceAlice = usdc.balanceOf(alice.addr);
-        uint256 balanceReceiver= usdc.balanceOf(receiver);
+        uint256 balanceReceiver = usdc.balanceOf(receiver);
         uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
 
         // cancel
@@ -824,8 +837,8 @@ contract EscrowTest is BaseSetup {
         srcClone.cancel(immutables);
 
         assertEq(bob.addr.balance, balanceBob + SRC_SAFETY_DEPOSIT);
-        assertEq(usdc.balanceOf(alice.addr), balanceAlice);
-        assertEq(usdc.balanceOf(receiver), balanceReceiver + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(alice.addr), balanceAlice + MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(receiver), balanceReceiver);
         assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
@@ -957,6 +970,36 @@ contract EscrowTest is BaseSetup {
 
         assertEq(bob.addr.balance, balanceBobNative + DST_SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(bob.addr), balanceBob + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - TAKING_AMOUNT);
+        assertEq(address(dstClone).balance, balanceEscrowNative - DST_SAFETY_DEPOSIT);
+    }
+
+    function test_CancelDstDifferentTarget() public {
+        address target = users[2].addr;
+        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
+            SECRET, TAKING_AMOUNT, alice.addr, target, address(dai)
+        );
+
+        // deploy escrow
+        vm.prank(bob.addr);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+
+        uint256 balanceBob = dai.balanceOf(bob.addr);
+        uint256 balanceBobNative = bob.addr.balance;
+        uint256 balanceTarget = dai.balanceOf(target);
+        uint256 balanceTargetNative = target.balance;
+        uint256 balanceEscrow = dai.balanceOf(address(dstClone));
+        uint256 balanceEscrowNative = address(dstClone).balance;
+
+        // cancel
+        vm.warp(block.timestamp + dstTimelocks.cancellation + 100);
+        vm.prank(target);
+        dstClone.cancel(immutables);
+
+        assertEq(bob.addr.balance, balanceBobNative);
+        assertEq(target.balance, balanceTargetNative + DST_SAFETY_DEPOSIT);
+        assertEq(dai.balanceOf(bob.addr), balanceBob);
+        assertEq(dai.balanceOf(target), balanceTarget + TAKING_AMOUNT);
         assertEq(dai.balanceOf(address(dstClone)), balanceEscrow - TAKING_AMOUNT);
         assertEq(address(dstClone).balance, balanceEscrowNative - DST_SAFETY_DEPOSIT);
     }

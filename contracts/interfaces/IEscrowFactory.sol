@@ -22,6 +22,7 @@ interface IEscrowFactory {
     }
 
     struct DstImmutablesComplement {
+        Address maker;
         uint256 amount;
         Address token;
         uint256 safetyDeposit;
@@ -41,7 +42,7 @@ interface IEscrowFactory {
      * @notice Emitted on EscrowDst deployment.
      * @param escrow The address of the created escrow.
      */
-    event DstEscrowCreated(address escrow);
+    event DstEscrowCreated(address escrow, Address taker);
 
     /* solhint-disable func-name-mixedcase */
     /// @notice Returns the address of implementation on the source chain.
