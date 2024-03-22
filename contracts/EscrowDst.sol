@@ -52,7 +52,10 @@ contract EscrowDst is Escrow, IEscrowDst {
         external
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
-        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
+        onlyBetween(
+            immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal),
+            immutables.timelocks.get(TimelocksLib.Stage.DstCancellation)
+        )
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
