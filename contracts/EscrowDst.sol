@@ -73,7 +73,7 @@ contract EscrowDst is Escrow, IEscrowDst {
         onlyValidImmutables(immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
-        _uniTransfer(immutables.token.get(), msg.sender, immutables.amount);
+        _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
     }
 }
