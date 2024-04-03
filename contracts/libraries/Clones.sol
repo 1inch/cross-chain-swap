@@ -47,6 +47,7 @@ library Clones {
      */
     function computeProxyBytecodeHash(address implementation) internal pure returns (bytes32 bytecodeHash) {
         assembly ("memory-safe") {
+            // Stores the bytecode after address
             mstore(0x20, 0x5af43d82803e903d91602b57fd5bf3)
             // implementation address
             mstore(0x11, implementation)
