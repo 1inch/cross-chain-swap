@@ -431,7 +431,7 @@ contract BaseSetup is Test {
             allowedSender: address(0),
             shouldCheckEpoch: false,
             allowPartialFill: true,
-            allowMultipleFills: true,
+            allowMultipleFills: false,
             usePermit2: false,
             unwrapWeth: false,
             expiry: 0,
