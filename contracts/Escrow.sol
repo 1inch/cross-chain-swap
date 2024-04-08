@@ -15,6 +15,7 @@ import { IEscrow } from "./interfaces/IEscrow.sol";
 
 /**
  * @title Base Escrow contract for cross-chain atomic swap.
+ * @dev {IEscrow-withdraw} and {IEscrow-cancel} functions must be implemented in the derived contracts.
  */
 abstract contract Escrow is IEscrow {
     using AddressLib for Address;

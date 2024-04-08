@@ -9,6 +9,7 @@ import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
+import { MakerTraitsLib } from "limit-order-protocol/libraries/MakerTraitsLib.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
@@ -76,6 +77,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         uint256 remainingMakingAmount,
         bytes calldata extraData
     ) internal override(WhitelistExtension, ResolverFeeExtension) {
+        if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) revert InvalidMakerTraits();
+
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
