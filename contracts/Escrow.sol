@@ -7,8 +7,8 @@ import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
-import { Clones } from "./libraries/Clones.sol";
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
+import { ProxyHashLib } from "./libraries/ProxyHashLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrow } from "./interfaces/IEscrow.sol";
@@ -28,7 +28,7 @@ abstract contract Escrow is IEscrow {
     /// @notice See {IEscrow-FACTORY}.
     address public immutable FACTORY = msg.sender;
     /// @notice See {IEscrow-PROXY_BYTECODE_HASH}.
-    bytes32 public immutable PROXY_BYTECODE_HASH = Clones.computeProxyBytecodeHash(address(this));
+    bytes32 public immutable PROXY_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(address(this));
 
     constructor(uint32 rescueDelay) {
         RESCUE_DELAY = rescueDelay;

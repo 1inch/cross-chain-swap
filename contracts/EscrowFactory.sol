@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.23;
 
+import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
@@ -14,7 +15,7 @@ import { ResolverFeeExtension } from "limit-order-settlement/extensions/Resolver
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
-import { Clones } from "./libraries/Clones.sol";
+import { ProxyHashLib } from "./libraries/ProxyHashLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
@@ -29,9 +30,9 @@ import { EscrowSrc } from "./EscrowSrc.sol";
 contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
     using AddressLib for Address;
     using Clones for address;
+    using ImmutablesLib for IEscrow.Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
-    using ImmutablesLib for IEscrow.Immutables;
 
     uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 
@@ -50,8 +51,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
         ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrc(rescueDelaySrc));
         ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst));
-        _PROXY_SRC_BYTECODE_HASH = Clones.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
-        _PROXY_DST_BYTECODE_HASH = Clones.computeProxyBytecodeHash(ESCROW_DST_IMPLEMENTATION);
+        _PROXY_SRC_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
+        _PROXY_DST_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_DST_IMPLEMENTATION);
     }
 
     /**
