@@ -9,7 +9,7 @@ import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
-import { Address, AddressLib, BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { Address, AddressLib, BaseSetup, IOrderMixin, MakerTraits } from "../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
     using AddressLib for Address;
@@ -198,6 +198,36 @@ contract EscrowFactoryTest is BaseSetup {
             "", // extension
             orderHash,
             alice.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+    }
+
+    function test_NoMultipleFillsOrder() public {
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            IEscrow srcClone,
+            /* IEscrow.Immutables memory immutables */
+        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+
+        order.makerTraits = MakerTraits.wrap(MakerTraits.unwrap(order.makerTraits) | _ALLOW_MULTIPLE_FILLS_FLAG);
+
+        vm.prank(address(limitOrderProtocol));
+        vm.expectRevert(IEscrowFactory.InvalidMakerTraits.selector);
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
