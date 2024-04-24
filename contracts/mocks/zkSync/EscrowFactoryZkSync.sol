@@ -13,16 +13,14 @@ import { ResolverFeeExtension } from "limit-order-settlement/extensions/Resolver
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
-import { ProxyHashLib } from "contracts/libraries/ProxyHashLib.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 import { ZkSyncLib } from "contracts/libraries/ZkSyncLib.sol";
 
 import { IEscrow } from "contracts/interfaces/IEscrow.sol";
-import { EscrowDst } from "contracts/EscrowDst.sol";
 import { EscrowSrcZkSync } from "./EscrowSrcZkSync.sol";
 import { EscrowDstZkSync } from "./EscrowDstZkSync.sol";
 import { IEscrowFactoryZkSync } from "./IEscrowFactoryZkSync.sol";
-import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
+// import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
 
 /**
  * @title Escrow Factory contract

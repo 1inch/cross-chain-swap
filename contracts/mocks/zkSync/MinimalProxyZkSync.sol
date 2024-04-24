@@ -3,14 +3,14 @@
 pragma solidity 0.8.23;
 
 contract MinimalProxyZkSync {
-    address private immutable _implementation;
+    address private immutable _IMPLEMENTATION;
 
     constructor(address implementation) {
-        _implementation = implementation;
+        _IMPLEMENTATION = implementation;
     }
 
     fallback() external payable {
-        address _impl = _implementation;
+        address _impl = _IMPLEMENTATION;
         assembly ("memory-safe") {
             calldatacopy(0, 0, calldatasize())
             let result := delegatecall(gas(), _impl, 0, calldatasize(), 0, 0)

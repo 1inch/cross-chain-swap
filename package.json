@@ -31,8 +31,8 @@
     "coverage": "mkdir -p coverage && forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:html": "bash scripts/coverage.sh",
     "doc": "forge doc --build --out documentation",
-    "lint": "solhint --max-warnings 0 \"**/*.sol\"",
-    "lint:fix": "solhint --max-warnings 0 \"**/*.sol\" --fix",
+    "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\"",
+    "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
     "test": "forge snapshot -vvv",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv"
   },

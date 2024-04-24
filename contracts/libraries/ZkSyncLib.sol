@@ -14,7 +14,12 @@ library ZkSyncLib {
      * @param inputHash The hash of the input.
      * @return addr The computed address.
      */
-    function computeAddressZkSync(bytes32 salt, bytes32 bytecodeHash, address deployer, bytes32 inputHash) internal pure returns (address addr) {
+    function computeAddressZkSync(
+        bytes32 salt,
+        bytes32 bytecodeHash,
+        address deployer,
+        bytes32 inputHash
+    ) internal pure returns (address addr) {
         bytes32 prefix = keccak256("zksyncCreate2");
         assembly ("memory-safe") {
             let ptr := mload(0x40)
