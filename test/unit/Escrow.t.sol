@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Address } from "solidity-utils/libraries/AddressLib.sol";
+import { Address } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { IEscrow } from "contracts/Escrow.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";

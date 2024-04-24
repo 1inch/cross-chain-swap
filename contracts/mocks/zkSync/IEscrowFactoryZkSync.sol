@@ -4,15 +4,15 @@ pragma solidity ^0.8.0;
 
 import { Address } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
 
-import { Timelocks } from "../libraries/TimelocksLib.sol";
+import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 
-import { IEscrow } from "./IEscrow.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 /**
  * @title Escrow Factory interface contract for cross-chain atomic swap.
  * @notice Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
  */
-interface IEscrowFactory {
+interface IEscrowFactoryZkSync {
     struct ExtraDataImmutables {
         bytes32 hashlock;
         uint256 dstChainId;
@@ -44,13 +44,6 @@ interface IEscrowFactory {
      * @param escrow The address of the created escrow.
      */
     event DstEscrowCreated(address escrow, Address taker);
-
-    /* solhint-disable func-name-mixedcase */
-    /// @notice Returns the address of implementation on the source chain.
-    function ESCROW_SRC_IMPLEMENTATION() external view returns (address);
-    /// @notice Returns the address of implementation on the destination chain.
-    function ESCROW_DST_IMPLEMENTATION() external view returns (address);
-    /* solhint-enable func-name-mixedcase */
 
     /**
      * @notice Creates a new escrow contract for taker on the destination chain.

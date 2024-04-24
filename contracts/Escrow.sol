@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
-import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
-import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
+import { AddressLib, Address } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
+import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { ProxyHashLib } from "./libraries/ProxyHashLib.sol";
@@ -39,7 +39,7 @@ abstract contract Escrow is IEscrow {
         _;
     }
 
-    modifier onlyValidImmutables(Immutables calldata immutables) {
+    modifier onlyValidImmutables(Immutables calldata immutables) virtual {
         _validateImmutables(immutables);
         _;
     }

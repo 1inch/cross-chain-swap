@@ -3,15 +3,15 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 
-import { IWETH, LimitOrderProtocol } from "limit-order-protocol/LimitOrderProtocol.sol";
-import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
-import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/libraries/MakerTraitsLib.sol";
-import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
-import { WrappedTokenMock } from "limit-order-protocol/mocks/WrappedTokenMock.sol";
+import { IWETH, LimitOrderProtocol } from "@1inch/limit-order-protocol-contract/contracts/LimitOrderProtocol.sol";
+import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
+import { MakerTraits, MakerTraitsLib } from "@1inch/limit-order-protocol-contract/contracts/libraries/MakerTraitsLib.sol";
+import { TakerTraits } from "@1inch/limit-order-protocol-contract/contracts/libraries/TakerTraitsLib.sol";
+import { WrappedTokenMock } from "@1inch/limit-order-protocol-contract/contracts/mocks/WrappedTokenMock.sol";
 import { IFeeBank } from "limit-order-settlement/interfaces/IFeeBank.sol";
-import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
-import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
-import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
+import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
+import { TokenCustomDecimalsMock } from "@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
+import { TokenMock } from "@1inch/solidity-utils/contracts/mocks/TokenMock.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
 import { EscrowSrc } from "contracts/EscrowSrc.sol";

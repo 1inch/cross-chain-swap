@@ -13,3 +13,11 @@ build
 # foundry
 cache_forge
 out
+
+# hardhat
+cache_hardhat
+
+# zkSync
+artifacts-zk
+cache_hardhat-zk
+deployments-zk

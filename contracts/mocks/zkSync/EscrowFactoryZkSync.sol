@@ -2,9 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
 import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 
@@ -14,34 +12,36 @@ import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.s
 import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 
-import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
-import { ProxyHashLib } from "./libraries/ProxyHashLib.sol";
-import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
+import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
+import { ProxyHashLib } from "contracts/libraries/ProxyHashLib.sol";
+import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { ZkSyncLib } from "contracts/libraries/ZkSyncLib.sol";
 
-import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { IEscrow } from "./interfaces/IEscrow.sol";
-import { EscrowDst } from "./EscrowDst.sol";
-import { EscrowSrc } from "./EscrowSrc.sol";
+import { IEscrow } from "contracts/interfaces/IEscrow.sol";
+import { EscrowDst } from "contracts/EscrowDst.sol";
+import { EscrowSrcZkSync } from "./EscrowSrcZkSync.sol";
+import { EscrowDstZkSync } from "./EscrowDstZkSync.sol";
+import { IEscrowFactoryZkSync } from "./IEscrowFactoryZkSync.sol";
+import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
 
 /**
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
-contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
+contract EscrowFactoryZkSync is IEscrowFactoryZkSync, WhitelistExtension, ResolverFeeExtension {
     using AddressLib for Address;
-    using Clones for address;
     using ImmutablesLib for IEscrow.Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
     uint256 private constant _SRC_IMMUTABLES_LENGTH = 160;
 
-    /// @notice See {IEscrowFactory-ESCROW_SRC_IMPLEMENTATION}.
-    address public immutable ESCROW_SRC_IMPLEMENTATION;
-    /// @notice See {IEscrowFactory-ESCROW_DST_IMPLEMENTATION}.
-    address public immutable ESCROW_DST_IMPLEMENTATION;
-    bytes32 private immutable _PROXY_SRC_BYTECODE_HASH;
-    bytes32 private immutable _PROXY_DST_BYTECODE_HASH;
+    uint32 public immutable ESCROW_SRC_RESCUE_DELAY;
+    uint32 public immutable ESCROW_DST_RESCUE_DELAY;
+    bytes32 public immutable ESCROW_SRC_INPUT_HASH;
+    bytes32 public immutable ESCROW_DST_INPUT_HASH;
+    bytes32 private immutable _ESCROW_SRC_BYTECODE_HASH;
+    bytes32 private immutable _ESCROW_DST_BYTECODE_HASH;
 
     constructor(
         address limitOrderProtocol,
@@ -49,10 +49,19 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         uint32 rescueDelaySrc,
         uint32 rescueDelayDst
     ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
-        ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrc(rescueDelaySrc));
-        ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst));
-        _PROXY_SRC_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
-        _PROXY_DST_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_DST_IMPLEMENTATION);
+        ESCROW_SRC_RESCUE_DELAY = rescueDelaySrc;
+        ESCROW_SRC_INPUT_HASH = keccak256(abi.encode(ESCROW_SRC_RESCUE_DELAY));
+        ESCROW_DST_INPUT_HASH = keccak256(abi.encode(rescueDelayDst));
+        address implSrc = address(new EscrowSrcZkSync(ESCROW_SRC_RESCUE_DELAY));
+        address implDst = address(new EscrowDstZkSync(ESCROW_DST_RESCUE_DELAY));
+        bytes32 bytecodeHashSrc;
+        bytes32 bytecodeHashDst;
+        assembly ("memory-safe") {
+            bytecodeHashSrc := extcodehash(implSrc)
+            bytecodeHashDst := extcodehash(implDst)
+        }
+        _ESCROW_SRC_BYTECODE_HASH = bytecodeHashSrc;
+        _ESCROW_DST_BYTECODE_HASH = bytecodeHashDst;
     }
 
     /**
@@ -110,7 +119,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         emit SrcEscrowCreated(immutables, immutablesComplement);
 
         bytes32 salt = immutables.hashMem();
-        address escrow = ESCROW_SRC_IMPLEMENTATION.cloneDeterministic(salt, 0);
+        address escrow = address(new EscrowSrcZkSync{salt: salt}(ESCROW_SRC_RESCUE_DELAY));
         if (escrow.balance < immutables.safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
         }
@@ -133,7 +142,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         if (immutables.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
 
         bytes32 salt = immutables.hashMem();
-        address escrow = ESCROW_DST_IMPLEMENTATION.cloneDeterministic(salt, msg.value);
+        address escrow = address(new EscrowDstZkSync{salt: salt, value: msg.value}(ESCROW_DST_RESCUE_DELAY));
         if (token != address(0)) {
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
@@ -145,13 +154,13 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
     function addressOfEscrowSrc(IEscrow.Immutables calldata immutables) external view returns (address) {
-        return Create2.computeAddress(immutables.hash(), _PROXY_SRC_BYTECODE_HASH);
+        return ZkSyncLib.computeAddressZkSync(immutables.hash(), _ESCROW_SRC_BYTECODE_HASH, address(this), ESCROW_SRC_INPUT_HASH);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
     function addressOfEscrowDst(IEscrow.Immutables calldata immutables) external view returns (address) {
-        return Create2.computeAddress(immutables.hash(), _PROXY_DST_BYTECODE_HASH);
+        return ZkSyncLib.computeAddressZkSync(immutables.hash(), _ESCROW_DST_BYTECODE_HASH, address(this), ESCROW_DST_INPUT_HASH);
     }
 }
