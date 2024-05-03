@@ -42,7 +42,7 @@ contract IntegrationResolverMockTest is BaseSetup {
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
-            SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, resolvers
+            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
@@ -89,7 +89,7 @@ contract IntegrationResolverMockTest is BaseSetup {
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
-            SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, resolvers
+            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
@@ -148,7 +148,7 @@ contract IntegrationResolverMockTest is BaseSetup {
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
-            SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, resolvers
+            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
@@ -209,7 +209,7 @@ contract IntegrationResolverMockTest is BaseSetup {
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
-            SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, resolvers
+            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
@@ -277,7 +277,7 @@ contract IntegrationResolverMockTest is BaseSetup {
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
-            SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, resolvers
+            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);

@@ -22,6 +22,7 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 import { EscrowDst } from "./EscrowDst.sol";
 import { EscrowSrc } from "./EscrowSrc.sol";
+import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
 
 /**
  * @title Escrow Factory contract
@@ -40,6 +41,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     address public immutable ESCROW_SRC_IMPLEMENTATION;
     /// @notice See {IEscrowFactory-ESCROW_DST_IMPLEMENTATION}.
     address public immutable ESCROW_DST_IMPLEMENTATION;
+    MerkleStorageInvalidator public immutable MERKLE_STORAGE_INVALIDATOR;
     bytes32 private immutable _PROXY_SRC_BYTECODE_HASH;
     bytes32 private immutable _PROXY_DST_BYTECODE_HASH;
 
@@ -53,6 +55,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst));
         _PROXY_SRC_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
         _PROXY_DST_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_DST_IMPLEMENTATION);
+        MERKLE_STORAGE_INVALIDATOR = new MerkleStorageInvalidator(limitOrderProtocol);
     }
 
     /**
@@ -62,7 +65,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * The external postInteraction function call will be made from the Limit Order Protocol
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
      * `extraData` consists of:
-     *   - ExtraDataImmutables struct
+     *   - ExtraDataArgs struct
      *   - whitelist
      *   - 0 / 4 bytes for the fee
      *   - 1 byte for the bitmap
@@ -77,34 +80,46 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         uint256 remainingMakingAmount,
         bytes calldata extraData
     ) internal override(WhitelistExtension, ResolverFeeExtension) {
-        if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) revert InvalidMakerTraits();
-
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
 
-        ExtraDataImmutables calldata extraDataImmutables;
+        ExtraDataArgs calldata extraDataArgs;
         assembly ("memory-safe") {
-            extraDataImmutables := extraData.offset
+            extraDataArgs := extraData.offset
+        }
+
+        bytes32 hashlock = extraDataArgs.hashlock;
+
+        if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) {
+            bytes32 key = keccak256(abi.encodePacked(orderHash, extraDataArgs.hashlock));
+            (uint256 validated, bytes32 validatedSecret) = MERKLE_STORAGE_INVALIDATOR.lastValidated(key);
+            hashlock = validatedSecret;
+            uint256 validatedIdx = uint128(validated);
+            uint256 secretsAmount = validated >> 128;
+            if (secretsAmount == 0) revert InvalidMultipleFills();
+            uint256 onePart = order.makingAmount / secretsAmount;
+            uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / onePart - 1;
+            if (calculatedIndex != validatedIdx) revert InvalidMultipleFills();
         }
 
         IEscrow.Immutables memory immutables = IEscrow.Immutables({
             orderHash: orderHash,
-            hashlock: extraDataImmutables.hashlock,
+            hashlock: hashlock,
             maker: order.maker,
             taker: Address.wrap(uint160(taker)),
             token: order.makerAsset,
             amount: makingAmount,
-            safetyDeposit: extraDataImmutables.deposits >> 128,
-            timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
+            safetyDeposit: extraDataArgs.deposits >> 128,
+            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp)
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
             amount: takingAmount,
-            token: extraDataImmutables.dstToken,
-            safetyDeposit: extraDataImmutables.deposits & type(uint128).max,
-            chainId: extraDataImmutables.dstChainId
+            token: extraDataArgs.dstToken,
+            safetyDeposit: extraDataArgs.deposits & type(uint128).max,
+            chainId: extraDataArgs.dstChainId
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);
