@@ -8,7 +8,7 @@ import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { BaseSetup, EscrowSrc, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
 contract MerkleStorageInvalidatorTest is BaseSetup {
-    uint256 public constant SECRETS_AMOUNT = 16;
+    uint256 public constant SECRETS_AMOUNT = 100;
 
     address public merkleStorageInvalidator;
     Merkle public merkle = new Merkle();
@@ -34,6 +34,8 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
+        bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
+
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -41,7 +43,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
             bytes memory extension,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
         uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / SECRETS_AMOUNT;

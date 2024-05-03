@@ -92,11 +92,11 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         bytes32 hashlock = extraDataArgs.hashlock;
 
         if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) {
-            bytes32 key = keccak256(abi.encodePacked(orderHash, extraDataArgs.hashlock));
+            uint256 secretsAmount = uint256(extraDataArgs.hashlock) >> 240;
+            bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlock))));
             (uint256 validated, bytes32 validatedSecret) = MERKLE_STORAGE_INVALIDATOR.lastValidated(key);
             hashlock = validatedSecret;
             uint256 validatedIdx = uint128(validated);
-            uint256 secretsAmount = validated >> 128;
             if (secretsAmount == 0) revert InvalidMultipleFills();
             uint256 onePart = order.makingAmount / secretsAmount;
             uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / onePart - 1;

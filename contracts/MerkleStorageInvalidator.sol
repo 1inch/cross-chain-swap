@@ -10,7 +10,7 @@ contract MerkleStorageInvalidator is ITakerInteraction {
     using MerkleProof for bytes32[];
 
     struct LastValidated {
-        uint256 index; // (amountOfLeaves << 128) | idx
+        uint256 index;
         bytes32 leaf;
     }
 
@@ -50,8 +50,7 @@ contract MerkleStorageInvalidator is ITakerInteraction {
             bytes32 secretHash
         ) = abi.decode(extraData, (bytes32, bytes32[], uint256, bytes32));
         if (!proof.verify(root, keccak256(abi.encodePacked(idx, secretHash)))) revert InvalidProof();
-        bytes32 key = keccak256(abi.encodePacked(orderHash, root));
-        uint256 amountOfLeaves = 2 ** (proof.length);
-        lastValidated[key] = LastValidated((amountOfLeaves << 128) | idx, secretHash);
+        bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(root))));
+        lastValidated[key] = LastValidated(idx, secretHash);
     }
 }
