@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
+import { Merkle } from "murky/src/Merkle.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
 import { IEscrowFactory } from "contracts/EscrowFactory.sol";
@@ -9,14 +10,26 @@ import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
-import { Address, AddressLib, BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { Address, AddressLib, BaseSetup, EscrowSrc, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract EscrowFactoryTest is BaseSetup {
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
 
+    uint256 public constant SECRETS_AMOUNT = 100;
+    bytes32[] public hashedSecrets = new bytes32[](SECRETS_AMOUNT);
+    bytes32[] public hashedPairs = new bytes32[](SECRETS_AMOUNT);
+    Merkle public merkle = new Merkle();
+    bytes32 public root;
+        
     function setUp() public virtual override {
         BaseSetup.setUp();
+
+        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
+        }
+        root = merkle.getRoot(hashedPairs);
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -247,6 +260,76 @@ contract EscrowFactoryTest is BaseSetup {
         vm.prank(bob.addr);
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+    }
+
+    function test_MultipleFillsInvalidSecretsAmount() public {
+        uint256 idx = SECRETS_AMOUNT / 2;
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
+
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
+        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+
+        immutables.hashlock = hashedSecrets[idx];
+        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / SECRETS_AMOUNT;
+        immutables.amount = makingAmount;
+        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+
+        vm.prank(address(limitOrderProtocol));
+        vm.expectRevert(IEscrowFactory.InvalidMultipleFills.selector);
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraData
+        );
+    }
+
+    function test_MultipleFillsInvalidKey() public {
+        uint256 idx = SECRETS_AMOUNT / 2;
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
+
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            bytes memory extraData,
+            /* bytes memory extension */,
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
+        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+
+        immutables.hashlock = hashedSecrets[idx];
+        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / SECRETS_AMOUNT;
+        immutables.amount = makingAmount;
+        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+
+        vm.prank(address(limitOrderProtocol));
+        vm.expectRevert(IEscrowFactory.InvalidMultipleFills.selector);
+        escrowFactory.postInteraction(
+            order,
+            "", // extension
+            orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            MAKING_AMOUNT, // remainingMakingAmount
+            extraData
+        );
     }
 
     /* solhint-enable func-name-mixedcase */
