@@ -7,7 +7,7 @@ import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 
 import { BaseSetup, EscrowSrc, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
-contract MerkleStorageInvalidatorTest is BaseSetup {
+contract MerkleStorageInvalidatorIntTest is BaseSetup {
     uint256 public constant SECRETS_AMOUNT = 100;
 
     address public merkleStorageInvalidator;

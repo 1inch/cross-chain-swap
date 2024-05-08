@@ -89,18 +89,19 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             extraDataArgs := extraData.offset
         }
 
-        bytes32 hashlock = extraDataArgs.hashlock;
+        bytes32 hashlock;
 
         if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) {
             uint256 secretsAmount = uint256(extraDataArgs.hashlock) >> 240;
             if (secretsAmount == 0) revert InvalidMultipleFills();
             bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlock))));
-            (uint256 validated, bytes32 validatedSecret) = MERKLE_STORAGE_INVALIDATOR.lastValidated(key);
-            hashlock = validatedSecret;
-            uint256 validatedIdx = uint128(validated);
-            uint256 onePart = order.makingAmount / secretsAmount;
-            uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / onePart - 1;
+            uint256 validatedIdx;
+            (validatedIdx, hashlock) = MERKLE_STORAGE_INVALIDATOR.lastValidated(key);
+            uint256 fraction = order.makingAmount / secretsAmount;
+            uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / fraction - 1;
             if (calculatedIndex != validatedIdx) revert InvalidMultipleFills();
+        } else {
+            hashlock = extraDataArgs.hashlock;
         }
 
         IEscrow.Immutables memory immutables = IEscrow.Immutables({

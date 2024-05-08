@@ -9,7 +9,7 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
 import { IEscrow } from "./IEscrow.sol";
 
 /**
- * @title Escrow Factory interface contract for cross-chain atomic swap.
+ * @title Escrow Factory interface for cross-chain atomic swap.
  * @notice Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
  */
 interface IEscrowFactory {

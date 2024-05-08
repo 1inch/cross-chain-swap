@@ -6,20 +6,19 @@ import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { ITakerInteraction } from "limit-order-protocol/interfaces/ITakerInteraction.sol";
 import { MerkleProof } from "openzeppelin-contracts/utils/cryptography/MerkleProof.sol";
 
-contract MerkleStorageInvalidator is ITakerInteraction {
-    using MerkleProof for bytes32[];
+import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
 
-    struct LastValidated {
-        uint256 index;
-        bytes32 leaf;
-    }
+/**
+ * @title Merkle Storage Invalidator contract
+ * @notice Contract to invalidate hashed secrets from an order that supports multimple fills.
+ */
+contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
+    using MerkleProof for bytes32[];
 
     address internal immutable _LIMIT_ORDER_PROTOCOL;
 
+    /// @notice See {IMerkleStorageInvalidator-lastValidated}.
     mapping(bytes32 => LastValidated) public lastValidated;
-
-    error AccessDenied();
-    error InvalidProof();
 
     /// @notice Only limit order protocol can call this contract.
     modifier onlyLimitOrderProtocol() {
@@ -33,6 +32,11 @@ contract MerkleStorageInvalidator is ITakerInteraction {
         _LIMIT_ORDER_PROTOCOL = limitOrderProtocol;
     }
 
+    /**
+     * @notice See {ITakerInteraction-takerInteraction}.
+     * @dev Verifies the proof and stores the last validated index and hashed secret.
+     * Only Limit Order Protocol can call this function.
+     */
     function takerInteraction(
         IOrderMixin.Order calldata /* order */,
         bytes calldata /* extension */,
