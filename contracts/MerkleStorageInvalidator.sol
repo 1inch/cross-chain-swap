@@ -10,7 +10,7 @@ import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageIn
 
 /**
  * @title Merkle Storage Invalidator contract
- * @notice Contract to invalidate hashed secrets from an order that supports multimple fills.
+ * @notice Contract to invalidate hashed secrets from an order that supports multiple fills.
  */
 contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];
