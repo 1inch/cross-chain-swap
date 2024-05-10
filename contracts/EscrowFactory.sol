@@ -98,7 +98,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             uint256 validatedIdx;
             (validatedIdx, hashlock) = MERKLE_STORAGE_INVALIDATOR.lastValidated(key);
             uint256 fraction = order.makingAmount / secretsAmount;
-            uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / fraction - 1;
+            uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / fraction;
             if (calculatedIndex != validatedIdx) revert InvalidMultipleFills();
         } else {
             hashlock = extraDataArgs.hashlock;

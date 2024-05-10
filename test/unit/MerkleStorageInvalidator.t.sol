@@ -24,11 +24,11 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
     /* solhint-disable func-name-mixedcase */
 
     function testFuzz_ValidateProof(uint256 secretsAmount, uint256 idx) public {
-        vm.assume(secretsAmount > 1 && secretsAmount < 1000 && idx < secretsAmount);
+        vm.assume(secretsAmount > 1 && secretsAmount < 1000 && idx < secretsAmount && idx > 0);
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint256 i = 1; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -67,11 +67,11 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
     }
 
     function testFuzz_NoInvalidProofValidation(uint256 secretsAmount, uint256 idx) public {
-        vm.assume(secretsAmount > 1 && secretsAmount < 1000 && idx < secretsAmount);
+        vm.assume(secretsAmount > 2 && secretsAmount < 1000 && idx < secretsAmount && idx > 0);
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint256 i = 1; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
