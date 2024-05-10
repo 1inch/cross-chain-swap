@@ -24,7 +24,8 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
     /* solhint-disable func-name-mixedcase */
 
     function testFuzz_ValidateProof(uint256 secretsAmount, uint256 idx) public {
-        vm.assume(secretsAmount > 1 && secretsAmount < 1000 && idx < secretsAmount && idx > 0);
+        secretsAmount = bound(secretsAmount, 2, 1000);
+        idx = bound(idx, 1, secretsAmount - 1);
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
@@ -67,7 +68,8 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
     }
 
     function testFuzz_NoInvalidProofValidation(uint256 secretsAmount, uint256 idx) public {
-        vm.assume(secretsAmount > 2 && secretsAmount < 1000 && idx < secretsAmount && idx > 0);
+        secretsAmount = bound(secretsAmount, 3, 1000);
+        idx = bound(idx, 1, secretsAmount - 1);
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
