@@ -6,7 +6,7 @@ test = 'test'
 optimizer_runs = 1000000
 via-ir = true
 evm_version = 'shanghai'
-gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory"]
+gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory", "MerkleStorageInvalidator"]
 
 [profile.lite.optimizer_details.yulDetails]
 optimizerSteps = ''

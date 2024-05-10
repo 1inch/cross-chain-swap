@@ -11,14 +11,11 @@ import { Address, BaseSetup, IOrderMixin, MakerTraits } from "../utils/BaseSetup
 
 contract MerkleStorageInvalidatorTest is BaseSetup {
 
-    address public merkleStorageInvalidator;
     Merkle public merkle = new Merkle();
     bytes32 public root;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
-
-        merkleStorageInvalidator = address(escrowFactory.MERKLE_STORAGE_INVALIDATOR());
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -41,7 +38,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32 orderHash = keccak256(abi.encode("order"));
 
         vm.prank(address(limitOrderProtocol));
-        ITakerInteraction(merkleStorageInvalidator).takerInteraction(
+        ITakerInteraction(escrowFactory).takerInteraction(
             IOrderMixin.Order({
                 salt: 0,
                 maker: Address.wrap(uint160(alice.addr)),
@@ -60,7 +57,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
             0,
             abi.encode(root, proof, idx, hashedSecrets[idx])
         );
-        (uint256 storedIndex, bytes32 storedLeaf) = IMerkleStorageInvalidator(merkleStorageInvalidator).lastValidated(
+        (uint256 storedIndex, bytes32 storedLeaf) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
             keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, idx);
@@ -87,7 +84,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IMerkleStorageInvalidator.InvalidProof.selector);
-        ITakerInteraction(merkleStorageInvalidator).takerInteraction(
+        ITakerInteraction(escrowFactory).takerInteraction(
             IOrderMixin.Order({
                 salt: 0,
                 maker: Address.wrap(uint160(alice.addr)),

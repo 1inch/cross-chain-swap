@@ -12,7 +12,6 @@ import { BaseSetup, EscrowSrc, IOrderMixin, TakerTraits } from "../utils/BaseSet
 contract MerkleStorageInvalidatorIntTest is BaseSetup {
     uint256 public constant SECRETS_AMOUNT = 100;
 
-    address public merkleStorageInvalidator;
     Merkle public merkle = new Merkle();
     bytes32 public root;
     bytes32[] public hashedSecrets = new bytes32[](SECRETS_AMOUNT);
@@ -26,7 +25,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
-        merkleStorageInvalidator = address(escrowFactory.MERKLE_STORAGE_INVALIDATOR());
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -55,7 +53,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(merkleStorageInvalidator, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -111,7 +109,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(merkleStorageInvalidator, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -152,7 +150,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(merkleStorageInvalidator, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount
@@ -252,7 +250,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(merkleStorageInvalidator, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -288,7 +286,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(merkleStorageInvalidator, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount

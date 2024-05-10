@@ -28,7 +28,7 @@ import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
-contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
+contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension, MerkleStorageInvalidator {
     using AddressLib for Address;
     using Clones for address;
     using ImmutablesLib for IEscrow.Immutables;
@@ -41,7 +41,6 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
     address public immutable ESCROW_SRC_IMPLEMENTATION;
     /// @notice See {IEscrowFactory-ESCROW_DST_IMPLEMENTATION}.
     address public immutable ESCROW_DST_IMPLEMENTATION;
-    MerkleStorageInvalidator public immutable MERKLE_STORAGE_INVALIDATOR;
     bytes32 private immutable _PROXY_SRC_BYTECODE_HASH;
     bytes32 private immutable _PROXY_DST_BYTECODE_HASH;
 
@@ -50,12 +49,11 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         IERC20 token,
         uint32 rescueDelaySrc,
         uint32 rescueDelayDst
-    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
+    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) MerkleStorageInvalidator(limitOrderProtocol) {
         ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrc(rescueDelaySrc));
         ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst));
         _PROXY_SRC_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
         _PROXY_DST_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_DST_IMPLEMENTATION);
-        MERKLE_STORAGE_INVALIDATOR = new MerkleStorageInvalidator(limitOrderProtocol);
     }
 
     /**
@@ -95,11 +93,11 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             uint256 secretsAmount = uint256(extraDataArgs.hashlock) >> 240;
             if (secretsAmount < 2) revert InvalidMultipleFills();
             bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlock))));
-            uint256 validatedIdx;
-            (validatedIdx, hashlock) = MERKLE_STORAGE_INVALIDATOR.lastValidated(key);
+            LastValidated memory validated = lastValidated[key];
+            hashlock = validated.leaf;
             uint256 fraction = order.makingAmount / secretsAmount;
             uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / fraction;
-            if (calculatedIndex != validatedIdx) revert InvalidMultipleFills();
+            if (calculatedIndex != validated.index) revert InvalidMultipleFills();
         } else {
             hashlock = extraDataArgs.hashlock;
         }

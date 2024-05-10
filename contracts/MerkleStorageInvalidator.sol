@@ -21,7 +21,7 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
     mapping(bytes32 => LastValidated) public lastValidated;
 
     /// @notice Only limit order protocol can call this contract.
-    modifier onlyLimitOrderProtocol() {
+    modifier onlyLOP() {
         if (msg.sender != _LIMIT_ORDER_PROTOCOL) {
             revert AccessDenied();
         }
@@ -46,7 +46,7 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
         uint256 /* takingAmount */,
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
-    ) external onlyLimitOrderProtocol {
+    ) external onlyLOP {
         (
             bytes32 root,
             bytes32[] memory proof,
