@@ -20,7 +20,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        for (uint256 i = 1; i < SECRETS_AMOUNT; i++) {
+        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -243,7 +243,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         immutables.hashlock = hashedSecrets[idx];
         uint256 fraction = MAKING_AMOUNT / SECRETS_AMOUNT;
-        uint256 makingAmount = fraction * (idx + 1) - (fraction / 2 + 1);
+        uint256 makingAmount = fraction * idx + fraction / 2 - 1;
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 

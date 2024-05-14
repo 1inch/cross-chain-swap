@@ -97,7 +97,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             hashlock = validated.leaf;
             uint256 fraction = order.makingAmount / secretsAmount;
             uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / fraction;
-            if (calculatedIndex != validated.index) revert InvalidMultipleFills();
+            if (calculatedIndex + 1 != validated.index) revert InvalidMultipleFills();
         } else {
             hashlock = extraDataArgs.hashlock;
         }
