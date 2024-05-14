@@ -1,6 +1,8 @@
 require('@nomicfoundation/hardhat-chai-matchers');
 require('@nomicfoundation/hardhat-foundry');
+require('hardhat-dependency-compiler');
 require('@matterlabs/hardhat-zksync-solc');
+require('@matterlabs/hardhat-zksync-deploy');
 require('dotenv').config();
 
 module.exports = {

@@ -9,6 +9,7 @@ contract MinimalProxyZkSync {
         _IMPLEMENTATION = implementation;
     }
 
+    // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
         address _impl = _IMPLEMENTATION;
         assembly ("memory-safe") {

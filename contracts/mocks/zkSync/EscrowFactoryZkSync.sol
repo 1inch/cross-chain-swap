@@ -48,8 +48,9 @@ contract EscrowFactoryZkSync is IEscrowFactoryZkSync, WhitelistExtension, Resolv
         uint32 rescueDelayDst
     ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
         ESCROW_SRC_RESCUE_DELAY = rescueDelaySrc;
+        ESCROW_DST_RESCUE_DELAY = rescueDelayDst;
         ESCROW_SRC_INPUT_HASH = keccak256(abi.encode(ESCROW_SRC_RESCUE_DELAY));
-        ESCROW_DST_INPUT_HASH = keccak256(abi.encode(rescueDelayDst));
+        ESCROW_DST_INPUT_HASH = keccak256(abi.encode(ESCROW_DST_RESCUE_DELAY));
         address implSrc = address(new EscrowSrcZkSync(ESCROW_SRC_RESCUE_DELAY));
         address implDst = address(new EscrowDstZkSync(ESCROW_DST_RESCUE_DELAY));
         bytes32 bytecodeHashSrc;

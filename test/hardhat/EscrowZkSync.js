@@ -11,6 +11,7 @@ const { ether, trim0x } = require('@1inch/solidity-utils');
 describe('EscrowFactory', function () {
     const RESCUE_DELAY = 604800; // 7 days
     const SECRET = ethers.keccak256(ethers.toUtf8Bytes('secret'));
+    const HASHLOCK = ethers.keccak256(SECRET);
     const MAKING_AMOUNT = ether('0.3');
     const TAKING_AMOUNT = ether('0.5');
     const SRC_SAFETY_DEPOSIT = ether('0.03');
@@ -50,8 +51,6 @@ describe('EscrowFactory', function () {
         return { accounts, contracts, tokens, chainId };
     }
     async function initContracts () {
-
-
         const { accounts, contracts, tokens, chainId } = await deployContracts();
 
         await tokens.dai.mint(accounts.bob.address, ether('1000'));
@@ -62,22 +61,6 @@ describe('EscrowFactory', function () {
         await tokens.usdc.approve(contracts.escrowFactory, ether('1'));
         await tokens.inch.approve(contracts.feeBank, ether('1000'));
         await contracts.feeBank.deposit(ether('10'));
-
-        return { accounts, contracts, tokens, chainId };
-    }
-
-    async function buldDynamicData({ chainId, token, timelocks }) {
-        const hashlock = ethers.keccak256(SECRET);
-        const data = abiCoder.encode(
-            ['bytes32', 'uint256', 'address', 'uint256', 'uint256'],
-            [hashlock, chainId, token, SRC_SAFETY_DEPOSIT << 128n | DST_SAFETY_DEPOSIT, timelocks],
-        );
-        return { data, hashlock };
-    }
-
-    it('should withdraw tokens on the source chain', async function () {
-        // TODO: is it possible to create a fixture?
-        const { accounts, contracts, tokens, chainId } = await initContracts();
 
         const order = buildOrder({
             makerAsset: await tokens.usdc.getAddress(),
@@ -91,11 +74,26 @@ describe('EscrowFactory', function () {
         const data = buildOrderData(chainId, contracts.limitOrderProtocol, order);
         const orderHash = ethers.TypedDataEncoder.hash(data.domain, data.types, data.value);
 
+        return { accounts, contracts, tokens, chainId, order, orderHash };
+    }
+
+    async function buldDynamicData({ chainId, token, timelocks }) {
+        const data = abiCoder.encode(
+            ['bytes32', 'uint256', 'address', 'uint256', 'uint256'],
+            [HASHLOCK, chainId, token, SRC_SAFETY_DEPOSIT << 128n | DST_SAFETY_DEPOSIT, timelocks],
+        );
+        return { data };
+    }
+
+    it('should withdraw tokens on the source chain', async function () {
+        // TODO: is it possible to create a fixture?
+        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+
         const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
         const newTimestamp = BigInt(blockTimestamp) + 100n;
         // set SrcCancellation to 1000 seconds
         const timelocks = newTimestamp | (1000n << 64n);
-        const { data: extraData, hashlock } = await buldDynamicData({
+        const { data: extraData } = await buldDynamicData({
             chainId,
             token: await tokens.dai.getAddress(),
             timelocks,
@@ -103,7 +101,7 @@ describe('EscrowFactory', function () {
 
         const immutables = {
             orderHash,
-            hashlock,
+            hashlock: HASHLOCK,
             maker: accounts.alice.address,
             taker: accounts.bob.address,
             token: await tokens.usdc.getAddress(),
@@ -144,5 +142,38 @@ describe('EscrowFactory', function () {
         expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
         expect(await tokens.usdc.balanceOf(accounts.bob.address)).to.equal(balanceBeforeBob + MAKING_AMOUNT);
 
+    });
+
+    it('should withdraw tokens on the destination chain', async function () {
+        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+
+        const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
+        const srcCancellationTimestamp = blockTimestamp + 1000000;
+        const newTimestamp = BigInt(blockTimestamp) + 100n;
+        // set DstCancellation to 1000 seconds
+        const timelocks = newTimestamp | (1000n << 192n);
+
+        const immutables = {
+            orderHash,
+            hashlock: HASHLOCK,
+            maker: accounts.alice.address,
+            taker: accounts.bob.address,
+            token: await tokens.dai.getAddress(),
+            amount: TAKING_AMOUNT,
+            safetyDeposit: DST_SAFETY_DEPOSIT,
+            timelocks,
+        };
+
+        const predictedAddress = await contracts.escrowFactory.addressOfEscrowDst(immutables);
+        const dstClone = await ethers.getContractAt('EscrowDstZkSync', predictedAddress, accounts.bob);
+
+        await provider.send("evm_setNextBlockTimestamp", [Number(newTimestamp) - 1]);
+        await contracts.escrowFactory.createDstEscrow(immutables, srcCancellationTimestamp, { value: DST_SAFETY_DEPOSIT, gasLimit: '2000000000' });
+
+        const balanceBeforeAlice = await tokens.dai.balanceOf(accounts.alice.address);
+        expect(await tokens.dai.balanceOf(predictedAddress)).to.equal(TAKING_AMOUNT);
+        await dstClone.withdraw(SECRET, immutables);
+        expect(await tokens.dai.balanceOf(predictedAddress)).to.equal(0);
+        expect(await tokens.dai.balanceOf(accounts.alice.address)).to.equal(balanceBeforeAlice + TAKING_AMOUNT);
     });
 });
