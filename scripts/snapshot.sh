@@ -1,7 +1,9 @@
 #!/bin/bash
 
 printf "Running forge snapshot --diff... \n"
-if forge snapshot --diff | grep -q "Overall gas change: 0 (0.000%)";
+snapshot_diff="$(forge snapshot --diff)"
+echo "${snapshot_diff}"
+if echo "${snapshot_diff}" | grep -q "Overall gas change: 0 (0.000%)";
 then
   printf "${GREEN}No gas difference${NC} \n"
 else
