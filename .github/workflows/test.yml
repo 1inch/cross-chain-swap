@@ -26,21 +26,11 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Check snapshot
+        run: forge snapshot --check --no-match-test "testFuzz_*"
+
       - name: Run tests
         run: forge test -vvv --gas-report
-
-  snapshot:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Run snapshot
-        run: bash scripts/snapshot.sh
 
   coverage:
     runs-on: ubuntu-latest

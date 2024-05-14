@@ -20,7 +20,7 @@
     "doc": "forge doc --build --out documentation",
     "lint": "solhint --max-warnings 0 \"**/*.sol\"",
     "lint:fix": "solhint --max-warnings 0 \"**/*.sol\" --fix",
-    "test": "forge snapshot -vvv",
+    "test": "forge snapshot -vvv --no-match-test \"testFuzz_*\"",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv"
   }
 }
