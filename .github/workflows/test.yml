@@ -26,6 +26,9 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Compile contracts
+        run: forge compile
+
       - name: Check snapshot
         run: forge snapshot --check --no-match-test "testFuzz_*"
 
