@@ -3,6 +3,7 @@ require('@nomicfoundation/hardhat-foundry');
 require('hardhat-dependency-compiler');
 require('@matterlabs/hardhat-zksync-solc');
 require('@matterlabs/hardhat-zksync-deploy');
+require('hardhat-gas-reporter');
 require('dotenv').config();
 
 module.exports = {
@@ -40,6 +41,10 @@ module.exports = {
     compilerSource: 'binary',
     settings: {},
   },
+  gasReporter: {
+    enable: true,
+    currency: 'USD',
+},
   dependencyCompiler: {
     paths: [
         '@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol',

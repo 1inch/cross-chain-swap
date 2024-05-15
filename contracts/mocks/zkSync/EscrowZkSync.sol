@@ -11,9 +11,9 @@ abstract contract EscrowZkSync is Escrow {
     using ImmutablesLib for Immutables;
 
     bytes32 private immutable _INPUT_HASH;
-    
-    constructor(uint32 rescueDelay) {
-        _INPUT_HASH = keccak256(abi.encode(rescueDelay));
+
+    constructor() {
+        _INPUT_HASH = keccak256(abi.encode(address(this)));
     }
 
     function _validateImmutablesZk(Immutables calldata immutables) internal view {
