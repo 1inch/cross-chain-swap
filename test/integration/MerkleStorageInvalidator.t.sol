@@ -214,7 +214,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IEscrowFactory.InvalidMultipleFills.selector);
+        vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
         limitOrderProtocol.fillOrderArgs(
             order,
             r,

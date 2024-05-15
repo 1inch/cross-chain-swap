@@ -284,7 +284,7 @@ contract EscrowFactoryTest is BaseSetup {
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(IEscrowFactory.InvalidMultipleFills.selector);
+        vm.expectRevert(IEscrowFactory.InvalidSecretsAmount.selector);
         escrowFactory.postInteraction(
             order,
             "", // extension
@@ -319,7 +319,7 @@ contract EscrowFactoryTest is BaseSetup {
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(IEscrowFactory.InvalidMultipleFills.selector);
+        vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
         escrowFactory.postInteraction(
             order,
             "", // extension

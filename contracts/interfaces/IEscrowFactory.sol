@@ -31,7 +31,8 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error InvalidMultipleFills();
+    error InvalidSecretIndex();
+    error InvalidSecretsAmount();
 
     /**
      * @notice Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain.
