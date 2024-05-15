@@ -12,4 +12,10 @@ else
   exit 1
 fi
 
-source scripts/snapshot.sh
+printf "Running forge snapshot --diff... \n"
+if forge snapshot --check --no-match-test "testFuzz_*" &>/dev/null; then
+  printf "${GREEN}No gas difference${NC} \n"
+else
+  printf "${RED}Gas difference${NC} Please run forge snapshot and add changes to the commit. \n"
+  exit 1
+fi
