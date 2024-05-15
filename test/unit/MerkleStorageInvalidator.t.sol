@@ -22,11 +22,11 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
     function testFuzz_ValidateProof(uint256 secretsAmount, uint256 idx) public {
         secretsAmount = bound(secretsAmount, 2, 1000);
-        idx = bound(idx, 1, secretsAmount - 1);
+        idx = bound(idx, 0, secretsAmount - 1);
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
-        for (uint256 i = 1; i < secretsAmount; i++) {
+        for (uint256 i = 0; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -60,17 +60,17 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         (uint256 storedIndex, bytes32 storedLeaf) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
             keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
         );
-        assertEq(storedIndex, idx);
+        assertEq(storedIndex, idx + 1);
         assertEq(storedLeaf, hashedSecrets[idx]);
     }
 
     function testFuzz_NoInvalidProofValidation(uint256 secretsAmount, uint256 idx) public {
-        secretsAmount = bound(secretsAmount, 3, 1000);
-        idx = bound(idx, 1, secretsAmount - 1);
+        secretsAmount = bound(secretsAmount, 2, 1000);
+        idx = bound(idx, 0, secretsAmount - 1);
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
-        for (uint256 i = 1; i < secretsAmount; i++) {
+        for (uint256 i = 0; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }

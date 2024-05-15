@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 
 /**
  * @title Merkle Storage Invalidator interface
- * @notice Interface to invalidate hashed secrets from an order that supports multimple fills.
+ * @notice Interface to invalidate hashed secrets from an order that supports multiple fills.
  */
 interface IMerkleStorageInvalidator {
     struct LastValidated {

@@ -95,9 +95,8 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlock))));
             LastValidated memory validated = lastValidated[key];
             hashlock = validated.leaf;
-            uint256 fraction = order.makingAmount / secretsAmount;
-            uint256 calculatedIndex = (order.makingAmount - (remainingMakingAmount - makingAmount)) / fraction;
-            if (calculatedIndex != validated.index) revert InvalidMultipleFills();
+            uint256 calculatedIndex = (order.makingAmount - remainingMakingAmount + makingAmount - 1) * secretsAmount / order.makingAmount;
+            if (calculatedIndex + 1 != validated.index) revert InvalidMultipleFills();
         } else {
             hashlock = extraDataArgs.hashlock;
         }

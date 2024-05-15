@@ -20,7 +20,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        for (uint256 i = 1; i < SECRETS_AMOUNT; i++) {
+        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -30,7 +30,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     /* solhint-disable func-name-mixedcase */
 
     function test_MultipleFillsOneFill() public {
-        uint256 idx = SECRETS_AMOUNT / 2;
+        uint256 makingAmount = MAKING_AMOUNT / 2;
+        uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -46,7 +47,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
-        uint256 makingAmount = MAKING_AMOUNT * idx / SECRETS_AMOUNT;
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
@@ -86,7 +86,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     }
 
     function test_MultipleFillsTwoFills() public {
-        uint256 idx = SECRETS_AMOUNT / 3;
+        uint256 makingAmount = MAKING_AMOUNT / 3;
+        uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -102,7 +103,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
-        uint256 makingAmount = MAKING_AMOUNT * idx / SECRETS_AMOUNT;
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
@@ -138,12 +138,12 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
 
         // ------------ 2nd fill ------------ //
-        idx = SECRETS_AMOUNT / 3 * 2;
+        uint256 makingAmount2 = MAKING_AMOUNT * 2 / 3 - makingAmount;
+        idx = SECRETS_AMOUNT * (makingAmount2 + makingAmount - 1) / MAKING_AMOUNT;
         proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
         immutables.hashlock = hashedSecrets[idx];
-        uint256 makingAmount2 = MAKING_AMOUNT * idx / SECRETS_AMOUNT - makingAmount;
         immutables.amount = makingAmount2;
         address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
 
@@ -226,7 +226,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     }
 
     function test_MultipleFillsNoSecondDeploymentWithTheSameIndex() public {
-        uint256 idx = 10;
+        uint256 fraction = MAKING_AMOUNT / SECRETS_AMOUNT;
+        uint256 makingAmount = MAKING_AMOUNT / 10 - fraction / 2;
+        uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -242,8 +244,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
-        uint256 fraction = MAKING_AMOUNT / SECRETS_AMOUNT;
-        uint256 makingAmount = fraction * (idx + 1) - (fraction / 2 + 1);
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 

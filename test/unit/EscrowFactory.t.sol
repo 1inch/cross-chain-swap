@@ -21,7 +21,7 @@ contract EscrowFactoryTest is BaseSetup {
     bytes32[] public hashedPairs = new bytes32[](SECRETS_AMOUNT);
     Merkle public merkle = new Merkle();
     bytes32 public root;
-        
+
     function setUp() public virtual override {
         BaseSetup.setUp();
 
@@ -263,7 +263,8 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_MultipleFillsInvalidSecretsAmount() public {
-        uint256 idx = SECRETS_AMOUNT / 2;
+        uint256 makingAmount = MAKING_AMOUNT / 2;
+        uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -279,7 +280,6 @@ contract EscrowFactoryTest is BaseSetup {
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
-        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / SECRETS_AMOUNT;
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
@@ -298,7 +298,8 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_MultipleFillsInvalidKey() public {
-        uint256 idx = SECRETS_AMOUNT / 2;
+        uint256 makingAmount = MAKING_AMOUNT / 2;
+        uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -314,7 +315,6 @@ contract EscrowFactoryTest is BaseSetup {
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
-        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / SECRETS_AMOUNT;
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
