@@ -44,6 +44,7 @@ module.exports = {
     paths: [
         '@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol',
         '@1inch/solidity-utils/contracts/mocks/TokenMock.sol',
+        '@1inch/limit-order-protocol-contract/contracts/LimitOrderProtocol.sol',
     ],
   },
   mocha: {

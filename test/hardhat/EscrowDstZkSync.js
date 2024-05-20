@@ -4,20 +4,16 @@ const { expect } = require('chai');
 
 const { Wallet, Provider } = require('zksync-ethers');
 const { Deployer } = require('@matterlabs/hardhat-zksync-deploy');
-const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { buildMakerTraits, buildOrder, buildOrderData } = require('@1inch/limit-order-protocol-contract/test/helpers/orderUtils');
-const { ether, trim0x } = require('@1inch/solidity-utils');
+const { ether } = require('@1inch/solidity-utils');
 
-describe('EscrowFactory', function () {
+describe('EscrowDstZkSync', function () {
     const RESCUE_DELAY = 604800; // 7 days
     const SECRET = ethers.keccak256(ethers.toUtf8Bytes('secret'));
     const HASHLOCK = ethers.keccak256(SECRET);
     const MAKING_AMOUNT = ether('0.3');
     const TAKING_AMOUNT = ether('0.5');
-    const SRC_SAFETY_DEPOSIT = ether('0.03');
     const DST_SAFETY_DEPOSIT = ether('0.05');
-    const RESOLVER_FEE = 100;
-    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const provider = Provider.getDefaultProvider();
 
     async function deployContracts () {
@@ -77,75 +73,8 @@ describe('EscrowFactory', function () {
         return { accounts, contracts, tokens, chainId, order, orderHash };
     }
 
-    async function buldDynamicData({ chainId, token, timelocks }) {
-        const data = abiCoder.encode(
-            ['bytes32', 'uint256', 'address', 'uint256', 'uint256'],
-            [HASHLOCK, chainId, token, SRC_SAFETY_DEPOSIT << 128n | DST_SAFETY_DEPOSIT, timelocks],
-        );
-        return { data };
-    }
-
-    it('should withdraw tokens on the source chain', async function () {
-        // TODO: is it possible to create a fixture?
-        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
-
-        const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
-        const newTimestamp = BigInt(blockTimestamp) + 100n;
-        // set SrcCancellation to 1000 seconds
-        const timelocks = newTimestamp | (1000n << 64n);
-        const { data: extraData } = await buldDynamicData({
-            chainId,
-            token: await tokens.dai.getAddress(),
-            timelocks,
-        });
-
-        const immutables = {
-            orderHash,
-            hashlock: HASHLOCK,
-            maker: accounts.alice.address,
-            taker: accounts.bob.address,
-            token: await tokens.usdc.getAddress(),
-            amount: MAKING_AMOUNT,
-            safetyDeposit: SRC_SAFETY_DEPOSIT,
-            timelocks,
-        };
-
-        const predictedAddress = await contracts.escrowFactory.addressOfEscrowSrc(immutables);
-
-        await tokens.usdc.transfer(predictedAddress, MAKING_AMOUNT);
-        await accounts.bob.sendTransaction({ to: predictedAddress, value: SRC_SAFETY_DEPOSIT });
-
-        const whitelist = ethers.solidityPacked(
-            ['uint32', 'bytes10', 'uint16'],
-            [blockTimestamp - time.duration.minutes(5), '0x' + (accounts.bob.address).substring(22), 0],
-        );
-
-        const extraDataInt = '0x' + trim0x(extraData) + RESOLVER_FEE.toString(16).padStart(8, '0') + trim0x(whitelist) + '09';
-
-        await provider.send("evm_setNextBlockTimestamp", [Number(newTimestamp) - 1]);
-        await contracts.escrowFactory.postInteraction(
-            order,
-            '0x', // extension
-            orderHash,
-            accounts.bob.address, // taker
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            0, // remainingMakingAmount
-            extraDataInt,
-            { gasLimit: '2000000000' },
-        )
-        const srcClone = await ethers.getContractAt('EscrowSrcZkSync', predictedAddress, accounts.bob);
-
-        const balanceBeforeBob = await tokens.usdc.balanceOf(accounts.bob.address);
-        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(MAKING_AMOUNT);
-        await srcClone.withdraw(SECRET, immutables);
-        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
-        expect(await tokens.usdc.balanceOf(accounts.bob.address)).to.equal(balanceBeforeBob + MAKING_AMOUNT);
-
-    });
-
-    it('should withdraw tokens on the destination chain', async function () {
-        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+    it('should withdraw tokens the destination chain', async function () {
+        const { accounts, contracts, tokens, orderHash } = await initContracts();
 
         const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
         const srcCancellationTimestamp = blockTimestamp + 1000000;
