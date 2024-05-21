@@ -38,7 +38,7 @@ describe('EscrowSrcZkSync', function () {
         const tokens = { dai, usdc, inch };
 
         const EscrowFactory = await deployer.loadArtifact('EscrowFactoryZkSync');
-        const escrowFactory = await deployer.deploy(EscrowFactory, [limitOrderProtocol, inch.target, RESCUE_DELAY, RESCUE_DELAY]);
+        const escrowFactory = await deployer.deploy(EscrowFactory, [limitOrderProtocol, await inch.getAddress(), RESCUE_DELAY, RESCUE_DELAY]);
         await escrowFactory.waitForDeployment();
 
         const FeeBank = await deployer.loadArtifact('FeeBank');

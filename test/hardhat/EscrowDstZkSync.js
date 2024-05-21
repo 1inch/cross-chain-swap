@@ -34,13 +34,10 @@ describe('EscrowDstZkSync', function () {
         const tokens = { dai, usdc, inch };
 
         const EscrowFactory = await deployer.loadArtifact('EscrowFactoryZkSync');
-        const escrowFactory = await deployer.deploy(EscrowFactory, [limitOrderProtocol, inch.target, RESCUE_DELAY, RESCUE_DELAY]);
+        const escrowFactory = await deployer.deploy(EscrowFactory, [limitOrderProtocol, await inch.getAddress(), RESCUE_DELAY, RESCUE_DELAY]);
         await escrowFactory.waitForDeployment();
 
-        const FeeBank = await deployer.loadArtifact('FeeBank');
-        const feeBank = new ethers.Contract(await escrowFactory.FEE_BANK(), FeeBank.abi, bob);
-
-        const contracts = { limitOrderProtocol, escrowFactory, feeBank };
+        const contracts = { limitOrderProtocol, escrowFactory };
 
         const chainId = (await ethers.provider.getNetwork()).chainId;
 
@@ -55,8 +52,6 @@ describe('EscrowDstZkSync', function () {
 
         await tokens.dai.approve(contracts.escrowFactory, ether('1'));
         await tokens.usdc.approve(contracts.escrowFactory, ether('1'));
-        await tokens.inch.approve(contracts.feeBank, ether('1000'));
-        await contracts.feeBank.deposit(ether('10'));
 
         const order = buildOrder({
             makerAsset: await tokens.usdc.getAddress(),

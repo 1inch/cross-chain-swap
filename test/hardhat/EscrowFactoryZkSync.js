@@ -44,7 +44,7 @@ describe('EscrowFactory', function () {
         await limitOrderProtocol.waitForDeployment();
 
         const EscrowFactory = await deployer.loadArtifact('EscrowFactoryZkSync');
-        const escrowFactory = await deployer.deploy(EscrowFactory, [await limitOrderProtocol.getAddress(), inch.target, RESCUE_DELAY, RESCUE_DELAY]);
+        const escrowFactory = await deployer.deploy(EscrowFactory, [await limitOrderProtocol.getAddress(), await inch.getAddress(), RESCUE_DELAY, RESCUE_DELAY]);
         await escrowFactory.waitForDeployment();
 
         const FeeBank = await deployer.loadArtifact('FeeBank');
