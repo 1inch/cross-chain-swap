@@ -77,7 +77,7 @@ describe('EscrowSrcZkSync', function () {
         return { accounts, contracts, tokens, chainId, order, orderHash };
     }
 
-    async function buldDynamicData({ chainId, token, timelocks }) {
+    async function buldDynamicData ({ chainId, token, timelocks }) {
         const data = abiCoder.encode(
             ['bytes32', 'uint256', 'address', 'uint256', 'uint256'],
             [HASHLOCK, chainId, token, SRC_SAFETY_DEPOSIT << 128n | DST_SAFETY_DEPOSIT, timelocks],
@@ -89,7 +89,7 @@ describe('EscrowSrcZkSync', function () {
         // TODO: is it possible to create a fixture?
         const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
 
-        const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
         const newTimestamp = BigInt(blockTimestamp) + 100n;
         // set SrcCancellation to 1000 seconds
         const timelocks = newTimestamp | (1000n << 64n);
@@ -122,7 +122,7 @@ describe('EscrowSrcZkSync', function () {
 
         const extraDataInt = '0x' + trim0x(extraData) + RESOLVER_FEE.toString(16).padStart(8, '0') + trim0x(whitelist) + '09';
 
-        await provider.send("evm_setNextBlockTimestamp", [Number(newTimestamp) - 1]);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
         await contracts.escrowFactory.postInteraction(
             order,
             '0x', // extension
@@ -133,7 +133,7 @@ describe('EscrowSrcZkSync', function () {
             0, // remainingMakingAmount
             extraDataInt,
             { gasLimit: '2000000000' },
-        )
+        );
         const srcClone = await ethers.getContractAt('EscrowSrcZkSync', predictedAddress, accounts.bob);
 
         const balanceBeforeBob = await tokens.usdc.balanceOf(accounts.bob.address);
@@ -141,6 +141,5 @@ describe('EscrowSrcZkSync', function () {
         await srcClone.withdraw(SECRET, immutables);
         expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
         expect(await tokens.usdc.balanceOf(accounts.bob.address)).to.equal(balanceBeforeBob + MAKING_AMOUNT);
-
     });
 });

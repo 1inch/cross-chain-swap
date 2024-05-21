@@ -76,7 +76,7 @@ describe('EscrowDstZkSync', function () {
     it('should withdraw tokens the destination chain', async function () {
         const { accounts, contracts, tokens, orderHash } = await initContracts();
 
-        const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
         const srcCancellationTimestamp = blockTimestamp + 1000000;
         const newTimestamp = BigInt(blockTimestamp) + 100n;
         // set DstCancellation to 1000 seconds
@@ -96,7 +96,7 @@ describe('EscrowDstZkSync', function () {
         const predictedAddress = await contracts.escrowFactory.addressOfEscrowDst(immutables);
         const dstClone = await ethers.getContractAt('EscrowDstZkSync', predictedAddress, accounts.bob);
 
-        await provider.send("evm_setNextBlockTimestamp", [Number(newTimestamp) - 1]);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
         await contracts.escrowFactory.createDstEscrow(immutables, srcCancellationTimestamp, { value: DST_SAFETY_DEPOSIT, gasLimit: '2000000000' });
 
         const balanceBeforeAlice = await tokens.dai.balanceOf(accounts.alice.address);

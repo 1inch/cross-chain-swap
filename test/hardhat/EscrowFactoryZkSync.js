@@ -71,7 +71,7 @@ describe('EscrowFactory', function () {
         return { accounts, contracts, tokens, chainId };
     }
 
-    async function buldDynamicData({ chainId, token, timelocks }) {
+    async function buldDynamicData ({ chainId, token, timelocks }) {
         const data = abiCoder.encode(
             ['bytes32', 'uint256', 'address', 'uint256', 'uint256'],
             [HASHLOCK, chainId, token, SRC_SAFETY_DEPOSIT << 128n | DST_SAFETY_DEPOSIT, timelocks],
@@ -83,7 +83,7 @@ describe('EscrowFactory', function () {
         // TODO: is it possible to create a fixture?
         const { accounts, contracts, tokens, chainId } = await initContracts();
 
-        const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
         const newTimestamp = BigInt(blockTimestamp) + 100n;
         // set SrcCancellation to 1000 seconds
         const timelocks = newTimestamp | (1000n << 64n);
@@ -114,9 +114,8 @@ describe('EscrowFactory', function () {
         const data = buildOrderData(chainId, await contracts.limitOrderProtocol.getAddress(), order);
         const orderHash = ethers.TypedDataEncoder.hash(data.domain, data.types, data.value);
 
-        const { r: r, yParityAndS: vs } = ethers.Signature.from(await signOrder(order, chainId, await contracts.limitOrderProtocol.getAddress(), accounts.alice));
+        const { r, yParityAndS: vs } = ethers.Signature.from(await signOrder(order, chainId, await contracts.limitOrderProtocol.getAddress(), accounts.alice));
         const signature = { r, vs };
-
 
         const immutables = {
             orderHash,
@@ -140,9 +139,8 @@ describe('EscrowFactory', function () {
 
         const balanceBeforeAlice = await tokens.usdc.balanceOf(accounts.alice.address);
         const balanceBeforePredicted = await tokens.usdc.balanceOf(predictedAddress);
-        
 
-        await provider.send("evm_setNextBlockTimestamp", [Number(newTimestamp) - 1]);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
         await contracts.limitOrderProtocol.fillOrderArgs(
             order,
             signature.r,
@@ -160,7 +158,7 @@ describe('EscrowFactory', function () {
     it('should deploy escrow on the destination chain', async function () {
         const { accounts, contracts, tokens } = await initContracts();
 
-        const blockTimestamp = await provider.send("config_getCurrentTimestamp", []);
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
         const srcCancellationTimestamp = blockTimestamp + 1000000;
         const newTimestamp = BigInt(blockTimestamp) + 100n;
         // set DstCancellation to 1000 seconds
@@ -179,7 +177,7 @@ describe('EscrowFactory', function () {
 
         const predictedAddress = await contracts.escrowFactory.addressOfEscrowDst(immutables);
 
-        await provider.send("evm_setNextBlockTimestamp", [Number(newTimestamp) - 1]);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
         await contracts.escrowFactory.createDstEscrow(immutables, srcCancellationTimestamp, { value: DST_SAFETY_DEPOSIT, gasLimit: '2000000000' });
 
         expect(await tokens.dai.balanceOf(predictedAddress)).to.equal(TAKING_AMOUNT);
