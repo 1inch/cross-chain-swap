@@ -181,5 +181,6 @@ describe('EscrowFactory', function () {
         await contracts.escrowFactory.createDstEscrow(immutables, srcCancellationTimestamp, { value: DST_SAFETY_DEPOSIT, gasLimit: '2000000000' });
 
         expect(await tokens.dai.balanceOf(predictedAddress)).to.equal(TAKING_AMOUNT);
+        expect(await provider.getBalance(predictedAddress)).to.equal(DST_SAFETY_DEPOSIT);
     });
 });

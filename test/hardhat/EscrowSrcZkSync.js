@@ -19,6 +19,8 @@ describe('EscrowSrcZkSync', function () {
     const RESOLVER_FEE = 100;
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const provider = Provider.getDefaultProvider();
+    const timestamps = { withdrawal: 120n, cancellation: 1020n, publicCancellation: 1130n };
+    const basicTimelocks = (timestamps.withdrawal << 32n) | (timestamps.cancellation << 64n) | (timestamps.publicCancellation << 96n);
 
     async function deployContracts () {
         const alice = new Wallet(process.env.ZKSYNC_TEST_PRIVATE_KEY_0, provider);
@@ -85,14 +87,13 @@ describe('EscrowSrcZkSync', function () {
         return { data };
     }
 
-    it('should withdraw tokens the source chain', async function () {
+    it('should withdraw tokens on the source chain', async function () {
         // TODO: is it possible to create a fixture?
         const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
 
         const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
         const newTimestamp = BigInt(blockTimestamp) + 100n;
-        // set SrcCancellation to 1000 seconds
-        const timelocks = newTimestamp | (1000n << 64n);
+        const timelocks = newTimestamp | basicTimelocks;
         const { data: extraData } = await buldDynamicData({
             chainId,
             token: await tokens.dai.getAddress(),
@@ -138,8 +139,198 @@ describe('EscrowSrcZkSync', function () {
 
         const balanceBeforeBob = await tokens.usdc.balanceOf(accounts.bob.address);
         expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(MAKING_AMOUNT);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp + timestamps.withdrawal)]);
         await srcClone.withdraw(SECRET, immutables);
         expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
         expect(await tokens.usdc.balanceOf(accounts.bob.address)).to.equal(balanceBeforeBob + MAKING_AMOUNT);
+    });
+
+    it('should cancel escrow on the source chain by the resolver', async function () {
+        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
+        const newTimestamp = BigInt(blockTimestamp) + 100n;
+        const timelocks = newTimestamp | basicTimelocks;
+        const { data: extraData } = await buldDynamicData({
+            chainId,
+            token: await tokens.dai.getAddress(),
+            timelocks,
+        });
+
+        const immutables = {
+            orderHash,
+            hashlock: HASHLOCK,
+            maker: accounts.alice.address,
+            taker: accounts.bob.address,
+            token: await tokens.usdc.getAddress(),
+            amount: MAKING_AMOUNT,
+            safetyDeposit: SRC_SAFETY_DEPOSIT,
+            timelocks,
+        };
+
+        const predictedAddress = await contracts.escrowFactory.addressOfEscrowSrc(immutables);
+
+        await tokens.usdc.transfer(predictedAddress, MAKING_AMOUNT);
+        await accounts.bob.sendTransaction({ to: predictedAddress, value: SRC_SAFETY_DEPOSIT });
+
+        const whitelist = ethers.solidityPacked(
+            ['uint32', 'bytes10', 'uint16'],
+            [blockTimestamp - time.duration.minutes(5), '0x' + (accounts.bob.address).substring(22), 0],
+        );
+
+        const extraDataInt = '0x' + trim0x(extraData) + RESOLVER_FEE.toString(16).padStart(8, '0') + trim0x(whitelist) + '09';
+
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
+        await contracts.escrowFactory.postInteraction(
+            order,
+            '0x', // extension
+            orderHash,
+            accounts.bob.address, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraDataInt,
+            { gasLimit: '2000000000' },
+        );
+        const srcClone = await ethers.getContractAt('EscrowSrcZkSync', predictedAddress, accounts.bob);
+
+        const balanceBeforeAlice = await tokens.usdc.balanceOf(accounts.alice.address);
+        const balanceBeforeBob = await provider.getBalance(accounts.bob);
+
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(MAKING_AMOUNT);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp + timestamps.cancellation)]);
+        await srcClone.cancel(immutables);
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
+        expect(await provider.getBalance(predictedAddress)).to.equal(0);
+        expect(await tokens.usdc.balanceOf(accounts.alice.address)).to.equal(balanceBeforeAlice + MAKING_AMOUNT);
+        expect(await provider.getBalance(accounts.bob)).to.be.gt(balanceBeforeBob);
+    });
+
+    it('should cancel escrow on the source chain by anyone', async function () {
+        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
+        const newTimestamp = BigInt(blockTimestamp) + 100n;
+        const timelocks = newTimestamp | basicTimelocks;
+        const { data: extraData } = await buldDynamicData({
+            chainId,
+            token: await tokens.dai.getAddress(),
+            timelocks,
+        });
+
+        const immutables = {
+            orderHash,
+            hashlock: HASHLOCK,
+            maker: accounts.alice.address,
+            taker: accounts.bob.address,
+            token: await tokens.usdc.getAddress(),
+            amount: MAKING_AMOUNT,
+            safetyDeposit: SRC_SAFETY_DEPOSIT,
+            timelocks,
+        };
+
+        const predictedAddress = await contracts.escrowFactory.addressOfEscrowSrc(immutables);
+
+        await tokens.usdc.transfer(predictedAddress, MAKING_AMOUNT);
+        await accounts.bob.sendTransaction({ to: predictedAddress, value: SRC_SAFETY_DEPOSIT });
+
+        const whitelist = ethers.solidityPacked(
+            ['uint32', 'bytes10', 'uint16'],
+            [blockTimestamp - time.duration.minutes(5), '0x' + (accounts.bob.address).substring(22), 0],
+        );
+
+        const extraDataInt = '0x' + trim0x(extraData) + RESOLVER_FEE.toString(16).padStart(8, '0') + trim0x(whitelist) + '09';
+
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
+        await contracts.escrowFactory.postInteraction(
+            order,
+            '0x', // extension
+            orderHash,
+            accounts.bob.address, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraDataInt,
+            { gasLimit: '2000000000' },
+        );
+        const srcClone = await ethers.getContractAt('EscrowSrcZkSync', predictedAddress, accounts.bob);
+
+        const balanceBeforeAlice = await tokens.usdc.balanceOf(accounts.alice.address);
+        const balanceBeforeAliceNative = await provider.getBalance(accounts.alice);
+
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(MAKING_AMOUNT);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp + timestamps.publicCancellation)]);
+        await srcClone.connect(accounts.alice).publicCancel(immutables);
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
+        expect(await provider.getBalance(predictedAddress)).to.equal(0);
+        expect(await tokens.usdc.balanceOf(accounts.alice.address)).to.equal(balanceBeforeAlice + MAKING_AMOUNT);
+        expect(await provider.getBalance(accounts.alice)).to.be.gt(balanceBeforeAliceNative);
+    });
+
+    it('should rescue extra tokens on the source chain', async function () {
+        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
+        const newTimestamp = BigInt(blockTimestamp) + 100n;
+        const timelocks = newTimestamp | basicTimelocks;
+        const { data: extraData } = await buldDynamicData({
+            chainId,
+            token: await tokens.dai.getAddress(),
+            timelocks,
+        });
+
+        const immutables = {
+            orderHash,
+            hashlock: HASHLOCK,
+            maker: accounts.alice.address,
+            taker: accounts.bob.address,
+            token: await tokens.usdc.getAddress(),
+            amount: MAKING_AMOUNT,
+            safetyDeposit: SRC_SAFETY_DEPOSIT,
+            timelocks,
+        };
+
+        const predictedAddress = await contracts.escrowFactory.addressOfEscrowSrc(immutables);
+
+        await tokens.usdc.transfer(predictedAddress, MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+        await accounts.bob.sendTransaction({ to: predictedAddress, value: SRC_SAFETY_DEPOSIT });
+
+        const whitelist = ethers.solidityPacked(
+            ['uint32', 'bytes10', 'uint16'],
+            [blockTimestamp - time.duration.minutes(5), '0x' + (accounts.bob.address).substring(22), 0],
+        );
+
+        const extraDataInt = '0x' + trim0x(extraData) + RESOLVER_FEE.toString(16).padStart(8, '0') + trim0x(whitelist) + '09';
+
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
+        await contracts.escrowFactory.postInteraction(
+            order,
+            '0x', // extension
+            orderHash,
+            accounts.bob.address, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraDataInt,
+            { gasLimit: '2000000000' },
+        );
+        const srcClone = await ethers.getContractAt('EscrowSrcZkSync', predictedAddress, accounts.bob);
+
+        const balanceBeforeAlice = await tokens.usdc.balanceOf(accounts.alice.address);
+        let balanceBeforeBob = await provider.getBalance(accounts.bob);
+
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp + timestamps.cancellation)]);
+        await srcClone.cancel(immutables);
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(SRC_SAFETY_DEPOSIT);
+        expect(await provider.getBalance(predictedAddress)).to.equal(0);
+        expect(await tokens.usdc.balanceOf(accounts.alice.address)).to.equal(balanceBeforeAlice + MAKING_AMOUNT);
+        expect(await provider.getBalance(accounts.bob)).to.be.gt(balanceBeforeBob);
+
+        balanceBeforeBob = await tokens.usdc.balanceOf(accounts.bob.address);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) + RESCUE_DELAY]);
+        await srcClone.rescueFunds(await tokens.usdc.getAddress(), SRC_SAFETY_DEPOSIT, immutables);
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(0);
+        expect(await tokens.usdc.balanceOf(accounts.bob.address)).to.equal(balanceBeforeBob + SRC_SAFETY_DEPOSIT);
     });
 });
