@@ -22,6 +22,24 @@ interface IEscrow {
         Timelocks timelocks;
     }
 
+    /**
+     * @notice Emitted on escrow cancellation.
+     */
+    event EscrowCancelled();
+
+    /**
+     * @notice Emitted when funds are rescued.
+     * @param token The address of the token rescued. Zero address for native token.
+     * @param amount The amount of tokens rescued.
+     */
+    event FundsRescued(address token, uint256 amount);
+
+    /**
+     * @notice Emitted on successful withdrawal.
+     * @param secret The secret that unlocks the escrow.
+     */
+    event SecretRevealed(bytes32 secret);
+
     error InvalidCaller();
     error InvalidImmutables();
     error InvalidSecret();
