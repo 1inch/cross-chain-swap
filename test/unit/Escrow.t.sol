@@ -1311,25 +1311,25 @@ contract EscrowTest is BaseSetup {
         vm.startPrank(bob.addr);
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutablesDst, srcCancellationTimestamp);
 
-        vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
-
         // withdraw src
+        vm.warp(block.timestamp + srcTimelocks.withdrawal + 10);
         immutablesSrc.amount = TAKING_AMOUNT;
         vm.expectRevert(IEscrow.InvalidImmutables.selector);
         srcClone.withdraw(SECRET, immutablesSrc);
 
         // withdraw dst
+        vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         immutablesDst.amount = MAKING_AMOUNT;
         vm.expectRevert(IEscrow.InvalidImmutables.selector);
         dstClone.withdraw(SECRET, immutablesDst);
 
-        vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 10);
-
         // cancel src
+        vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         vm.expectRevert(IEscrow.InvalidImmutables.selector);
         srcClone.cancel(immutablesSrc);
 
         // cancel dst
+        vm.warp(block.timestamp + dstTimelocks.cancellation + 10);
         vm.expectRevert(IEscrow.InvalidImmutables.selector);
         dstClone.cancel(immutablesDst);
 
