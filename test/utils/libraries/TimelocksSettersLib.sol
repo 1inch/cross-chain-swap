@@ -21,6 +21,7 @@ library TimelocksSettersLib {
      */
     function init(
         uint32 srcWithdrawal,
+        uint32 srcPublicWithdrawal,
         uint32 srcCancellation,
         uint32 srcPublicCancellation,
         uint32 dstWithdrawal,
@@ -31,6 +32,7 @@ library TimelocksSettersLib {
         return Timelocks.wrap(
             deployedAt
                 | (uint256(srcWithdrawal) << (uint256(TimelocksLib.Stage.SrcWithdrawal) * 32))
+                | (uint256(srcPublicWithdrawal) << (uint256(TimelocksLib.Stage.SrcPublicWithdrawal) * 32))
                 | (uint256(srcCancellation) << (uint256(TimelocksLib.Stage.SrcCancellation) * 32))
                 | (uint256(srcPublicCancellation) << (uint256(TimelocksLib.Stage.SrcPublicCancellation) * 32))
                 | (uint256(dstWithdrawal) << (uint256(TimelocksLib.Stage.DstWithdrawal) * 32))

@@ -26,6 +26,7 @@ contract TimelocksLibTest is BaseSetup {
         uint256 timestamp = block.timestamp;
         Timelocks timelocksTest = TimelocksSettersLib.init(
             srcTimelocks.withdrawal,
+            srcTimelocks.publicWithdrawal,
             srcTimelocks.cancellation,
             srcTimelocks.publicCancellation,
             dstTimelocks.withdrawal,
