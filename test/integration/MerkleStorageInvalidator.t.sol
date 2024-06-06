@@ -86,6 +86,79 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
     }
 
+    function testFuzz_MultipleFillsOneFillPassAndFail(uint256 makingAmount, uint256 partsAmount, uint256 idx) public {
+        makingAmount = bound(makingAmount, 1, MAKING_AMOUNT);
+        partsAmount = bound(partsAmount, 2, 1000);
+        idx = bound(idx, 0, partsAmount);
+        uint256 secretsAmount = partsAmount + 1;
+        
+        uint256 idxCalculated = partsAmount * (makingAmount - 1) / MAKING_AMOUNT;
+        bool shouldFail = (idxCalculated != idx) && ((idx != partsAmount)|| (makingAmount != MAKING_AMOUNT));
+
+        bytes32[] memory hashedSecretsLocal = new bytes32[](secretsAmount);
+        bytes32[] memory hashedPairsLocal = new bytes32[](secretsAmount);
+
+        for (uint256 i = 0; i < secretsAmount; i++) {
+            hashedSecretsLocal[i] = keccak256(abi.encodePacked(i));
+            hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
+        }
+
+        root = merkle.getRoot(hashedPairsLocal);
+        bytes32[] memory proof = merkle.getProof(hashedPairsLocal, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairsLocal[idx]));
+
+        bytes32 rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
+
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            /* bytes memory extraData */,
+            bytes memory extension,
+            IEscrow srcClone,
+            IEscrow.Immutables memory immutables
+        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+
+        immutables.hashlock = hashedSecretsLocal[idx];
+        immutables.amount = makingAmount;
+        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecretsLocal[idx]));
+
+        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            address(srcClone), // target
+            extension,
+            interaction,
+            0 // threshold
+        );
+
+        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        if (shouldFail) {
+            vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+        }
+        limitOrderProtocol.fillOrderArgs(
+            order,
+            r,
+            vs,
+            makingAmount, // amount
+            takerTraits,
+            args
+        );
+
+        if (!shouldFail) {
+            assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        }
+    }
+
     function test_MultipleFillsTwoFills() public {
         uint256 makingAmount = MAKING_AMOUNT / 3;
         uint256 idx = PARTS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;

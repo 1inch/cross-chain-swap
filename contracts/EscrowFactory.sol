@@ -96,7 +96,10 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
             LastValidated memory validated = lastValidated[key];
             hashlock = validated.leaf;
             uint256 calculatedIndex = (order.makingAmount - remainingMakingAmount + makingAmount - 1) * secretsAmount / order.makingAmount;
-            if ((calculatedIndex + 1 != validated.index) && (calculatedIndex + 2 != validated.index || remainingMakingAmount != makingAmount)) revert InvalidSecretIndex();
+            if (
+                (calculatedIndex + 1 != validated.index) &&
+                (calculatedIndex + 2 != validated.index || remainingMakingAmount != makingAmount)
+            ) revert InvalidSecretIndex();
         } else {
             hashlock = extraDataArgs.hashlock;
         }
