@@ -58,6 +58,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
+        emit EscrowCancelled();
     }
 
     /**
@@ -72,6 +73,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
+        emit EscrowCancelled();
     }
 
     /**
@@ -90,5 +92,6 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
+        emit Withdrawal(secret);
     }
 }
