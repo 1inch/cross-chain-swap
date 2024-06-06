@@ -38,8 +38,8 @@ module.exports = {
         settings: {},
     },
     gasReporter: {
-    enable: true,
-    currency: 'USD',
+        enable: true,
+        currency: 'USD',
     },
     dependencyCompiler: {
         paths: [
