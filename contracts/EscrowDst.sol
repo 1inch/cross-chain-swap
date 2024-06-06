@@ -39,7 +39,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
-        emit SecretRevealed(secret);
+        emit Withdrawal(secret);
     }
 
     /**
@@ -56,7 +56,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
-        emit SecretRevealed(secret);
+        emit Withdrawal(secret);
     }
 
     /**
