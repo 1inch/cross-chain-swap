@@ -111,7 +111,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
-        emit SecretRevealed(secret);
+        emit Withdrawal(secret);
     }
 
     /**

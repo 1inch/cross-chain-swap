@@ -38,7 +38,7 @@ interface IEscrow {
      * @notice Emitted on successful withdrawal.
      * @param secret The secret that unlocks the escrow.
      */
-    event SecretRevealed(bytes32 secret);
+    event Withdrawal(bytes32 secret);
 
     error InvalidCaller();
     error InvalidImmutables();
