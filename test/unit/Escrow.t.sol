@@ -29,7 +29,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -61,7 +61,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -119,7 +119,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -162,7 +162,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -207,7 +207,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -245,7 +245,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -286,7 +286,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -337,7 +337,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -389,7 +389,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -438,7 +438,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         assertEq(usdc.balanceOf(address(srcClone)), 0);
         assertEq(address(srcClone).balance, 0);
@@ -677,7 +677,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -796,7 +796,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -882,7 +882,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -926,7 +926,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -981,7 +981,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1023,7 +1023,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1057,7 +1057,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1091,7 +1091,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1235,7 +1235,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrowSrc srcClone,
             IEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1284,7 +1284,7 @@ contract EscrowTest is BaseSetup {
             /* bytes memory extension */,
             IEscrow srcClone,
             IEscrow.Immutables memory immutablesSrc
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (IEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)

@@ -27,7 +27,16 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes memory extension,
             IEscrow srcClone,
             /* IEscrow.Immutables memory immutables */
-        ) = _prepareDataSrc(secret, srcAmount, dstAmount, srcSafetyDeposit, dstSafetyDeposit, address(0), false);
+        ) = _prepareDataSrc(
+            keccak256(abi.encode(secret)),
+            srcAmount,
+            dstAmount,
+            srcSafetyDeposit,
+            dstSafetyDeposit,
+            address(0),
+            false, // fakeOrder
+            false // allowMultipleFills
+        );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
@@ -74,7 +83,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes memory extension,
             IEscrow srcClone,
             /* IEscrow.Immutables memory immutables */
-        ) = _prepareDataSrc(SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false);
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
