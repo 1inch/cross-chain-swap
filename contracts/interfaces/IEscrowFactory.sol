@@ -9,12 +9,12 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
 import { IEscrow } from "./IEscrow.sol";
 
 /**
- * @title Escrow Factory interface contract for cross-chain atomic swap.
+ * @title Escrow Factory interface for cross-chain atomic swap.
  * @notice Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
  */
 interface IEscrowFactory {
-    struct ExtraDataImmutables {
-        bytes32 hashlock;
+    struct ExtraDataArgs {
+        bytes32 hashlock; // Hash of the secret or the Merkle tree root if multiple fills are allowed
         uint256 dstChainId;
         Address dstToken;
         uint256 deposits;
@@ -31,7 +31,8 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error InvalidMakerTraits();
+    error InvalidSecretIndex();
+    error InvalidSecretsAmount();
 
     /**
      * @notice Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain.

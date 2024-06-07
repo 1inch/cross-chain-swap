@@ -69,6 +69,7 @@ abstract contract Escrow is IEscrow {
         onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
     {
         _uniTransfer(token, msg.sender, amount);
+        emit FundsRescued(token, amount);
     }
 
     /**

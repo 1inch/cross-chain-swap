@@ -22,12 +22,13 @@ import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IEscrow } from "./interfaces/IEscrow.sol";
 import { EscrowDst } from "./EscrowDst.sol";
 import { EscrowSrc } from "./EscrowSrc.sol";
+import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
 
 /**
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
-contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension {
+contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension, MerkleStorageInvalidator {
     using AddressLib for Address;
     using Clones for address;
     using ImmutablesLib for IEscrow.Immutables;
@@ -48,7 +49,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         IERC20 token,
         uint32 rescueDelaySrc,
         uint32 rescueDelayDst
-    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) {
+    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) MerkleStorageInvalidator(limitOrderProtocol) {
         ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrc(rescueDelaySrc));
         ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst));
         _PROXY_SRC_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
@@ -62,7 +63,7 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
      * The external postInteraction function call will be made from the Limit Order Protocol
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
      * `extraData` consists of:
-     *   - ExtraDataImmutables struct
+     *   - ExtraDataArgs struct
      *   - whitelist
      *   - 0 / 4 bytes for the fee
      *   - 1 byte for the bitmap
@@ -77,34 +78,49 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         uint256 remainingMakingAmount,
         bytes calldata extraData
     ) internal override(WhitelistExtension, ResolverFeeExtension) {
-        if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) revert InvalidMakerTraits();
-
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
         );
 
-        ExtraDataImmutables calldata extraDataImmutables;
+        ExtraDataArgs calldata extraDataArgs;
         assembly ("memory-safe") {
-            extraDataImmutables := extraData.offset
+            extraDataArgs := extraData.offset
+        }
+
+        bytes32 hashlock;
+
+        if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) {
+            uint256 secretsAmount = uint256(extraDataArgs.hashlock) >> 240;
+            if (secretsAmount < 2) revert InvalidSecretsAmount();
+            bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlock))));
+            LastValidated memory validated = lastValidated[key];
+            hashlock = validated.leaf;
+            uint256 calculatedIndex = (order.makingAmount - remainingMakingAmount + makingAmount - 1) * secretsAmount / order.makingAmount;
+            if (
+                (calculatedIndex + 1 != validated.index) &&
+                (calculatedIndex + 2 != validated.index || remainingMakingAmount != makingAmount)
+            ) revert InvalidSecretIndex();
+        } else {
+            hashlock = extraDataArgs.hashlock;
         }
 
         IEscrow.Immutables memory immutables = IEscrow.Immutables({
             orderHash: orderHash,
-            hashlock: extraDataImmutables.hashlock,
+            hashlock: hashlock,
             maker: order.maker,
             taker: Address.wrap(uint160(taker)),
             token: order.makerAsset,
             amount: makingAmount,
-            safetyDeposit: extraDataImmutables.deposits >> 128,
-            timelocks: extraDataImmutables.timelocks.setDeployedAt(block.timestamp)
+            safetyDeposit: extraDataArgs.deposits >> 128,
+            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp)
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
             amount: takingAmount,
-            token: extraDataImmutables.dstToken,
-            safetyDeposit: extraDataImmutables.deposits & type(uint128).max,
-            chainId: extraDataImmutables.dstChainId
+            token: extraDataArgs.dstToken,
+            safetyDeposit: extraDataArgs.deposits & type(uint128).max,
+            chainId: extraDataArgs.dstChainId
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);

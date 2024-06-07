@@ -39,7 +39,7 @@
     "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\"",
     "lint:js": "eslint .",
     "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
-    "test": "forge snapshot -vvv",
+    "test": "forge snapshot --no-match-test \"testFuzz_*\" && forge test -vvv --gas-report",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv"
   },
   "dependencies": {}

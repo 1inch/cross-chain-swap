@@ -36,6 +36,7 @@ contract BaseSetup is Test {
      */
     struct SrcTimelocks {
         uint32 withdrawal;
+        uint32 publicWithdrawal;
         uint32 cancellation;
         uint32 publicCancellation;
     }
@@ -95,6 +96,7 @@ contract BaseSetup is Test {
 
     /* solhint-disable private-vars-leading-underscore */
     bytes32 internal constant SECRET = keccak256(abi.encodePacked("secret"));
+    bytes32 internal constant HASHED_SECRET = keccak256(abi.encodePacked(SECRET));
     uint256 internal constant MAKING_AMOUNT = 0.3 ether;
     uint256 internal constant TAKING_AMOUNT = 0.5 ether;
     uint256 internal constant SRC_SAFETY_DEPOSIT = 0.03 ether;
@@ -121,7 +123,12 @@ contract BaseSetup is Test {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({ withdrawal: 120, cancellation: 1020, publicCancellation: 1130 });
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({
+        withdrawal: 120,
+        publicWithdrawal: 500,
+        cancellation: 1020,
+        publicCancellation: 1530
+    });
     DstTimelocks internal dstTimelocks = DstTimelocks({ withdrawal: 300, publicWithdrawal: 540, cancellation: 900 });
     bytes internal auctionPoints = abi.encodePacked(
         uint24(800000), uint16(100),
@@ -175,6 +182,7 @@ contract BaseSetup is Test {
     function _setTimelocks() internal {
         timelocks = TimelocksSettersLib.init(
             srcTimelocks.withdrawal,
+            srcTimelocks.publicWithdrawal,
             srcTimelocks.cancellation,
             srcTimelocks.publicCancellation,
             dstTimelocks.withdrawal,
@@ -183,6 +191,7 @@ contract BaseSetup is Test {
             uint32(block.timestamp)
         );
         timelocksDst = TimelocksSettersLib.init(
+            0,
             0,
             0,
             0,
@@ -208,13 +217,12 @@ contract BaseSetup is Test {
     }
 
     function _buidDynamicData(
-        bytes32 secret,
+        bytes32 hashlock,
         uint256 chainId,
         address token,
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit
     ) internal view returns (bytes memory) {
-        bytes32 hashlock = keccak256(abi.encodePacked(secret));
         return (
             abi.encode(
                 hashlock,
@@ -250,7 +258,8 @@ contract BaseSetup is Test {
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit,
         address receiver,
-        bool fakeOrder
+        bool fakeOrder,
+        bool allowMultipleFills
     ) internal returns(
         IOrderMixin.Order memory order,
         bytes32 orderHash,
@@ -269,18 +278,20 @@ contract BaseSetup is Test {
             dstSafetyDeposit,
             receiver,
             fakeOrder,
+            allowMultipleFills,
             resolvers
         );
     }
 
     function _prepareDataSrcCustomResolver(
-        bytes32 secret,
+        bytes32 hashlock,
         uint256 srcAmount,
         uint256 dstAmount,
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit,
         address receiver,
         bool fakeOrder,
+        bool allowMultipleFills,
         address[] memory resolvers
     ) internal returns(
         IOrderMixin.Order memory order,
@@ -291,7 +302,7 @@ contract BaseSetup is Test {
         IEscrow.Immutables memory immutables
     ) {
         extraData = _buidDynamicData(
-            secret,
+            hashlock,
             block.chainid,
             address(dai),
             srcSafetyDeposit,
@@ -341,6 +352,7 @@ contract BaseSetup is Test {
                 srcAmount,
                 dstAmount,
                 MakerTraits.wrap(0),
+                allowMultipleFills,
                 InteractionParams("", "", gettersAmountData, gettersAmountData, "", "", "", postInteractionData),
                 ""
             );
@@ -356,7 +368,7 @@ contract BaseSetup is Test {
             maker: Address.wrap(uint160(alice.addr)),
             taker: Address.wrap(uint160(resolvers[0])),
             token: Address.wrap(uint160(address(usdc))),
-            hashlock: keccak256(abi.encodePacked(secret)),
+            hashlock: hashlock,
             safetyDeposit: srcSafetyDeposit,
             timelocks: timelocks
         });
@@ -424,6 +436,7 @@ contract BaseSetup is Test {
         uint256 makingAmount,
         uint256 takingAmount,
         MakerTraits makerTraits,
+        bool allowMultipleFills,
         InteractionParams memory interactions,
         bytes memory customData
     ) internal pure returns (IOrderMixin.Order memory, bytes memory) {
@@ -431,7 +444,7 @@ contract BaseSetup is Test {
             allowedSender: address(0),
             shouldCheckEpoch: false,
             allowPartialFill: true,
-            allowMultipleFills: false,
+            allowMultipleFills: allowMultipleFills,
             usePermit2: false,
             unwrapWeth: false,
             expiry: 0,

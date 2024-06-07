@@ -10,12 +10,6 @@ import { IEscrow } from "./IEscrow.sol";
  */
 interface IEscrowDst is IEscrow {
     /**
-     * @notice Emitted on successful public withdrawal.
-     * @param secret The secret that unlocks the escrow.
-     */
-    event SecretRevealed(bytes32 secret);
-
-    /**
      * @notice Withdraws funds to maker
      * @dev Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
      * @param secret The secret that unlocks the escrow.
