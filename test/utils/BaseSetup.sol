@@ -8,7 +8,7 @@ import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/inte
 import { MakerTraits, MakerTraitsLib } from "@1inch/limit-order-protocol-contract/contracts/libraries/MakerTraitsLib.sol";
 import { TakerTraits } from "@1inch/limit-order-protocol-contract/contracts/libraries/TakerTraitsLib.sol";
 import { WrappedTokenMock } from "@1inch/limit-order-protocol-contract/contracts/mocks/WrappedTokenMock.sol";
-import { IFeeBank } from "limit-order-settlement/interfaces/IFeeBank.sol";
+import { IFeeBank } from "@1inch/limit-order-settlement/contracts/interfaces/IFeeBank.sol";
 import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "@1inch/solidity-utils/contracts/mocks/TokenMock.sol";

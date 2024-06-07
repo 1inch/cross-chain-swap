@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
+import { WhitelistExtension } from "@1inch/limit-order-settlement/contracts/extensions/WhitelistExtension.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";

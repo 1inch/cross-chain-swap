@@ -8,9 +8,9 @@ import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.s
 
 import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
 import { MakerTraitsLib } from "@1inch/limit-order-protocol-contract/contracts/libraries/MakerTraitsLib.sol";
-import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
-import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
-import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
+import { BaseExtension } from "@1inch/limit-order-settlement/contracts/extensions/BaseExtension.sol";
+import { ResolverFeeExtension } from "@1inch/limit-order-settlement/contracts/extensions/ResolverFeeExtension.sol";
+import { WhitelistExtension } from "@1inch/limit-order-settlement/contracts/extensions/WhitelistExtension.sol";
 
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
