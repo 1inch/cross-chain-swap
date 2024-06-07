@@ -36,6 +36,7 @@ contract BaseSetup is Test {
      */
     struct SrcTimelocks {
         uint32 withdrawal;
+        uint32 publicWithdrawal;
         uint32 cancellation;
         uint32 publicCancellation;
     }
@@ -122,7 +123,12 @@ contract BaseSetup is Test {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({ withdrawal: 120, cancellation: 1020, publicCancellation: 1130 });
+    SrcTimelocks internal srcTimelocks = SrcTimelocks({
+        withdrawal: 120,
+        publicWithdrawal: 500,
+        cancellation: 1020,
+        publicCancellation: 1530
+    });
     DstTimelocks internal dstTimelocks = DstTimelocks({ withdrawal: 300, publicWithdrawal: 540, cancellation: 900 });
     bytes internal auctionPoints = abi.encodePacked(
         uint24(800000), uint16(100),
@@ -176,6 +182,7 @@ contract BaseSetup is Test {
     function _setTimelocks() internal {
         timelocks = TimelocksSettersLib.init(
             srcTimelocks.withdrawal,
+            srcTimelocks.publicWithdrawal,
             srcTimelocks.cancellation,
             srcTimelocks.publicCancellation,
             dstTimelocks.withdrawal,
@@ -184,6 +191,7 @@ contract BaseSetup is Test {
             uint32(block.timestamp)
         );
         timelocksDst = TimelocksSettersLib.init(
+            0,
             0,
             0,
             0,

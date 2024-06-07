@@ -32,6 +32,7 @@ library TimelocksLib {
     enum Stage {
         DeployedAt,
         SrcWithdrawal,
+        SrcPublicWithdrawal,
         SrcCancellation,
         SrcPublicCancellation,
         DstWithdrawal,
@@ -69,7 +70,7 @@ library TimelocksLib {
     function get(Timelocks timelocks, Stage stage) internal pure returns (uint256) {
         uint256 data = Timelocks.unwrap(timelocks);
         uint256 bitShift = uint256(stage) * 32;
-        // The maximum uint32 value will be reached in 2106. 
+        // The maximum uint32 value will be reached in 2106.
         return uint32(data) + uint32(data >> bitShift);
     }
 }

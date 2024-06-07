@@ -20,6 +20,14 @@ interface IEscrowSrc is IEscrow {
     function withdrawTo(bytes32 secret, address target, IEscrow.Immutables calldata immutables) external;
 
     /**
+     * @notice Withdraws funds to the taker.
+     * @dev Withdrawal can only be made during the public withdrawal period and with secret with hash matches the hashlock.
+     * @param secret The secret that unlocks the escrow.
+     * @param immutables The immutables of the escrow contract.
+     */
+    function publicWithdraw(bytes32 secret, Immutables calldata immutables) external;
+
+    /**
      * @notice Cancels the escrow and returns tokens to the maker.
      * @dev The escrow can only be cancelled during the public cancellation period.
      * The safety deposit is sent to the caller.
