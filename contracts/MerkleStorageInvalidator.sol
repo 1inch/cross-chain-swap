@@ -15,7 +15,7 @@ import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageIn
 contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];
 
-    address internal immutable _LIMIT_ORDER_PROTOCOL;
+    address private immutable _LIMIT_ORDER_PROTOCOL;
 
     /// @notice See {IMerkleStorageInvalidator-lastValidated}.
     mapping(bytes32 => LastValidated) public lastValidated;
