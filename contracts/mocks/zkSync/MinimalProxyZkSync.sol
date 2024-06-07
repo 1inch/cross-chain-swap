@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 contract MinimalProxyZkSync {
     address private immutable _IMPLEMENTATION;
 
-    constructor(address implementation) {
+    constructor(address implementation) payable {
         _IMPLEMENTATION = implementation;
     }
 
