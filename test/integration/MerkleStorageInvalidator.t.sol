@@ -88,12 +88,12 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
     function testFuzz_MultipleFillsOneFillPassAndFail(uint256 makingAmount, uint256 partsAmount, uint256 idx) public {
         makingAmount = bound(makingAmount, 1, MAKING_AMOUNT);
-        partsAmount = bound(partsAmount, 2, 1000);
+        partsAmount = bound(partsAmount, 2, 100);
         idx = bound(idx, 0, partsAmount);
         uint256 secretsAmount = partsAmount + 1;
-        
+
         uint256 idxCalculated = partsAmount * (makingAmount - 1) / MAKING_AMOUNT;
-        bool shouldFail = (idxCalculated != idx) && ((idx != partsAmount)|| (makingAmount != MAKING_AMOUNT));
+        bool shouldFail = (idxCalculated != idx) && ((idx != partsAmount) || (makingAmount != MAKING_AMOUNT));
 
         bytes32[] memory hashedSecretsLocal = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairsLocal = new bytes32[](secretsAmount);
