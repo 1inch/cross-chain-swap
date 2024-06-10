@@ -94,7 +94,7 @@ abstract contract Escrow is IEscrow {
     /**
      * @dev Verifies that the computed escrow address matches the address of this contract.
      */
-    function _validateImmutables(Immutables calldata immutables) private view {
+    function _validateImmutables(Immutables calldata immutables) internal view virtual {
         bytes32 salt = immutables.hash();
         if (Create2.computeAddress(salt, PROXY_BYTECODE_HASH, FACTORY) != address(this)) {
             revert InvalidImmutables();

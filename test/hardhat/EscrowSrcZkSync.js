@@ -19,8 +19,11 @@ describe('EscrowSrcZkSync', function () {
     const RESOLVER_FEE = 100;
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const provider = Provider.getDefaultProvider();
-    const timestamps = { withdrawal: 120n, cancellation: 1020n, publicCancellation: 1130n };
-    const basicTimelocks = (timestamps.withdrawal << 32n) | (timestamps.cancellation << 64n) | (timestamps.publicCancellation << 96n);
+    const timestamps = { withdrawal: 120n, publicWithdrawal: 500n, cancellation: 1020n, publicCancellation: 1130n };
+    const basicTimelocks = (timestamps.withdrawal << 32n) |
+        (timestamps.publicWithdrawal << 64n) |
+        (timestamps.cancellation << 96n) |
+        (timestamps.publicCancellation << 128n);
 
     async function deployContracts () {
         const alice = new Wallet(process.env.ZKSYNC_TEST_PRIVATE_KEY_0, provider);

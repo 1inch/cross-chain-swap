@@ -86,7 +86,7 @@ describe('EscrowFactory', function () {
         const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
         const newTimestamp = BigInt(blockTimestamp) + 100n;
         // set SrcCancellation to 1000 seconds
-        const timelocks = newTimestamp | (1000n << 64n);
+        const timelocks = newTimestamp | (1000n << 96n);
         const { data: extraData } = await buldDynamicData({
             chainId,
             token: await tokens.dai.getAddress(),

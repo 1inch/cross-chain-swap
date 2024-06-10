@@ -16,7 +16,7 @@ describe('EscrowDstZkSync', function () {
     const DST_SAFETY_DEPOSIT = ether('0.05');
     const provider = Provider.getDefaultProvider();
     const timestamps = { withdrawal: 300n, publicWithdrawal: 540n, cancellation: 900n };
-    const basicTimelocks = (timestamps.withdrawal << 128n) | (timestamps.publicWithdrawal << 160n) | (timestamps.cancellation << 192n);
+    const basicTimelocks = (timestamps.withdrawal << 160n) | (timestamps.publicWithdrawal << 192n) | (timestamps.cancellation << 224n);
 
     async function deployContracts () {
         const alice = new Wallet(process.env.ZKSYNC_TEST_PRIVATE_KEY_0, provider);

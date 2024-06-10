@@ -5,7 +5,7 @@ import { WhitelistExtension } from "@1inch/limit-order-settlement/contracts/exte
 import { Merkle } from "murky/src/Merkle.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
-import { IEscrowFactory } from "contracts/EscrowFactory.sol";
+import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { IEscrow } from "contracts/interfaces/IEscrow.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";

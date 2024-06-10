@@ -16,7 +16,7 @@ abstract contract EscrowZkSync is Escrow {
         _INPUT_HASH = keccak256(abi.encode(address(this)));
     }
 
-    function _validateImmutablesZk(Immutables calldata immutables) internal view {
+    function _validateImmutables(Immutables calldata immutables) internal view virtual override {
         bytes32 salt = immutables.hash();
         bytes32 bytecodeHash;
         assembly ("memory-safe") {

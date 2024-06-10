@@ -2,14 +2,12 @@
 
 pragma solidity 0.8.23;
 
-import { EscrowDst } from "contracts/EscrowDst.sol";
+import { Escrow, EscrowDst } from "contracts/EscrowDst.sol";
 import { EscrowZkSync } from "contracts/mocks/zkSync/EscrowZkSync.sol";
 
 contract EscrowDstZkSync is EscrowDst, EscrowZkSync {
     constructor(uint32 rescueDelay) EscrowDst(rescueDelay) EscrowZkSync() payable {}
 
-    modifier onlyValidImmutables(Immutables calldata immutables) override {
-        _validateImmutablesZk(immutables);
-        _;
-    }
+    // solhint-disable-next-line no-empty-blocks
+    function _validateImmutables(Immutables calldata immutables) internal view override(Escrow, EscrowZkSync) {}
 }
