@@ -66,11 +66,10 @@ contract EscrowFactoryZkSync is BaseEscrowFactory {
      * @notice Deploys a new escrow contract.
      * @param salt The salt for the deterministic address computation.
      * @param value The value to be sent to the escrow contract.
-     * @param data The data to be used during the deployment.
+     * @param implementation Address of the implementation.
      * @return escrow The address of the deployed escrow contract.
      */
-    function _deployEscrow(bytes32 salt, uint256 value, bytes memory data) internal override returns (address escrow){
-        address implementation  = abi.decode(data, (address));
-        escrow = escrow = address(new MinimalProxyZkSync{salt: salt, value: value}(implementation));
+    function _deployEscrow(bytes32 salt, uint256 value, address implementation) internal override returns (address escrow) {
+        escrow = address(new MinimalProxyZkSync{salt: salt, value: value}(implementation));
     }
 }
