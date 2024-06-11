@@ -17,17 +17,18 @@ import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
-import { IEscrow } from "./interfaces/IEscrow.sol";
+import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
 import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
 
 /**
  * @title Abstract contract for escrow factory
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
+ * @dev Immutable variables must be set in the constructor of the derived contracts.
  */
 abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtension, MerkleStorageInvalidator {
     using AddressLib for Address;
     using Clones for address;
-    using ImmutablesLib for IEscrow.Immutables;
+    using ImmutablesLib for IBaseEscrow.Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
@@ -88,7 +89,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
             hashlock = extraDataArgs.hashlock;
         }
 
-        IEscrow.Immutables memory immutables = IEscrow.Immutables({
+        IBaseEscrow.Immutables memory immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
             hashlock: hashlock,
             maker: order.maker,
@@ -119,7 +120,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
     /**
      * @notice See {IEscrowFactory-createDstEscrow}.
      */
-    function createDstEscrow(IEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
+    function createDstEscrow(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
         address token = dstImmutables.token.get();
         uint256 nativeAmount = dstImmutables.safetyDeposit;
         if (token == address(0)) {
@@ -127,7 +128,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
-        IEscrow.Immutables memory immutables = dstImmutables;
+        IBaseEscrow.Immutables memory immutables = dstImmutables;
         immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (immutables.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
@@ -144,14 +145,14 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
     /**
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
-    function addressOfEscrowSrc(IEscrow.Immutables calldata immutables) external view virtual returns (address) {
+    function addressOfEscrowSrc(IBaseEscrow.Immutables calldata immutables) external view virtual returns (address) {
         return Create2.computeAddress(immutables.hash(), _PROXY_SRC_BYTECODE_HASH);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
-    function addressOfEscrowDst(IEscrow.Immutables calldata immutables) external view virtual returns (address) {
+    function addressOfEscrowDst(IBaseEscrow.Immutables calldata immutables) external view virtual returns (address) {
         return Create2.computeAddress(immutables.hash(), _PROXY_DST_BYTECODE_HASH);
     }
 

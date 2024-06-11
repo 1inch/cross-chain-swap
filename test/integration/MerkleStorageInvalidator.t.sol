@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
 
@@ -43,8 +43,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -114,8 +114,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecretsLocal[idx];
@@ -172,8 +172,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -261,8 +261,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = 0;
@@ -313,8 +313,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -401,8 +401,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -457,8 +457,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -557,8 +557,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -612,8 +612,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -712,8 +712,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -823,8 +823,8 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, makingAmount, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedS[idx];

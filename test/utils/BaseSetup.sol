@@ -17,7 +17,7 @@ import { EscrowDst } from "contracts/EscrowDst.sol";
 import { EscrowSrc } from "contracts/EscrowSrc.sol";
 import { EscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 import { Utils, VmSafe } from "./Utils.sol";
@@ -266,7 +266,7 @@ contract BaseSetup is Test {
         bytes memory extraData,
         bytes memory extension,
         EscrowSrc srcClone,
-        IEscrow.Immutables memory immutables
+        IBaseEscrow.Immutables memory immutables
     ) {
         address[] memory resolvers = new address[](1);
         resolvers[0] = bob.addr;
@@ -299,7 +299,7 @@ contract BaseSetup is Test {
         bytes memory extraData,
         bytes memory extension,
         EscrowSrc srcClone,
-        IEscrow.Immutables memory immutables
+        IBaseEscrow.Immutables memory immutables
     ) {
         extraData = _buidDynamicData(
             hashlock,
@@ -362,7 +362,7 @@ contract BaseSetup is Test {
 
         orderHash = limitOrderProtocol.hashOrder(order);
 
-        immutables = IEscrow.Immutables({
+        immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
             amount: srcAmount,
             maker: Address.wrap(uint160(alice.addr)),
@@ -384,8 +384,8 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrow.Immutables memory, uint256, EscrowDst) {
-        (IEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
+    ) internal view returns (IBaseEscrow.Immutables memory, uint256, EscrowDst) {
+        (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
             secret, amount, maker, taker, token
         );
         return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
@@ -397,12 +397,12 @@ contract BaseSetup is Test {
         address maker,
         address taker,
         address token
-    ) internal view returns (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp) {
+    ) internal view returns (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp) {
         bytes32 hashlock = keccak256(abi.encodePacked(secret));
         uint256 safetyDeposit = amount * 10 / 100;
         srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
 
-        immutables = IEscrow.Immutables({
+        immutables = IBaseEscrow.Immutables({
             orderHash: bytes32(block.timestamp), // fake order hash
             hashlock: hashlock,
             maker: Address.wrap(uint160(maker)),

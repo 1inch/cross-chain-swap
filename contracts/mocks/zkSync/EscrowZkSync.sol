@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.23;
 
-import { Escrow } from "contracts/Escrow.sol";
+import { BaseEscrow } from "contracts/BaseEscrow.sol";
 
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
 import { ZkSyncLib } from "contracts/libraries/ZkSyncLib.sol";
 
-abstract contract EscrowZkSync is Escrow {
+abstract contract EscrowZkSync is BaseEscrow {
     using ImmutablesLib for Immutables;
 
     bytes32 private immutable _INPUT_HASH;

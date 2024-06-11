@@ -11,7 +11,7 @@ import { MerkleStorageInvalidator } from "contracts/MerkleStorageInvalidator.sol
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
 import { ZkSyncLib } from "contracts/libraries/ZkSyncLib.sol";
 
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { EscrowSrcZkSync } from "./EscrowSrcZkSync.sol";
 import { EscrowDstZkSync } from "./EscrowDstZkSync.sol";
 import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
@@ -21,7 +21,7 @@ import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  */
 contract EscrowFactoryZkSync is BaseEscrowFactory {
-    using ImmutablesLib for IEscrow.Immutables;
+    using ImmutablesLib for IBaseEscrow.Immutables;
 
     bytes32 public immutable ESCROW_SRC_INPUT_HASH;
     bytes32 public immutable ESCROW_DST_INPUT_HASH;
@@ -51,14 +51,14 @@ contract EscrowFactoryZkSync is BaseEscrowFactory {
     /**
      * @notice See {IEscrowFactory-addressOfEscrowSrc}.
      */
-    function addressOfEscrowSrc(IEscrow.Immutables calldata immutables) external view override returns (address) {
+    function addressOfEscrowSrc(IBaseEscrow.Immutables calldata immutables) external view override returns (address) {
         return ZkSyncLib.computeAddressZkSync(immutables.hash(), _PROXY_SRC_BYTECODE_HASH, address(this), ESCROW_SRC_INPUT_HASH);
     }
 
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
-    function addressOfEscrowDst(IEscrow.Immutables calldata immutables) external view override returns (address) {
+    function addressOfEscrowDst(IBaseEscrow.Immutables calldata immutables) external view override returns (address) {
         return ZkSyncLib.computeAddressZkSync(immutables.hash(), _PROXY_DST_BYTECODE_HASH, address(this), ESCROW_DST_INPUT_HASH);
     }
 

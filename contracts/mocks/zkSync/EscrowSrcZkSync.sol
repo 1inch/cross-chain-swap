@@ -8,7 +8,6 @@ import { EscrowZkSync } from "contracts/mocks/zkSync/EscrowZkSync.sol";
 contract EscrowSrcZkSync is EscrowSrc, EscrowZkSync {
     constructor(uint32 rescueDelay) EscrowSrc(rescueDelay) EscrowZkSync() {}
 
-    // solhint-disable-next-line no-empty-blocks
     function _validateImmutables(Immutables calldata immutables) internal view override(Escrow, EscrowZkSync) {
         EscrowZkSync._validateImmutables(immutables);
     }

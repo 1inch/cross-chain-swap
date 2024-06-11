@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 
 import { Address, AddressLib, BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
@@ -25,8 +25,8 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IBaseEscrow srcClone,
+            /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(
             keccak256(abi.encode(secret)),
             srcAmount,
@@ -81,8 +81,8 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IBaseEscrow srcClone,
+            /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
