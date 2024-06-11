@@ -110,7 +110,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
         emit SrcEscrowCreated(immutables, immutablesComplement);
 
         bytes32 salt = immutables.hashMem();
-        address escrow = _deployEscrow(salt, 0, abi.encode(ESCROW_SRC_IMPLEMENTATION));
+        address escrow = _deployEscrow(salt, 0, ESCROW_SRC_IMPLEMENTATION);
         if (escrow.balance < immutables.safetyDeposit || IERC20(order.makerAsset.get()).safeBalanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
         }
@@ -133,7 +133,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
         if (immutables.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
 
         bytes32 salt = immutables.hashMem();
-        address escrow = _deployEscrow(salt, msg.value, abi.encode(ESCROW_DST_IMPLEMENTATION));
+        address escrow = _deployEscrow(salt, msg.value, ESCROW_DST_IMPLEMENTATION);
         if (token != address(0)) {
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
@@ -159,11 +159,10 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
      * @notice Deploys a new escrow contract.
      * @param salt The salt for the deterministic address computation.
      * @param value The value to be sent to the escrow contract.
-     * @param data The data to be used during the deployment.
+     * @param implementation Address of the implementation.
      * @return escrow The address of the deployed escrow contract.
      */
-    function _deployEscrow(bytes32 salt, uint256 value, bytes memory data) internal virtual returns (address escrow){
-        address implementation  = abi.decode(data, (address));
+    function _deployEscrow(bytes32 salt, uint256 value, address implementation) internal virtual returns (address escrow) {
         escrow = implementation.cloneDeterministic(salt, value);
     }
 }
