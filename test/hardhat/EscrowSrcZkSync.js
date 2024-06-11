@@ -90,6 +90,61 @@ describe('EscrowSrcZkSync', function () {
         return { data };
     }
 
+    it('should not withdraw tokens with invalid immutables', async function () {
+        const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();
+
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
+        const newTimestamp = BigInt(blockTimestamp) + 100n;
+        const timelocks = newTimestamp | basicTimelocks;
+        const { data: extraData } = await buldDynamicData({
+            chainId,
+            token: await tokens.dai.getAddress(),
+            timelocks,
+        });
+
+        const immutables = {
+            orderHash,
+            hashlock: HASHLOCK,
+            maker: accounts.alice.address,
+            taker: accounts.bob.address,
+            token: await tokens.usdc.getAddress(),
+            amount: MAKING_AMOUNT,
+            safetyDeposit: SRC_SAFETY_DEPOSIT,
+            timelocks,
+        };
+
+        const predictedAddress = await contracts.escrowFactory.addressOfEscrowSrc(immutables);
+
+        await tokens.usdc.transfer(predictedAddress, MAKING_AMOUNT);
+        await accounts.bob.sendTransaction({ to: predictedAddress, value: SRC_SAFETY_DEPOSIT });
+
+        const whitelist = ethers.solidityPacked(
+            ['uint32', 'bytes10', 'uint16'],
+            [blockTimestamp - time.duration.minutes(5), '0x' + (accounts.bob.address).substring(22), 0],
+        );
+
+        const extraDataInt = '0x' + trim0x(extraData) + RESOLVER_FEE.toString(16).padStart(8, '0') + trim0x(whitelist) + '09';
+
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
+        await contracts.escrowFactory.postInteraction(
+            order,
+            '0x', // extension
+            orderHash,
+            accounts.bob.address, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            extraDataInt,
+            { gasLimit: '2000000000' },
+        );
+        const srcClone = await ethers.getContractAt('EscrowSrcZkSync', predictedAddress, accounts.bob);
+
+        expect(await tokens.usdc.balanceOf(predictedAddress)).to.equal(MAKING_AMOUNT);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp + timestamps.withdrawal)]);
+        immutables.amount = MAKING_AMOUNT + 1n;
+        await expect(srcClone.withdraw(SECRET, immutables)).to.be.revertedWithCustomError(srcClone, 'InvalidImmutables');
+    });
+
     it('should withdraw tokens on the source chain', async function () {
         // TODO: is it possible to create a fixture?
         const { accounts, contracts, tokens, chainId, order, orderHash } = await initContracts();

@@ -70,6 +70,38 @@ describe('EscrowDstZkSync', function () {
         return { accounts, contracts, tokens, chainId, order, orderHash };
     }
 
+    it('should not withdraw tokens with invalid immutables', async function () {
+        const { accounts, contracts, tokens, orderHash } = await initContracts();
+
+        const blockTimestamp = await provider.send('config_getCurrentTimestamp', []);
+        const srcCancellationTimestamp = blockTimestamp + RESCUE_DELAY;
+        const newTimestamp = BigInt(blockTimestamp) + 100n;
+        const timelocks = newTimestamp | basicTimelocks;
+
+        const immutables = {
+            orderHash,
+            hashlock: HASHLOCK,
+            maker: accounts.alice.address,
+            taker: accounts.bob.address,
+            token: await tokens.dai.getAddress(),
+            amount: TAKING_AMOUNT,
+            safetyDeposit: DST_SAFETY_DEPOSIT,
+            timelocks,
+        };
+
+        const predictedAddress = await contracts.escrowFactory.addressOfEscrowDst(immutables);
+        const dstClone = await ethers.getContractAt('EscrowDstZkSync', predictedAddress, accounts.bob);
+
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp) - 1]);
+        await contracts.escrowFactory.createDstEscrow(immutables, srcCancellationTimestamp, { value: DST_SAFETY_DEPOSIT, gasLimit: '2000000000' });
+
+        expect(await tokens.dai.balanceOf(predictedAddress)).to.equal(TAKING_AMOUNT);
+        expect(await provider.getBalance(predictedAddress)).to.equal(DST_SAFETY_DEPOSIT);
+        await provider.send('evm_setNextBlockTimestamp', [Number(newTimestamp + timestamps.withdrawal)]);
+        immutables.amount = TAKING_AMOUNT + 1n;
+        await expect(dstClone.withdraw(SECRET, immutables)).to.be.revertedWithCustomError(dstClone, 'InvalidImmutables');
+    });
+
     it('should withdraw tokens on the destination chain by the resolver', async function () {
         const { accounts, contracts, tokens, orderHash } = await initContracts();
 

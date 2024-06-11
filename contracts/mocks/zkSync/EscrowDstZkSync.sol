@@ -9,5 +9,7 @@ contract EscrowDstZkSync is EscrowDst, EscrowZkSync {
     constructor(uint32 rescueDelay) EscrowDst(rescueDelay) EscrowZkSync() payable {}
 
     // solhint-disable-next-line no-empty-blocks
-    function _validateImmutables(Immutables calldata immutables) internal view override(Escrow, EscrowZkSync) {}
+    function _validateImmutables(Immutables calldata immutables) internal view override(Escrow, EscrowZkSync) {
+        EscrowZkSync._validateImmutables(immutables);
+    }
 }
