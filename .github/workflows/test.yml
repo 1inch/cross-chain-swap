@@ -16,22 +16,25 @@ jobs:
       - run: yarn
       - run: yarn lint
 
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Check snapshot
+        run: forge snapshot --check --no-match-test "testFuzz_*"
+
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Compile contracts
-        run: forge compile
-
-      - name: Check snapshot
-        run: forge snapshot --check --no-match-test "testFuzz_*"
-
       - name: Run tests
         run: forge test -vvv --gas-report
 
@@ -41,10 +44,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
       - name: Run coverage
         run: yarn coverage
       - uses: codecov/codecov-action@v4
