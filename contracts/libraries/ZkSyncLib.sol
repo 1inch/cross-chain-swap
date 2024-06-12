@@ -6,6 +6,8 @@ pragma solidity ^0.8.20;
  * @title Library for ZkSync contracts.
  */
 library ZkSyncLib {
+    bytes32 constant private _CREATE2_PREFIX = 0x2020dba91b30cc0006188af794c2fb30dd8520db7e2c088b7fc7c103c00ca494;  // keccak256("zksyncCreate2")
+
     /**
      * @notice Returns the address of the contract deployed with CREATE2.
      * @param salt The salt used for the deployment.
@@ -20,10 +22,9 @@ library ZkSyncLib {
         address deployer,
         bytes32 inputHash
     ) internal pure returns (address addr) {
-        bytes32 prefix = keccak256("zksyncCreate2");
         assembly ("memory-safe") {
             let ptr := mload(0x40)
-            mstore(ptr, prefix)
+            mstore(ptr, _CREATE2_PREFIX)
             mstore(add(ptr, 0x20), deployer)
             mstore(add(ptr, 0x40), salt)
             mstore(add(ptr, 0x60), bytecodeHash)
