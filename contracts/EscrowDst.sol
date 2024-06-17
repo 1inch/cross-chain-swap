@@ -32,6 +32,8 @@ contract EscrowDst is Escrow, IEscrowDst {
     function withdraw(bytes32 secret, Immutables calldata immutables)
         external
         onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
@@ -45,6 +47,8 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function publicWithdraw(bytes32 secret, Immutables calldata immutables)
         external
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
@@ -71,11 +75,7 @@ contract EscrowDst is Escrow, IEscrowDst {
      * @dev Transfers ERC20 (or native) tokens to the maker and native tokens to the caller.
      * @param immutables The immutable values used to deploy the clone contract.
      */
-    function _withdraw(bytes32 secret, Immutables calldata immutables)
-        internal
-        onlyValidImmutables(immutables)
-        onlyValidSecret(secret, immutables)
-    {
+    function _withdraw(bytes32 secret, Immutables calldata immutables) internal {
         _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit Withdrawal(secret);
