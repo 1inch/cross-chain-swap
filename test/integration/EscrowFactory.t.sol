@@ -38,7 +38,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             false // allowMultipleFills
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -85,7 +85,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
