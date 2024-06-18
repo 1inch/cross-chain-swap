@@ -25,7 +25,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
       - name: Check snapshot
-        run: forge snapshot --check --no-match-test "testFuzz_*"
+        run: FOUNDRY_PROFILE=default forge snapshot --check --no-match-test "testFuzz_*"
 
   test:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
       - name: Run tests
-        run: forge test -vvv --gas-report
+        run: FOUNDRY_PROFILE=default forge test -vvv --gas-report
 
   coverage:
     runs-on: ubuntu-latest
