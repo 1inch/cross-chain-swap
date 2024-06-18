@@ -37,6 +37,24 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
       - name: Run tests
         run: FOUNDRY_PROFILE=default forge test -vvv --gas-report
+  
+  test-zksync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: matter-labs/foundry-zksync
+          ref: 'dev'
+          path: 'foundry-zksync'
+
+      - name: Install Foundry for zksync
+        run: cd foundry-zksync && ./install-foundry-zksync
+  
+      - name: Run tests
+        run: FOUNDRY_PROFILE=zksync forge test -vvv --zksync
 
   coverage:
     runs-on: ubuntu-latest
