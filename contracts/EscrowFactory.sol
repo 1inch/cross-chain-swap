@@ -78,13 +78,14 @@ contract EscrowFactory is IEscrowFactory, WhitelistExtension, ResolverFeeExtensi
         uint256 remainingMakingAmount,
         bytes calldata extraData
     ) internal override(WhitelistExtension, ResolverFeeExtension) {
+        uint256 superArgsLength = extraData.length - _SRC_IMMUTABLES_LENGTH;
         super._postInteraction(
-            order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[_SRC_IMMUTABLES_LENGTH:]
+            order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[:superArgsLength]
         );
 
         ExtraDataArgs calldata extraDataArgs;
         assembly ("memory-safe") {
-            extraDataArgs := extraData.offset
+            extraDataArgs := add(extraData.offset, superArgsLength)
         }
 
         bytes32 hashlock;
