@@ -8,6 +8,7 @@ pragma solidity ^0.8.20;
  * For illustrative purposes, it is possible to describe timelocks by two structures:
  * struct SrcTimelocks {
  *     uint256 withdrawal;
+ *     uint256 publicWithdrawal;
  *     uint256 cancellation;
  *     uint256 publicCancellation;
  * }
