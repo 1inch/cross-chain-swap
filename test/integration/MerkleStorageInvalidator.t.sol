@@ -51,7 +51,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -122,7 +122,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecretsLocal[idx]));
@@ -180,7 +180,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -221,7 +221,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount2;
         address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
 
-        (v, r, s) = vm.sign(alice, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -270,7 +270,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -321,7 +321,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -357,7 +357,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount2;
         address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
 
-        (v, r, s) = vm.sign(alice, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -409,7 +409,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -465,7 +465,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -509,7 +509,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount2;
         address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
 
-        (v, r, s) = vm.sign(alice, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -564,7 +564,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.hashlock = hashedSecrets[idx];
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -620,7 +620,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -662,7 +662,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount2;
         address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
 
-        (v, r, s) = vm.sign(alice, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -720,7 +720,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -765,7 +765,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmount2;
         address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
 
-        (v, r, s) = vm.sign(alice, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
@@ -831,7 +831,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         immutables.amount = makingAmountToFill;
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedS[idx]));

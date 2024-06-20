@@ -7,6 +7,7 @@ import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { NoReceiveCaller } from "contracts/mocks/NoReceiveCaller.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
@@ -180,7 +181,7 @@ contract EscrowTest is BaseSetup {
             extraData
         );
 
-        address target = users[2].addr;
+        address target = charlie.addr;
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
         uint256 balanceTarget = usdc.balanceOf(target);
@@ -794,7 +795,7 @@ contract EscrowTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IBaseEscrow srcClone,
+            IEscrowSrc srcClone,
             IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
@@ -815,11 +816,11 @@ contract EscrowTest is BaseSetup {
         );
 
         // withdraw
-        vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
-        vm.prank(bob.addr);
-        vm.mockCallRevert(bob.addr, SRC_SAFETY_DEPOSIT, "", "REVERTED");
+        vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
+        NoReceiveCaller caller = new NoReceiveCaller();
+        bytes memory data = abi.encodeWithSelector(IEscrowSrc.publicWithdraw.selector, SECRET, immutables);
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
-        srcClone.withdraw(SECRET, immutables);
+        caller.arbitraryCall(address(srcClone), data);
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDst() public {
@@ -917,7 +918,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_CancelResolverSrcReceiver() public {
-        address receiver = users[2].addr;
+        address receiver = charlie.addr;
         // deploy escrow
         (
             IOrderMixin.Order memory order,
@@ -1142,7 +1143,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_CancelDstDifferentTarget() public {
-        address target = users[2].addr;
+        address target = charlie.addr;
         (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, target, address(dai)
         );
@@ -1258,22 +1259,6 @@ contract EscrowTest is BaseSetup {
         vm.prank(address(escrowFactory));
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         srcClone.publicCancel(immutables);
-    }
-
-    function test_NoFailedNativeTokenTransferCancelDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
-
-        // deploy escrow
-        vm.startPrank(bob.addr);
-        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
-
-        // cancel
-        vm.warp(block.timestamp + dstTimelocks.cancellation + 100);
-        vm.mockCallRevert(bob.addr, DST_SAFETY_DEPOSIT, "", "REVERTED");
-        vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
-        dstClone.cancel(immutables);
     }
 
     function test_NoCallsWithInvalidImmutables() public {

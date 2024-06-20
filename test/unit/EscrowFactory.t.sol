@@ -76,7 +76,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function testFuzz_DeployCloneForMakerWithReceiver() public {
-        address receiver = users[2].addr;
+        address receiver = charlie.addr;
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,

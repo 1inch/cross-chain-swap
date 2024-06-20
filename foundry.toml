@@ -19,3 +19,10 @@ wrap_comments = true
 
 [fuzz]
 runs = 1024
+
+[profile.zksync]
+src = 'contracts'
+libs = ['lib']
+fallback_oz = true
+is_system = false
+mode = "3"

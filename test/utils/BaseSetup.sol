@@ -15,12 +15,13 @@ import { TokenMock } from "@1inch/solidity-utils/contracts/mocks/TokenMock.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
 import { EscrowSrc } from "contracts/EscrowSrc.sol";
+import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
 import { EscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
+import { EscrowFactoryZkSync } from "contracts/mocks/zkSync/EscrowFactoryZkSync.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
-import { Utils, VmSafe } from "./Utils.sol";
 
 /* solhint-disable max-states-count */
 contract BaseSetup is Test {
@@ -76,6 +77,11 @@ contract BaseSetup is Test {
         uint40 series;
     }
 
+    struct Wallet {
+        address addr;
+        uint256 privateKey;
+    }
+
     // Limit order protocol flags
     uint256 internal constant _NO_PARTIAL_FILLS_FLAG = 1 << 255;
     uint256 internal constant _ALLOW_MULTIPLE_FILLS_FLAG = 1 << 254;
@@ -104,10 +110,13 @@ contract BaseSetup is Test {
     uint32 internal constant RESOLVER_FEE = 100;
     uint32 internal constant RESCUE_DELAY = 604800; // 7 days
 
-    VmSafe.Wallet[] internal users;
+    bytes32 internal constant ZKSYNC_PROFILE_HASH = keccak256(abi.encodePacked("zksync"));
 
-    VmSafe.Wallet internal alice;
-    VmSafe.Wallet internal bob;
+    Wallet[] internal users;
+    uint256 internal nextUser = uint256(keccak256(abi.encodePacked("user address")));
+    Wallet internal alice;
+    Wallet internal bob;
+    Wallet internal charlie;
 
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
@@ -115,7 +124,7 @@ contract BaseSetup is Test {
     TokenMock internal inch;
 
     LimitOrderProtocol internal limitOrderProtocol;
-    EscrowFactory internal escrowFactory;
+    BaseEscrowFactory internal escrowFactory;
     EscrowSrc internal escrowSrc;
     EscrowDst internal escrowDst;
     IFeeBank internal feeBank;
@@ -137,18 +146,22 @@ contract BaseSetup is Test {
         uint24(500000), uint16(100),
         uint24(400000), uint16(100)
     );
+    bool internal isZkSync;
     /* solhint-enable private-vars-leading-underscore */
 
     receive() external payable {}
 
     function setUp() public virtual {
-        Utils utils = new Utils();
-        users = utils.createUsers(3);
+        bytes32 profileHash = keccak256(abi.encodePacked(vm.envString("FOUNDRY_PROFILE")));
+        if (profileHash == ZKSYNC_PROFILE_HASH) isZkSync = true;
+        _createUsers(3);
 
         alice = users[0];
         vm.label(alice.addr, "Alice");
         bob = users[1];
         vm.label(bob.addr, "Bob");
+        charlie = users[2];
+        vm.label(charlie.addr, "Charlie");
 
         _deployTokens();
         dai.mint(bob.addr, 1000 ether);
@@ -166,6 +179,23 @@ contract BaseSetup is Test {
         vm.stopPrank();
         vm.prank(alice.addr);
         usdc.approve(address(limitOrderProtocol), 1000 ether);
+    }
+
+    function _getNextUserAddress() internal returns (Wallet memory) {
+        address addr = vm.addr(nextUser);
+        Wallet memory user = Wallet(addr, nextUser);
+        nextUser = uint256(keccak256(abi.encodePacked(nextUser)));
+        return user;
+    }
+
+    // create users with 100 ETH balance each
+    function _createUsers(uint256 userNum) internal {
+        users = new Wallet[](userNum);
+        for (uint256 i = 0; i < userNum; i++) {
+            Wallet memory user = _getNextUserAddress();
+            vm.deal(user.addr, 100 ether);
+            users[i] = user;
+        }
     }
 
     function _deployTokens() internal {
@@ -205,7 +235,11 @@ contract BaseSetup is Test {
     function _deployContracts() internal {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
 
-        escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+        if (isZkSync) {
+            escrowFactory = new EscrowFactoryZkSync(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+        } else {
+            escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+        }
         vm.label(address(escrowFactory), "EscrowFactory");
         escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
         vm.label(address(escrowSrc), "EscrowSrc");
