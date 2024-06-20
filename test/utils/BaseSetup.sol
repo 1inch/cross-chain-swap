@@ -362,10 +362,10 @@ contract BaseSetup is Test {
         } else {
             bytes memory postInteractionData = abi.encodePacked(
                 address(escrowFactory),
-                extraData,
                 RESOLVER_FEE,
                 whitelist,
-                bytes1(0x08) | bytes1(0x01) // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
+                bytes1(0x08) | bytes1(0x01), // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
+                extraData
             );
 
             bytes memory auctionDetails = _buildAuctionDetails(
@@ -409,7 +409,7 @@ contract BaseSetup is Test {
 
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
         // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
-        extraData = abi.encodePacked(extraData, RESOLVER_FEE, whitelist, bytes1(0x08) | bytes1(0x01));
+        extraData = abi.encodePacked(RESOLVER_FEE, whitelist, bytes1(0x08) | bytes1(0x01), extraData);
     }
 
     function _prepareDataDst(
