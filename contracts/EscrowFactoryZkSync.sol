@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.23;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { BaseExtension } from "@1inch/limit-order-settlement/contracts/extensions/BaseExtension.sol";
-import { ResolverFeeExtension } from "@1inch/limit-order-settlement/contracts/extensions/ResolverFeeExtension.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
+import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
 
 import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
 import { MerkleStorageInvalidator } from "contracts/MerkleStorageInvalidator.sol";

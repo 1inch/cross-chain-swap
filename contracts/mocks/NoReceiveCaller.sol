@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { RevertReasonForwarder } from "@1inch/solidity-utils/contracts/libraries/RevertReasonForwarder.sol";
+import { RevertReasonForwarder } from "solidity-utils/libraries/RevertReasonForwarder.sol";
 
 contract NoReceiveCaller {
     function arbitraryCall(address target, bytes calldata arguments) external {

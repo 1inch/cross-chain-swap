@@ -2,16 +2,16 @@
 
 pragma solidity 0.8.23;
 
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
-import { Address, AddressLib } from "@1inch/solidity-utils/contracts/libraries/AddressLib.sol";
-import { SafeERC20 } from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
+import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
+import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
+import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
-import { IOrderMixin } from "@1inch/limit-order-protocol-contract/contracts/interfaces/IOrderMixin.sol";
-import { MakerTraitsLib } from "@1inch/limit-order-protocol-contract/contracts/libraries/MakerTraitsLib.sol";
-import { ResolverFeeExtension } from "@1inch/limit-order-settlement/contracts/extensions/ResolverFeeExtension.sol";
-import { WhitelistExtension } from "@1inch/limit-order-settlement/contracts/extensions/WhitelistExtension.sol";
+import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
+import { MakerTraitsLib } from "limit-order-protocol/libraries/MakerTraitsLib.sol";
+import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
+import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
