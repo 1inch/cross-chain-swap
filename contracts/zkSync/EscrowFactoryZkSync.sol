@@ -8,13 +8,13 @@ import { ResolverFeeExtension } from "limit-order-settlement/extensions/Resolver
 
 import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
 import { MerkleStorageInvalidator } from "contracts/MerkleStorageInvalidator.sol";
-import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
-import { ZkSyncLib } from "contracts/libraries/ZkSyncLib.sol";
-
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { EscrowSrcZkSync } from "./EscrowSrcZkSync.sol";
-import { EscrowDstZkSync } from "./EscrowDstZkSync.sol";
-import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
+import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
+
+import { EscrowDstZkSync } from "contracts/zkSync/EscrowDstZkSync.sol";
+import { EscrowSrcZkSync } from "contracts/zkSync/EscrowSrcZkSync.sol";
+import { MinimalProxyZkSync } from "contracts/zkSync/MinimalProxyZkSync.sol";
+import { ZkSyncLib } from "contracts/zkSync/ZkSyncLib.sol";
 
 /**
  * @title Escrow Factory contract

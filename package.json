@@ -18,9 +18,10 @@
     "coverage": "mkdir -p coverage && FOUNDRY_PROFILE=default forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:html": "bash scripts/coverage.sh",
     "doc": "forge doc --build --out documentation",
+    "gasreport": "FOUNDRY_PROFILE=default forge test -vvv --gas-report",
     "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\"",
     "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
-    "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\" && FOUNDRY_PROFILE=default forge test -vvv --gas-report",
+    "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\"",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
     "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync"
   },

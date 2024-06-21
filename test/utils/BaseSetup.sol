@@ -18,8 +18,8 @@ import { EscrowSrc } from "contracts/EscrowSrc.sol";
 import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
 import { EscrowFactory } from "contracts/EscrowFactory.sol";
 import { ERC20True } from "contracts/mocks/ERC20True.sol";
-import { EscrowFactoryZkSync } from "contracts/EscrowFactoryZkSync.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 

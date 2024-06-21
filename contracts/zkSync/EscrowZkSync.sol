@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import { BaseEscrow } from "contracts/BaseEscrow.sol";
 
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
-import { ZkSyncLib } from "contracts/libraries/ZkSyncLib.sol";
+import { ZkSyncLib } from "contracts/zkSync/ZkSyncLib.sol";
 
 abstract contract EscrowZkSync is BaseEscrow {
     using ImmutablesLib for Immutables;
