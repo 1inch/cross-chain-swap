@@ -22,7 +22,7 @@ contract EscrowTest is BaseSetup {
     /* solhint-disable func-name-mixedcase */
 
     function test_setup() public {
-        BaseSetup.setUp();
+        _deployContracts();
     }
 
     // Only resolver can withdraw
