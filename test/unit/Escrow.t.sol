@@ -8,6 +8,8 @@ import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { NoReceiveCaller } from "contracts/mocks/NoReceiveCaller.sol";
+import { EscrowFactory } from "contracts/EscrowFactory.sol";
+import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
@@ -21,8 +23,13 @@ contract EscrowTest is BaseSetup {
 
     /* solhint-disable func-name-mixedcase */
 
-    function test_setup() public {
-        _deployContracts();
+    // hotfix coverage
+    function test_Constructors() public {
+        if (isZkSync) {
+            new EscrowFactoryZkSync(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+        } else {
+            new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+        }
     }
 
     // Only resolver can withdraw
