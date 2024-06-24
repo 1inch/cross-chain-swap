@@ -19,11 +19,12 @@ contract EscrowTest is BaseSetup {
         BaseSetup.setUp();
     }
 
+    /* solhint-disable func-name-mixedcase */
+
     function test_setup() public {
         BaseSetup.setUp();
     }
 
-    /* solhint-disable func-name-mixedcase */
     // Only resolver can withdraw
     function test_NoWithdrawalByAnyoneSrc() public {
         // deploy escrow
