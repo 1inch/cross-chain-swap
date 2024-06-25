@@ -13,7 +13,7 @@ else
 fi
 
 printf "Checking forge version... \n"
-local_version=$(forge --version | awk -F' ' '{print substr($3, 2, 7)}')
+local_version=$(forge --version | cut -w -f 3 | cut -c 2-8)
 remote_version=$(curl -s https://api.github.com/repos/foundry-rs/foundry/git/refs/tags | jq '.[] | select(.ref == "refs/tags/nightly") | .object.sha' | cut -c 2-8)
 if [ "$local_version" == "$remote_version" ]; then
   printf "${GREEN}Forge version is up to date${NC} \n"
