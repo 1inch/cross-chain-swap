@@ -9,6 +9,7 @@ import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
+import { BaseEscrow } from "./BaseEscrow.sol";
 import { Escrow } from "./Escrow.sol";
 
 /**
@@ -22,10 +23,10 @@ contract EscrowDst is Escrow, IEscrowDst {
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
 
-    constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
+    constructor(uint32 rescueDelay) BaseEscrow(rescueDelay) {}
 
     /**
-     * @notice See {IEscrow-withdraw}.
+     * @notice See {IBaseEscrow-withdraw}.
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/-- private cancellation ----
      */
@@ -39,7 +40,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     }
 
     /**
-     * @notice See {IEscrow-publicWithdraw}.
+     * @notice See {IBaseEscrow-publicWithdraw}.
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PUBLIC WITHDRAWAL --/-- private cancellation ----
      */
@@ -52,7 +53,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     }
 
     /**
-     * @notice See {IEscrow-cancel}.
+     * @notice See {IBaseEscrow-cancel}.
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/-- PRIVATE CANCELLATION ----
      */

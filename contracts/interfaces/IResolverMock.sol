@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
 
-import { IEscrow } from "../interfaces/IEscrow.sol";
+import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 
 /**
  * @title Interface for the sample implementation of a Resolver contract for cross-chain swap.
@@ -26,7 +26,7 @@ interface IResolverMock {
      * @param args Arguments that are used by the taker (target, extension, interaction, permit).
      */
     function deploySrc(
-        IEscrow.Immutables calldata immutables,
+        IBaseEscrow.Immutables calldata immutables,
         IOrderMixin.Order calldata order,
         bytes32 r,
         bytes32 vs,
@@ -40,7 +40,7 @@ interface IResolverMock {
      * @param dstImmutables The immutables of the escrow contract that are used in deployment.
      * @param srcCancellationTimestamp The start of the cancellation period for the source chain.
      */
-    function deployDst(IEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
+    function deployDst(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 
     /**
      * @notice Allows the owner to make arbitrary calls to other contracts on behalf of this contract.
