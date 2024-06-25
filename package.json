@@ -16,6 +16,7 @@
   "scripts": {
     "clean": "rimraf coverage && forge clean",
     "coverage": "mkdir -p coverage && FOUNDRY_PROFILE=default forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
+    "coverage:zksync": "mkdir -p coverage && FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:html": "bash scripts/coverage.sh",
     "doc": "forge doc --build --out documentation",
     "gasreport": "FOUNDRY_PROFILE=default forge test -vvv --gas-report",
