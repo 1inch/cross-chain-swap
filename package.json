@@ -25,6 +25,5 @@
     "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\"",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
     "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync"
-  },
-  "dependencies": {}
+  }
 }
