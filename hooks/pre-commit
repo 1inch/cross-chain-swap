@@ -12,6 +12,18 @@ else
   exit 1
 fi
 
+printf "Checking forge version... \n"
+local_version=$(forge --version | awk -F' ' '{print substr($3, 2, 7)}')
+remote_version=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' https://github.com/foundry-rs/foundry.git | tail --lines=1 | awk '{print substr($1, 1, 7)}')
+if [ "$local_version" == "$remote_version" ]; then
+  printf "${GREEN}Forge version is up to date${NC} \n"
+else
+  printf "${RED}Forge version is outdated${NC} Please update forge to the latest version \n"
+  printf "Local version: ${local_version} \n"
+  printf "Remote version: ${remote_version} \n"
+  exit 1
+fi
+
 printf "Running forge snapshot --diff... \n"
 if FOUNDRY_PROFILE=default forge snapshot --check --no-match-test "testFuzz_*" &>/dev/null; then
   printf "${GREEN}No gas difference${NC} \n"
