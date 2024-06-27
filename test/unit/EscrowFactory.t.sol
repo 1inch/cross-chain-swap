@@ -129,7 +129,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectEmit();
-        emit IEscrowFactory.DstEscrowCreated(address(dstClone), Address.wrap(uint160(bob.addr)));
+        emit IEscrowFactory.DstEscrowCreated(address(dstClone), immutables.hashlock, Address.wrap(uint160(bob.addr)));
         escrowFactory.createDstEscrow{ value: safetyDeposit }(immutables, srcCancellationTimestamp);
 
         assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);
