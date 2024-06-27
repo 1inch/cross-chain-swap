@@ -140,7 +140,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, WhitelistExtension, Resol
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
 
-        emit DstEscrowCreated(escrow, dstImmutables.taker);
+        emit DstEscrowCreated(escrow, dstImmutables.hashlock, dstImmutables.taker);
     }
 
     /**
