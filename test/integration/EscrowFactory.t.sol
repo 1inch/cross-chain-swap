@@ -68,11 +68,65 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
                 args
             );
 
-            assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+            assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         }
 
         assertEq(usdc.balanceOf(address(srcClone)), srcAmount);
         assertEq(address(srcClone).balance, srcSafetyDeposit);
+    }
+
+    function test_DeployCloneForMakerNonWhitelistedResolverInt() public {
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            /* bytes memory extraData */,
+            bytes memory extension,
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
+        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        immutables.taker = Address.wrap(uint160(charlie.addr));
+        srcClone = IBaseEscrow(escrowFactory.addressOfEscrowSrc(immutables));
+
+        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            address(srcClone), // target
+            extension, // extension
+            "", // interaction
+            0 // threshold
+        );
+
+        {
+            (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+            assertEq(success, true);
+
+            uint256 resolverCredit = feeBank.availableCredit(bob.addr);
+            inch.mint(charlie.addr, 1000 ether);
+
+            vm.startPrank(charlie.addr);
+            inch.approve(address(feeBank), 1000 ether);
+            feeBank.deposit(10 ether);
+            limitOrderProtocol.fillOrderArgs(
+                order,
+                r,
+                vs,
+                MAKING_AMOUNT, // amount
+                takerTraits,
+                args
+            );
+            vm.stopPrank();
+
+            assertLt(feeBank.availableCredit(charlie.addr), resolverCredit);
+        }
+
+        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
+        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
     }
 
     function test_NoInsufficientBalanceDeploymentForMakerInt() public {

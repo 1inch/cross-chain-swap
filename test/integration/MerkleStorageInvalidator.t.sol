@@ -82,7 +82,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+        assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
     }
 
@@ -440,7 +440,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+        assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
     }
 
@@ -496,7 +496,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+        assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
 
         // ------------ 2nd fill ------------ //
@@ -595,7 +595,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+        assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
     }
 
@@ -862,7 +862,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertLt(feeBank.availableCredit(bob.addr), resolverCredit);
+        assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         assertEq(usdc.balanceOf(address(srcClone)), makingAmountToFill);
     }
 
