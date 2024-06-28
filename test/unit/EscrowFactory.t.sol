@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";
 import { Merkle } from "murky/src/Merkle.sol";
