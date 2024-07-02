@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
-import { ResolverFeeExtension } from "limit-order-settlement/extensions/ResolverFeeExtension.sol";
+import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";
 
 import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
 import { MerkleStorageInvalidator } from "contracts/MerkleStorageInvalidator.sol";
@@ -28,10 +28,15 @@ contract EscrowFactoryZkSync is BaseEscrowFactory {
 
     constructor(
         address limitOrderProtocol,
-        IERC20 token,
+        IERC20 feeToken,
+        IERC20 accessToken,
+        address owner,
         uint32 rescueDelaySrc,
         uint32 rescueDelayDst
-    ) BaseExtension(limitOrderProtocol) ResolverFeeExtension(token) MerkleStorageInvalidator(limitOrderProtocol) {
+    ) 
+    BaseExtension(limitOrderProtocol)
+    ResolverValidationExtension(feeToken, accessToken, owner)
+    MerkleStorageInvalidator(limitOrderProtocol) {
         ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrcZkSync(rescueDelaySrc));
         ESCROW_DST_IMPLEMENTATION = address(new EscrowDstZkSync(rescueDelayDst));
         ESCROW_SRC_INPUT_HASH = keccak256(abi.encode(ESCROW_SRC_IMPLEMENTATION));

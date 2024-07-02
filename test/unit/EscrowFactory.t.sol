@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
+import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
 import { EscrowDst } from "contracts/EscrowDst.sol";
@@ -213,7 +213,7 @@ contract EscrowFactoryTest is BaseSetup {
         feeBank.deposit(10 ether);
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(WhitelistExtension.ResolverIsNotWhitelisted.selector);
+        vm.expectRevert(ResolverValidationExtension.ResolverCanNotFillOrder.selector);
         escrowFactory.postInteraction(
             order,
             "", // extension

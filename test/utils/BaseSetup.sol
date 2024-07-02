@@ -236,9 +236,9 @@ contract BaseSetup is Test {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
 
         if (isZkSync) {
-            escrowFactory = new EscrowFactoryZkSync(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+            escrowFactory = new EscrowFactoryZkSync(address(limitOrderProtocol), inch, inch, charlie.addr,  RESCUE_DELAY, RESCUE_DELAY);
         } else {
-            escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, RESCUE_DELAY, RESCUE_DELAY);
+            escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, inch, charlie.addr, RESCUE_DELAY, RESCUE_DELAY);
         }
         vm.label(address(escrowFactory), "EscrowFactory");
         escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
