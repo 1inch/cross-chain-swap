@@ -2,14 +2,11 @@
 
 pragma solidity 0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
-import { IWETH } from "solidity-utils/interfaces/IWETH.sol";
 import { RevertReasonForwarder } from "solidity-utils/libraries/RevertReasonForwarder.sol";
-import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "../interfaces/IEscrowFactory.sol";
@@ -20,9 +17,6 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
  * @title Sample implementation of a Resolver contract for cross-chain swap.
  */
 contract ResolverMock is IResolverMock, Ownable {
-    using SafeERC20 for IERC20;
-    using SafeERC20 for IWETH;
-
     IEscrowFactory private immutable _FACTORY;
     IOrderMixin private immutable _LOP;
 
