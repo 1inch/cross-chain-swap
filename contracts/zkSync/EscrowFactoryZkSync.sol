@@ -2,19 +2,19 @@
 
 pragma solidity 0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";
 
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
-import { MerkleStorageInvalidator } from "contracts/MerkleStorageInvalidator.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
+import { BaseEscrowFactory } from "../BaseEscrowFactory.sol";
+import { MerkleStorageInvalidator } from "../MerkleStorageInvalidator.sol";
+import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
+import { ImmutablesLib } from "../libraries/ImmutablesLib.sol";
 
-import { EscrowDstZkSync } from "contracts/zkSync/EscrowDstZkSync.sol";
-import { EscrowSrcZkSync } from "contracts/zkSync/EscrowSrcZkSync.sol";
-import { MinimalProxyZkSync } from "contracts/zkSync/MinimalProxyZkSync.sol";
-import { ZkSyncLib } from "contracts/zkSync/ZkSyncLib.sol";
+import { EscrowDstZkSync } from "./EscrowDstZkSync.sol";
+import { EscrowSrcZkSync } from "./EscrowSrcZkSync.sol";
+import { MinimalProxyZkSync } from "./MinimalProxyZkSync.sol";
+import { ZkSyncLib } from "./ZkSyncLib.sol";
 
 /**
  * @title Escrow Factory contract
@@ -33,7 +33,7 @@ contract EscrowFactoryZkSync is BaseEscrowFactory {
         address owner,
         uint32 rescueDelaySrc,
         uint32 rescueDelayDst
-    ) 
+    )
     BaseExtension(limitOrderProtocol)
     ResolverValidationExtension(feeToken, accessToken, owner)
     MerkleStorageInvalidator(limitOrderProtocol) {

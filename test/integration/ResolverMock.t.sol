@@ -2,11 +2,11 @@
 
 pragma solidity 0.8.23;
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
-import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
-import { IResolverMock, ResolverMock } from "contracts/mocks/ResolverMock.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
+import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
+import { Timelocks } from "../../contracts/libraries/TimelocksLib.sol";
+import { IResolverMock, ResolverMock } from "../../contracts/mocks/ResolverMock.sol";
 import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
 contract IntegrationResolverMockTest is BaseSetup {

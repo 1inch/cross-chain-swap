@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.23;
 
-import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "openzeppelin-contracts/utils/Create2.sol";
+import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { Create2 } from "openzeppelin-contracts/contracts/utils/Create2.sol";
 import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
 

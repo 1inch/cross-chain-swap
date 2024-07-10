@@ -13,13 +13,13 @@ import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
 
-import { EscrowDst } from "contracts/EscrowDst.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
-import { EscrowFactory } from "contracts/EscrowFactory.sol";
-import { ERC20True } from "contracts/mocks/ERC20True.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
+import { EscrowDst } from "../../contracts/EscrowDst.sol";
+import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
+import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
+import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { ERC20True } from "../../contracts/mocks/ERC20True.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 

@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
+import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
 import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";

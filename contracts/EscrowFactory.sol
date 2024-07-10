@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import { BaseExtension } from "limit-order-settlement/extensions/BaseExtension.sol";
 import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";

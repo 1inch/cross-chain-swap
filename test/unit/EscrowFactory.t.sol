@@ -4,10 +4,10 @@ pragma solidity 0.8.23;
 import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { EscrowDst } from "contracts/EscrowDst.sol";
-import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { EscrowDst } from "../../contracts/EscrowDst.sol";
+import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { Timelocks, TimelocksLib } from "../../contracts/libraries/TimelocksLib.sol";
 
 import { Address, AddressLib, BaseSetup, EscrowSrc, IOrderMixin } from "../utils/BaseSetup.sol";
 
