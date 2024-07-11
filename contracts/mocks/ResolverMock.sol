@@ -4,8 +4,8 @@ pragma solidity 0.8.23;
 
 import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
-import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
+import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
 import { RevertReasonForwarder } from "solidity-utils/libraries/RevertReasonForwarder.sol";
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
