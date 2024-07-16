@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { ResolverValidationExtension } from "limit-order-settlement/extensions/ResolverValidationExtension.sol";
+import { ResolverValidationExtension } from "limit-order-settlement/contracts/extensions/ResolverValidationExtension.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
 import { EscrowDst } from "../../contracts/EscrowDst.sol";
