@@ -3,9 +3,9 @@ pragma solidity 0.8.23;
 
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
-import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
+import { IMerkleStorageInvalidator } from "../../contracts/interfaces/IMerkleStorageInvalidator.sol";
 
 import { BaseSetup, EscrowSrc, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 

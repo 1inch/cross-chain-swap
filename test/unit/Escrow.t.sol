@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Address } from "solidity-utils/libraries/AddressLib.sol";
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
-import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { NoReceiveCaller } from "contracts/mocks/NoReceiveCaller.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
+import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
+import { NoReceiveCaller } from "../../contracts/mocks/NoReceiveCaller.sol";
 
 import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 

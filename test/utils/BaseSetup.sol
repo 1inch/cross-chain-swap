@@ -3,23 +3,23 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 
-import { IWETH, LimitOrderProtocol } from "limit-order-protocol/LimitOrderProtocol.sol";
-import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
-import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/libraries/MakerTraitsLib.sol";
-import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
-import { WrappedTokenMock } from "limit-order-protocol/mocks/WrappedTokenMock.sol";
-import { IFeeBank } from "limit-order-settlement/interfaces/IFeeBank.sol";
-import { Address, AddressLib } from "solidity-utils/libraries/AddressLib.sol";
-import { TokenCustomDecimalsMock } from "solidity-utils/mocks/TokenCustomDecimalsMock.sol";
-import { TokenMock } from "solidity-utils/mocks/TokenMock.sol";
+import { IWETH, LimitOrderProtocol } from "limit-order-protocol/contracts/LimitOrderProtocol.sol";
+import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
+import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
+import { WrappedTokenMock } from "limit-order-protocol/contracts/mocks/WrappedTokenMock.sol";
+import { IFeeBank } from "limit-order-settlement/contracts/interfaces/IFeeBank.sol";
+import { Address, AddressLib } from "solidity-utils/contracts/libraries/AddressLib.sol";
+import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
+import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
 
-import { EscrowDst } from "contracts/EscrowDst.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
-import { EscrowFactory } from "contracts/EscrowFactory.sol";
-import { ERC20True } from "contracts/mocks/ERC20True.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
+import { EscrowDst } from "../../contracts/EscrowDst.sol";
+import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
+import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
+import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { ERC20True } from "../../contracts/mocks/ERC20True.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
 
 

@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.23;
 
-import { Escrow, EscrowSrc } from "contracts/EscrowSrc.sol";
-import { EscrowZkSync } from "contracts/zkSync/EscrowZkSync.sol";
+import { Escrow, EscrowSrc } from "../EscrowSrc.sol";
+import { EscrowZkSync } from "./EscrowZkSync.sol";
 
 contract EscrowSrcZkSync is EscrowSrc, EscrowZkSync {
     constructor(uint32 rescueDelay) EscrowSrc(rescueDelay) EscrowZkSync() {}

@@ -3,10 +3,10 @@ pragma solidity 0.8.23;
 
 import { stdError } from "forge-std/StdError.sol";
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
 
-import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
+import { Timelocks } from "../../contracts/libraries/TimelocksLib.sol";
 import { TimelocksSettersLib } from "../utils/libraries/TimelocksSettersLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
