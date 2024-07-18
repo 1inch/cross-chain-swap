@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.23;
 
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { Timelocks, TimelocksLib } from "../../../contracts/libraries/TimelocksLib.sol";
 
 /**
  * @title Library with setters for Timelocks.

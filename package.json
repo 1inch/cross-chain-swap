@@ -8,19 +8,22 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "eslint": "8.53.0",
+    "eslint": "8.56.0",
     "rimraf": "5.0.5",
     "solc": "0.8.23",
-    "solhint": "4.1.1"
+    "solhint": "5.0.1"
   },
   "scripts": {
     "clean": "rimraf coverage && forge clean",
-    "coverage": "mkdir -p coverage && forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
+    "coverage": "mkdir -p coverage && FOUNDRY_PROFILE=default forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
+    "coverage:zksync": "mkdir -p coverage && FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:html": "bash scripts/coverage.sh",
     "doc": "forge doc --build --out documentation",
-    "lint": "solhint --max-warnings 0 \"**/*.sol\"",
-    "lint:fix": "solhint --max-warnings 0 \"**/*.sol\" --fix",
-    "test": "forge snapshot --no-match-test \"testFuzz_*\" && forge test -vvv --gas-report",
-    "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv"
+    "gasreport": "FOUNDRY_PROFILE=default forge test -vvv --gas-report",
+    "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\"",
+    "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
+    "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\"",
+    "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
+    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync"
   }
 }

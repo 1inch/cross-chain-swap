@@ -3,9 +3,9 @@ pragma solidity 0.8.23;
 
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { ITakerInteraction } from "limit-order-protocol/interfaces/ITakerInteraction.sol";
+import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
 
-import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
+import { IMerkleStorageInvalidator } from "../../contracts/interfaces/IMerkleStorageInvalidator.sol";
 
 import { Address, BaseSetup, IOrderMixin, MakerTraits } from "../utils/BaseSetup.sol";
 

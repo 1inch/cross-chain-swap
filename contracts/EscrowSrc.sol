@@ -2,14 +2,15 @@
 
 pragma solidity 0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
-import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
+import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 
 import { IEscrowSrc } from "./interfaces/IEscrowSrc.sol";
+import { BaseEscrow } from "./BaseEscrow.sol";
 import { Escrow } from "./Escrow.sol";
 
 /**
@@ -25,10 +26,10 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    constructor(uint32 rescueDelay) Escrow(rescueDelay) {}
+    constructor(uint32 rescueDelay) BaseEscrow(rescueDelay) {}
 
     /**
-     * @notice See {IEscrow-withdraw}.
+     * @notice See {IBaseEscrow-withdraw}.
      * @dev The function works on the time interval highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/--
      * --/-- private cancellation --/-- public cancellation ----
@@ -78,7 +79,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     }
 
     /**
-     * @notice See {IEscrow-cancel}.
+     * @notice See {IBaseEscrow-cancel}.
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/--
      * --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----

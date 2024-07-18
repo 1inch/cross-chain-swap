@@ -3,10 +3,10 @@ pragma solidity 0.8.23;
 
 import { stdError } from "forge-std/StdError.sol";
 
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
 
-import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
+import { Timelocks } from "../../contracts/libraries/TimelocksLib.sol";
 import { TimelocksSettersLib } from "../utils/libraries/TimelocksSettersLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
@@ -55,7 +55,7 @@ contract TimelocksLibTest is BaseSetup {
         dstTimelocks = DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 1 });
         _setTimelocks();
 
-        (IEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
+        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 

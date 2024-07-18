@@ -1,3 +1,6 @@
 @1inch/limit-order-protocol-contract/=lib/limit-order-protocol/
+@1inch/limit-order-settlement/=lib/limit-order-settlement/
 @1inch/solidity-utils/=lib/solidity-utils/
-openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+solidity-utils/=lib/solidity-utils/
+limit-order-protocol/=lib/limit-order-protocol/
+limit-order-settlement/=lib/limit-order-settlement/

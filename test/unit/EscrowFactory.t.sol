@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { WhitelistExtension } from "limit-order-settlement/extensions/WhitelistExtension.sol";
+import { ResolverValidationExtension } from "limit-order-settlement/contracts/extensions/ResolverValidationExtension.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { EscrowDst } from "contracts/EscrowDst.sol";
-import { IEscrowFactory } from "contracts/EscrowFactory.sol";
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
-import { IEscrow } from "contracts/interfaces/IEscrow.sol";
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { EscrowDst } from "../../contracts/EscrowDst.sol";
+import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { Timelocks, TimelocksLib } from "../../contracts/libraries/TimelocksLib.sol";
 
 import { Address, AddressLib, BaseSetup, EscrowSrc, IOrderMixin } from "../utils/BaseSetup.sol";
 
@@ -43,8 +42,8 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IBaseEscrow srcClone,
+            /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(
             keccak256(abi.encode(secret)),
             srcAmount,
@@ -77,14 +76,14 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function testFuzz_DeployCloneForMakerWithReceiver() public {
-        address receiver = users[2].addr;
+        address receiver = charlie.addr;
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -118,7 +117,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
-        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDst(
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDst(
             secret, amount, alice.addr, bob.addr, address(dai)
         );
         uint256 balanceBobNative = bob.addr.balance;
@@ -130,7 +129,7 @@ contract EscrowFactoryTest is BaseSetup {
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectEmit();
-        emit IEscrowFactory.DstEscrowCreated(address(dstClone), Address.wrap(uint160(bob.addr)));
+        emit IEscrowFactory.DstEscrowCreated(address(dstClone), immutables.hashlock, Address.wrap(uint160(bob.addr)));
         escrowFactory.createDstEscrow{ value: safetyDeposit }(immutables, srcCancellationTimestamp);
 
         assertEq(bob.addr.balance, balanceBobNative - immutables.safetyDeposit);
@@ -145,8 +144,8 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IBaseEscrow srcClone,
+            /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         usdc.transfer(address(srcClone), MAKING_AMOUNT);
@@ -171,8 +170,8 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IBaseEscrow srcClone,
+            /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -199,8 +198,8 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            /* IEscrow.Immutables memory immutables */
+            IBaseEscrow srcClone,
+            /* IBaseEscrow.Immutables memory immutables */
         ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
@@ -214,7 +213,7 @@ contract EscrowFactoryTest is BaseSetup {
         feeBank.deposit(10 ether);
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(WhitelistExtension.ResolverIsNotWhitelisted.selector);
+        vm.expectRevert(ResolverValidationExtension.ResolverCanNotFillOrder.selector);
         escrowFactory.postInteraction(
             order,
             "", // extension
@@ -228,7 +227,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -241,7 +240,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
         );
 
@@ -252,7 +251,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
-        (IEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
         );
 
@@ -275,8 +274,8 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
@@ -310,8 +309,8 @@ contract EscrowFactoryTest is BaseSetup {
             bytes32 orderHash,
             bytes memory extraData,
             /* bytes memory extension */,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];

@@ -13,3 +13,6 @@ build
 # foundry
 cache_forge
 out
+
+# zkSync
+zkout

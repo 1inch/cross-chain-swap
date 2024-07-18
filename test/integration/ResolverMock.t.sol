@@ -2,10 +2,11 @@
 
 pragma solidity 0.8.23;
 
-import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { IEscrow, IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
-import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
-import { IResolverMock, ResolverMock } from "contracts/mocks/ResolverMock.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
+import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
+import { Timelocks } from "../../contracts/libraries/TimelocksLib.sol";
+import { IResolverMock, ResolverMock } from "../../contracts/mocks/ResolverMock.sol";
 import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 
 contract IntegrationResolverMockTest is BaseSetup {
@@ -39,13 +40,13 @@ contract IntegrationResolverMockTest is BaseSetup {
             bytes32 orderHash,
             /* bytes memory extraData */,
             bytes memory extension,
-            IEscrow srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow srcClone,
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
             HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -87,12 +88,12 @@ contract IntegrationResolverMockTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             IEscrowSrc srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
             HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -146,12 +147,12 @@ contract IntegrationResolverMockTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             IEscrowSrc srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
             HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -207,12 +208,12 @@ contract IntegrationResolverMockTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             IEscrowSrc srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
             HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -252,7 +253,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         // Resolver is bob, so unable to cancel escrow
-        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
         IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
 
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 10);
@@ -275,12 +276,12 @@ contract IntegrationResolverMockTest is BaseSetup {
             /* bytes memory extraData */,
             bytes memory extension,
             IEscrowSrc srcClone,
-            IEscrow.Immutables memory immutables
+            IBaseEscrow.Immutables memory immutables
         ) = _prepareDataSrcCustomResolver(
             HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
@@ -329,9 +330,9 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockDeployDst() public {
-        (IEscrow.Immutables memory immutables,
+        (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
-        IEscrow dstClone
+        IBaseEscrow dstClone
         ) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
         );
@@ -353,9 +354,9 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockWithdrawDst() public {
-        (IEscrow.Immutables memory immutables,
+        (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
-        IEscrow dstClone
+        IBaseEscrow dstClone
         ) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
         );
@@ -393,7 +394,7 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockPublicWithdrawDst() public {
-        (IEscrow.Immutables memory immutables,
+        (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
         IEscrowDst dstClone
         ) = _prepareDataDst(
@@ -416,7 +417,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         // Resolver is bob, so unable to withdraw tokens
-        vm.expectRevert(IEscrow.InvalidCaller.selector);
+        vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
         IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
 
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 10);
@@ -431,9 +432,9 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockCancelDst() public {
-        (IEscrow.Immutables memory immutables,
+        (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
-        IEscrow dstClone
+        IBaseEscrow dstClone
         ) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
         );
@@ -471,9 +472,9 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockRescueFundsDst() public {
-        (IEscrow.Immutables memory immutables,
+        (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
-        IEscrow dstClone
+        IBaseEscrow dstClone
         ) = _prepareDataDst(
             SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
         );
