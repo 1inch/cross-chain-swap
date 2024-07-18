@@ -37,6 +37,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     function withdraw(bytes32 secret, Immutables calldata immutables)
         external
         onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
@@ -52,6 +54,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     function withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
         external
         onlyTaker(immutables)
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
@@ -66,6 +70,8 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      */
     function publicWithdraw(bytes32 secret, Immutables calldata immutables)
         external
+        onlyValidImmutables(immutables)
+        onlyValidSecret(secret, immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcPublicWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
@@ -81,6 +87,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     function cancel(Immutables calldata immutables)
         external
         onlyTaker(immutables)
+        onlyValidImmutables(immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
         _cancel(immutables);
@@ -94,6 +101,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      */
     function publicCancel(Immutables calldata immutables)
         external
+        onlyValidImmutables(immutables)
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcPublicCancellation))
     {
         _cancel(immutables);
@@ -105,11 +113,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @param target The address to transfer ERC20 tokens to.
      * @param immutables The immutable values used to deploy the clone contract.
      */
-    function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
-        internal
-        onlyValidImmutables(immutables)
-        onlyValidSecret(secret, immutables)
-    {
+    function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables) internal {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit Withdrawal(secret);
@@ -119,7 +123,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev Transfers ERC20 tokens to the maker and native tokens to the caller.
      * @param immutables The immutable values used to deploy the clone contract.
      */
-    function _cancel(Immutables calldata immutables) internal onlyValidImmutables(immutables) {
+    function _cancel(Immutables calldata immutables) internal {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowCancelled();
