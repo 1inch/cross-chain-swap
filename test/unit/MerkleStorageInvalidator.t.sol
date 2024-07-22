@@ -3,11 +3,14 @@ pragma solidity 0.8.23;
 
 import { Merkle } from "murky/src/Merkle.sol";
 
+import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
+import { MakerTraits } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
-import { IMerkleStorageInvalidator } from "../../contracts/interfaces/IMerkleStorageInvalidator.sol";
+import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
 
-import { Address, BaseSetup, IOrderMixin, MakerTraits } from "../utils/BaseSetup.sol";
+import { BaseSetup } from "../utils/BaseSetup.sol";
 
 contract MerkleStorageInvalidatorTest is BaseSetup {
 

@@ -2,17 +2,18 @@
 pragma solidity 0.8.23;
 
 import { ResolverValidationExtension } from "limit-order-settlement/contracts/extensions/ResolverValidationExtension.sol";
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { EscrowDst } from "../../contracts/EscrowDst.sol";
-import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
-import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
-import { Timelocks, TimelocksLib } from "../../contracts/libraries/TimelocksLib.sol";
+import { EscrowDst } from "contracts/EscrowDst.sol";
+import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
-import { Address, AddressLib, BaseSetup, EscrowSrc, IOrderMixin } from "../utils/BaseSetup.sol";
+import { BaseSetup } from "../utils/BaseSetup.sol";
+import { CrossChainLib } from "../utils/libraries/CrossChainLib.sol";
 
 contract EscrowFactoryTest is BaseSetup {
-    using AddressLib for Address;
     using TimelocksLib for Timelocks;
 
     uint256 public constant SECRETS_AMOUNT = 100;
@@ -37,14 +38,7 @@ contract EscrowFactoryTest is BaseSetup {
         vm.assume(srcAmount > 0 && dstAmount > 0);
         uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
         uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            /* IBaseEscrow.Immutables memory immutables */
-        ) = _prepareDataSrc(
+        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
             keccak256(abi.encode(secret)),
             srcAmount,
             dstAmount,
@@ -55,40 +49,42 @@ contract EscrowFactoryTest is BaseSetup {
             false // allowMultipleFills
         );
 
-        (bool success,) = address(srcClone).call{ value: srcSafetyDeposit }("");
+        (bool success,) = address(swapData.srcClone).call{ value: srcSafetyDeposit }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), srcAmount);
+        usdc.transfer(address(swapData.srcClone), srcAmount);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             srcAmount, // makingAmount
             dstAmount, // takingAmount
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), srcAmount);
-        assertEq(address(srcClone).balance, srcSafetyDeposit);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), srcAmount);
+        assertEq(address(swapData.srcClone).balance, srcSafetyDeposit);
     }
 
     function testFuzz_DeployCloneForMakerWithReceiver() public {
         address receiver = charlie.addr;
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true, false);
+        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            receiver,
+            true,
+            false
+        );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         IEscrowFactory.DstImmutablesComplement memory immutablesComplement = IEscrowFactory.DstImmutablesComplement({
             maker: Address.wrap(uint160(receiver)),
@@ -100,32 +96,33 @@ contract EscrowFactoryTest is BaseSetup {
 
         vm.prank(address(limitOrderProtocol));
         vm.expectEmit();
-        emit IEscrowFactory.SrcEscrowCreated(immutables, immutablesComplement);
+        emit IEscrowFactory.SrcEscrowCreated(swapData.immutables, immutablesComplement);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), MAKING_AMOUNT);
+        assertEq(address(swapData.srcClone).balance, SRC_SAFETY_DEPOSIT);
     }
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDst(
-            secret, amount, alice.addr, bob.addr, address(dai)
+        uint256 safetyDeposit = uint64(amount) * 10 / 100;
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDstCustom(
+            secret, amount, alice.addr, bob.addr, address(dai), safetyDeposit
         );
         uint256 balanceBobNative = bob.addr.balance;
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
         uint256 balanceEscrowNative = address(dstClone).balance;
 
-        uint256 safetyDeposit = uint64(amount) * 10 / 100;
+
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectEmit();
@@ -139,72 +136,51 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            /* IBaseEscrow.Immutables memory immutables */
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
     }
 
     function test_NoInsufficientBalanceDeploymentForMaker() public {
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            /* IBaseEscrow.Immutables memory immutables */
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InsufficientEscrowBalance.selector);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
     }
 
     // Only whitelisted resolver can deploy escrow
     function test_NoDeploymentForNotResolver() public {
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            /* IBaseEscrow.Immutables memory immutables */
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         inch.mint(alice.addr, 10 ether);
         vm.prank(alice.addr);
@@ -215,21 +191,19 @@ contract EscrowFactoryTest is BaseSetup {
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(ResolverValidationExtension.ResolverCanNotFillOrder.selector);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             alice.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst();
 
         vm.warp(srcCancellationTimestamp + 1);
 
@@ -240,9 +214,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -251,8 +223,8 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDstCustom(
+            HASHED_SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00), DST_SAFETY_DEPOSIT
         );
 
         // deploy escrow
@@ -269,30 +241,22 @@ contract EscrowFactoryTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InvalidSecretsAmount.selector);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
     }
 
@@ -304,30 +268,22 @@ contract EscrowFactoryTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             MAKING_AMOUNT, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
     }
 
