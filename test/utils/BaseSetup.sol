@@ -9,12 +9,12 @@ import { IFeeBank } from "limit-order-settlement/contracts/interfaces/IFeeBank.s
 import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
 
-import { EscrowDst } from "contracts/EscrowDst.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
-import { EscrowFactory } from "contracts/EscrowFactory.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
+import { EscrowDst } from "../../contracts/EscrowDst.sol";
+import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
+import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
+import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Utils } from "./Utils.sol";
 import { CrossChainLib } from "./libraries/CrossChainLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";

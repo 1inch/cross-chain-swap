@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.23;
 
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { ERC20True } from "contracts/mocks/ERC20True.sol";
+import { BaseEscrowFactory } from "../../../contracts/BaseEscrowFactory.sol";
+import { EscrowSrc } from "../../../contracts/EscrowSrc.sol";
+import { IBaseEscrow } from "../../../contracts/interfaces/IBaseEscrow.sol";
+import { ERC20True } from "../../../contracts/mocks/ERC20True.sol";
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { MakerTraits } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
