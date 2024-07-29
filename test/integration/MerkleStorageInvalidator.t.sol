@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
 import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
@@ -17,15 +18,20 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     bytes32 public root;
     bytes32[] public hashedSecrets = new bytes32[](SECRETS_AMOUNT);
     bytes32[] public hashedPairs = new bytes32[](SECRETS_AMOUNT);
+    Address public dstWithParts;
+    address[] public resolvers = new address[](1);
 
     function setUp() public virtual override {
         BaseSetup.setUp();
+
+        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | (PARTS_AMOUNT << 240));
 
         for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
+        resolvers[0] = bob.addr;
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -36,8 +42,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -45,7 +49,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -54,7 +60,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -107,7 +113,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairsLocal, idx);
         assert(merkle.verifyProof(root, proof, hashedPairsLocal[idx]));
 
-        bytes32 rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
+        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | (partsAmount << 240));
 
         (
             IOrderMixin.Order memory order,
@@ -116,7 +122,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecretsLocal[idx];
         immutables.amount = makingAmount;
@@ -125,7 +133,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecretsLocal[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecretsLocal[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -165,8 +173,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -174,7 +180,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -183,7 +191,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -224,7 +232,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount
@@ -254,7 +262,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     }
 
     function test_MultipleFillsNoDeploymentWithoutValidation() public {
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
         (
             IOrderMixin.Order memory order,
@@ -263,7 +270,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = 0;
         uint256 makingAmount = MAKING_AMOUNT / PARTS_AMOUNT;
@@ -306,8 +315,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -315,7 +322,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -324,7 +333,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -360,7 +369,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount
@@ -394,8 +403,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -403,7 +410,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -412,7 +421,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -450,8 +459,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -459,7 +466,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -468,7 +477,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -512,7 +521,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount
@@ -540,7 +549,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(orderHash, root))
         );
         assertEq(storedIndex, idx + 1);
     }
@@ -550,8 +559,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -559,7 +566,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
@@ -567,7 +576,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -605,8 +614,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -614,7 +621,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -623,7 +632,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -665,7 +674,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount
@@ -693,7 +702,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(orderHash, root))
         );
         assertEq(storedIndex, PARTS_AMOUNT);
     }
@@ -705,8 +714,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -714,7 +721,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -723,7 +732,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -752,7 +761,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(orderHash, root))
         );
         assertEq(storedIndex, PARTS_AMOUNT);
 
@@ -768,7 +777,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (v, r, s) = vm.sign(alice.privateKey, orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
         (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
             true, // makingAmount
@@ -796,7 +805,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(orderHash, root))
         );
         assertEq(storedIndex, SECRETS_AMOUNT);
     }
@@ -816,7 +825,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedP, idx);
         assert(merkle.verifyProof(root, proof, hashedP[idx]));
 
-        bytes32 rootPlusAmount = bytes32(secretsAmount << 240 | uint240(uint256(root)));
+        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | (secretsAmount << 240));
 
         (
             IOrderMixin.Order memory order,
@@ -825,7 +834,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, makingAmount, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, makingAmount, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedS[idx];
         immutables.amount = makingAmountToFill;
@@ -834,7 +845,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedS[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedS[idx]));
 
         (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
             true, // makingAmount
@@ -864,6 +875,111 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
         assertEq(usdc.balanceOf(address(srcClone)), makingAmountToFill);
+    }
+
+    function test_MultipleFillsNoReuseOfSecrets() public {
+        uint256 idx = 0;
+        uint256 onePart = MAKING_AMOUNT / PARTS_AMOUNT;
+        uint256 makingAmount = onePart / 2 - 1;
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            /* bytes memory extraData */,
+            bytes memory extension,
+            /* IBaseEscrow srcClone */,
+            IBaseEscrow.Immutables memory immutables
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
+
+        immutables.hashlock = hashedSecrets[idx];
+        immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(immutables);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
+
+        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone, // target
+            extension,
+            interaction,
+            0 // threshold
+        );
+
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+
+        vm.prank(bob.addr);
+        limitOrderProtocol.fillOrderArgs(
+            order,
+            r,
+            vs,
+            makingAmount, // amount
+            takerTraits,
+            args
+        );
+
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
+        (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
+            keccak256(abi.encodePacked(orderHash, root))
+        );
+        assertEq(storedIndex, idx + 1);
+
+        // ------------ 2nd fill ------------ //
+        uint256 makingAmount2 = makingAmount + 1;
+        bytes32[] memory hashedSecretsLocal = new bytes32[](SECRETS_AMOUNT);
+        bytes32[] memory hashedPairsLocal = new bytes32[](SECRETS_AMOUNT);
+        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+            hashedSecretsLocal[i] = keccak256(abi.encodePacked(keccak256(abi.encodePacked(i))));
+            hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
+        }
+        bytes32 rootLocal = merkle.getRoot(hashedPairsLocal);
+
+        bytes32[] memory proofLocal = merkle.getProof(hashedPairsLocal, idx);
+        assert(merkle.verifyProof(rootLocal, proofLocal, hashedPairsLocal[idx]));
+
+        immutables.amount = makingAmount2;
+        address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
+
+        (v, r, s) = vm.sign(alice.privateKey, orderHash);
+        vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proofLocal, idx + 1, hashedSecretsLocal[idx]));
+
+        (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone2, // target
+            extension,
+            interaction,
+            0 // threshold
+        );
+
+        (success,) = srcClone2.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        vm.expectRevert(IMerkleStorageInvalidator.InvalidProof.selector);
+        limitOrderProtocol.fillOrderArgs(
+            order,
+            r,
+            vs,
+            makingAmount2, // amount
+            takerTraits2,
+            args2
+        );
     }
 
     /* solhint-enable func-name-mixedcase */

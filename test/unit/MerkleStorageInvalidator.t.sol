@@ -7,15 +7,19 @@ import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITa
 
 import { IMerkleStorageInvalidator } from "../../contracts/interfaces/IMerkleStorageInvalidator.sol";
 
-import { Address, BaseSetup, IOrderMixin, MakerTraits } from "../utils/BaseSetup.sol";
+import { Address, BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
 
 contract MerkleStorageInvalidatorTest is BaseSetup {
 
     Merkle public merkle = new Merkle();
     bytes32 public root;
+    address[] public resolvers = new address[](1);
+    Address public dstWithParts;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
+        resolvers[0] = bob.addr;
+        dstWithParts = Address.wrap(uint160(address(dai)));
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -35,30 +39,30 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 orderHash = keccak256(abi.encode("order"));
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            /* bytes memory extraData */,
+            bytes memory extension,
+            /* IBaseEscrow srcClone */,
+            /* IBaseEscrow.Immutables memory immutables */
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         vm.prank(address(limitOrderProtocol));
         ITakerInteraction(escrowFactory).takerInteraction(
-            IOrderMixin.Order({
-                salt: 0,
-                maker: Address.wrap(uint160(alice.addr)),
-                receiver: Address.wrap(uint160(bob.addr)),
-                makerAsset: Address.wrap(uint160(address(usdc))),
-                takerAsset: Address.wrap(uint160(address(dai))),
-                makingAmount: MAKING_AMOUNT,
-                takingAmount: TAKING_AMOUNT,
-                makerTraits: MakerTraits.wrap(0)
-            }),
-            "",
+            order,
+            extension,
             orderHash,
             bob.addr,
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0,
-            abi.encode(root, proof, idx, hashedSecrets[idx])
+            abi.encode(proof, idx, hashedSecrets[idx])
         );
         (uint256 storedIndex, bytes32 storedLeaf) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(orderHash, root))
         );
         assertEq(storedIndex, idx + 1);
         assertEq(storedLeaf, hashedSecrets[idx]);
@@ -78,30 +82,30 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
 
-        bytes32 orderHash = keccak256(abi.encode("order"));
+        (
+            IOrderMixin.Order memory order,
+            bytes32 orderHash,
+            /* bytes memory extraData */,
+            bytes memory extension,
+            /* IBaseEscrow srcClone */,
+            /* IBaseEscrow.Immutables memory immutables */
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         uint256 wrongIndex = idx + 1 < secretsAmount ? idx + 1 : idx - 1;
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IMerkleStorageInvalidator.InvalidProof.selector);
         ITakerInteraction(escrowFactory).takerInteraction(
-            IOrderMixin.Order({
-                salt: 0,
-                maker: Address.wrap(uint160(alice.addr)),
-                receiver: Address.wrap(uint160(bob.addr)),
-                makerAsset: Address.wrap(uint160(address(usdc))),
-                takerAsset: Address.wrap(uint160(address(dai))),
-                makingAmount: MAKING_AMOUNT,
-                takingAmount: TAKING_AMOUNT,
-                makerTraits: MakerTraits.wrap(0)
-            }),
-            "",
+            order,
+            extension,
             orderHash,
             bob.addr,
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0,
-            abi.encode(root, proof, wrongIndex, hashedSecrets[wrongIndex])
+            abi.encode(proof, wrongIndex, hashedSecrets[wrongIndex])
         );
     }
 

@@ -267,8 +267,6 @@ contract EscrowFactoryTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
-
         (
             IOrderMixin.Order memory order,
             bytes32 orderHash,
@@ -276,7 +274,7 @@ contract EscrowFactoryTest is BaseSetup {
             /* bytes memory extension */,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrc(root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;
@@ -301,8 +299,10 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+        address[] memory resolvers = new address[](1);
+        resolvers[0] = bob.addr;
 
-        bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
+        Address dstWithParts = Address.wrap(uint256(uint160(address(dai))) | ((SECRETS_AMOUNT - 1) << 240));
 
         (
             IOrderMixin.Order memory order,
@@ -311,7 +311,9 @@ contract EscrowFactoryTest is BaseSetup {
             /* bytes memory extension */,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        ) = _prepareDataSrcCustom(
+            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true, resolvers
+        );
 
         immutables.hashlock = hashedSecrets[idx];
         immutables.amount = makingAmount;

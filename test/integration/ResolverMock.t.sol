@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.23;
 
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
 import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
@@ -12,6 +13,7 @@ import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
 contract IntegrationResolverMockTest is BaseSetup {
     /* solhint-disable-next-line private-vars-leading-underscore */
     address private resolverMock;
+    Address public dstWithParts;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
@@ -24,6 +26,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         inch.approve(address(feeBank), 1000 ether);
         feeBank.deposit(10 ether);
         vm.stopPrank();
+        dstWithParts = Address.wrap(uint160(address(dai)));
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -42,8 +45,17 @@ contract IntegrationResolverMockTest is BaseSetup {
             bytes memory extension,
             IBaseEscrow srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustomResolver(
-            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
+        ) = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            address(0),
+            false,
+            false,
+            resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
@@ -89,8 +101,17 @@ contract IntegrationResolverMockTest is BaseSetup {
             bytes memory extension,
             IEscrowSrc srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustomResolver(
-            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
+        ) = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            address(0),
+            false,
+            false,
+            resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
@@ -148,8 +169,17 @@ contract IntegrationResolverMockTest is BaseSetup {
             bytes memory extension,
             IEscrowSrc srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustomResolver(
-            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
+        ) = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            address(0),
+            false,
+            false,
+            resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
@@ -209,8 +239,17 @@ contract IntegrationResolverMockTest is BaseSetup {
             bytes memory extension,
             IEscrowSrc srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustomResolver(
-            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
+        ) = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            address(0),
+            false,
+            false,
+            resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
@@ -277,8 +316,17 @@ contract IntegrationResolverMockTest is BaseSetup {
             bytes memory extension,
             IEscrowSrc srcClone,
             IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustomResolver(
-            HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, false, resolvers
+        ) = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            address(0),
+            false,
+            false,
+            resolvers
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);

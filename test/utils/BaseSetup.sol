@@ -253,7 +253,7 @@ contract BaseSetup is Test {
     function _buidDynamicData(
         bytes32 hashlock,
         uint256 chainId,
-        address token,
+        Address token,
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit
     ) internal view returns (bytes memory) {
@@ -304,12 +304,13 @@ contract BaseSetup is Test {
     ) {
         address[] memory resolvers = new address[](1);
         resolvers[0] = bob.addr;
-        (order, orderHash, extraData, extension, srcClone, immutables) = _prepareDataSrcCustomResolver(
+        (order, orderHash, extraData, extension, srcClone, immutables) = _prepareDataSrcCustom(
             secret,
             srcAmount,
             dstAmount,
             srcSafetyDeposit,
             dstSafetyDeposit,
+            Address.wrap(uint160(address(dai))),
             receiver,
             fakeOrder,
             allowMultipleFills,
@@ -317,12 +318,13 @@ contract BaseSetup is Test {
         );
     }
 
-    function _prepareDataSrcCustomResolver(
+    function _prepareDataSrcCustom(
         bytes32 hashlock,
         uint256 srcAmount,
         uint256 dstAmount,
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit,
+        Address dstToken,
         address receiver,
         bool fakeOrder,
         bool allowMultipleFills,
@@ -338,7 +340,7 @@ contract BaseSetup is Test {
         extraData = _buidDynamicData(
             hashlock,
             block.chainid,
-            address(dai),
+            dstToken,
             srcSafetyDeposit,
             dstSafetyDeposit
         );
