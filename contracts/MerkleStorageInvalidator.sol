@@ -58,14 +58,13 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, EscrowFactoryCon
             extraDataArgs := add(add(extension.offset, 32), sub(end, _SRC_IMMUTABLES_LENGTH))
         }
         bytes32 root = extraDataArgs.hashlockInfo;
-        (
-            bytes32[] memory proof,
-            uint256 idx,
-            bytes32 secretHash
-        ) = abi.decode(extraData, (bytes32[], uint256, bytes32));
+        TakerData calldata takerData;
+        assembly ("memory-safe") {
+            takerData := extraData.offset
+        }
         bytes32 key = keccak256(abi.encodePacked(orderHash, root));
-        if (idx < lastValidated[key].index) revert InvalidIndex();
-        if (!proof.verify(root, keccak256(abi.encodePacked(idx, secretHash)))) revert InvalidProof();
-        lastValidated[key] = LastValidated(idx + 1, secretHash);
+        if (takerData.idx < lastValidated[key].index) revert InvalidIndex();
+        if (!takerData.proof.verifyCalldata(root, keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)))) revert InvalidProof();
+        lastValidated[key] = LastValidated(takerData.idx + 1, takerData.secretHash);
     }
 }
