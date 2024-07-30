@@ -3,13 +3,14 @@ pragma solidity 0.8.23;
 
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
-import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
-import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
-import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
-import { NoReceiveCaller } from "../../contracts/mocks/NoReceiveCaller.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
+import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { NoReceiveCaller } from "contracts/mocks/NoReceiveCaller.sol";
 
-import { BaseSetup, IOrderMixin } from "../utils/BaseSetup.sol";
+import { BaseSetup } from "../utils/BaseSetup.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract EscrowTest is BaseSetup {
     // solhint-disable-next-line private-vars-leading-underscore
@@ -23,79 +24,63 @@ contract EscrowTest is BaseSetup {
     // Only resolver can withdraw
     function test_NoWithdrawalByAnyoneSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // withdraw
         vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
     }
 
     function test_NoWithdrawalOutsideOfAllowedPeriodSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // withdraw during finality lock
         vm.prank(bob.addr);
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         // withdraw during the cancellation period
         vm.warp(block.timestamp + srcTimelocks.cancellation + 100);
         vm.prank(bob.addr);
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
     }
 
     function test_NoWithdrawalOutsideOfAllowedPeriodDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.startPrank(bob.addr);
@@ -113,72 +98,58 @@ contract EscrowTest is BaseSetup {
 
     function test_WithdrawSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
         uint256 balanceBobNative = bob.addr.balance;
-        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+        uint256 balanceEscrow = usdc.balanceOf(address(swapData.srcClone));
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.prank(bob.addr);
         vm.expectEmit();
         emit IBaseEscrow.Withdrawal(SECRET);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
     function test_WithdrawSrcTo() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         address target = charlie.addr;
@@ -186,126 +157,105 @@ contract EscrowTest is BaseSetup {
         uint256 balanceBob = usdc.balanceOf(bob.addr);
         uint256 balanceTarget = usdc.balanceOf(target);
         uint256 balanceBobNative = bob.addr.balance;
-        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+        uint256 balanceEscrow = usdc.balanceOf(address(swapData.srcClone));
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.prank(bob.addr);
-        srcClone.withdrawTo(SECRET, target, immutables);
+        swapData.srcClone.withdrawTo(SECRET, target, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob);
         assertEq(usdc.balanceOf(target), balanceTarget + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
     function test_NoPublicWithdrawalOutsideOfAllowedPeriodSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // withdraw during the private withdrawal
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.publicWithdraw(SECRET, immutables);
+        swapData.srcClone.publicWithdraw(SECRET, swapData.immutables);
 
         //withdraw during the cancellation period
         vm.warp(block.timestamp + srcTimelocks.cancellation + 100);
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.publicWithdraw(SECRET, immutables);
+        swapData.srcClone.publicWithdraw(SECRET, swapData.immutables);
     }
 
     function test_PublicWithdrawSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
         uint256 balanceThisNative = address(this).balance;
-        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+        uint256 balanceEscrow = usdc.balanceOf(address(swapData.srcClone));
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
-        srcClone.publicWithdraw(SECRET, immutables);
+        swapData.srcClone.publicWithdraw(SECRET, swapData.immutables);
 
         assertEq(address(this).balance, balanceThisNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
 
     function test_RescueFundsSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
@@ -314,49 +264,42 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.startPrank(bob.addr);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), SRC_SAFETY_DEPOSIT);
 
         // rescue
         vm.warp(block.timestamp + RESCUE_DELAY);
         vm.expectEmit();
         emit IBaseEscrow.FundsRescued(address(usdc), SRC_SAFETY_DEPOSIT);
-        srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutables);
+        swapData.srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, swapData.immutables);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
     }
 
     function test_RescueFundsSrcNative() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT + MAKING_AMOUNT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT + MAKING_AMOUNT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
@@ -365,50 +308,43 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.startPrank(bob.addr);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, MAKING_AMOUNT);
 
         // rescue
         vm.warp(block.timestamp + RESCUE_DELAY);
         vm.expectEmit();
         emit IBaseEscrow.FundsRescued(address(0), MAKING_AMOUNT);
-        srcClone.rescueFunds(address(0), MAKING_AMOUNT, immutables);
+        swapData.srcClone.rescueFunds(address(0), MAKING_AMOUNT, swapData.immutables);
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT + MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(address(swapData.srcClone).balance, 0);
     }
 
     function test_NoRescueFundsEarlierSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
@@ -417,47 +353,40 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.startPrank(bob.addr);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), SRC_SAFETY_DEPOSIT);
 
         // rescue
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutables);
+        swapData.srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, swapData.immutables);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), SRC_SAFETY_DEPOSIT);
     }
 
     function test_NoRescueFundsByAnyoneSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT + SRC_SAFETY_DEPOSIT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = usdc.balanceOf(bob.addr);
@@ -466,24 +395,22 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.prank(bob.addr);
-        srcClone.withdraw(SECRET, immutables);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), SRC_SAFETY_DEPOSIT);
 
         // rescue
         vm.warp(block.timestamp + RESCUE_DELAY);
         vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
-        srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutables);
+        swapData.srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, swapData.immutables);
         assertEq(usdc.balanceOf(bob.addr), balanceBob + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), SRC_SAFETY_DEPOSIT);
     }
 
     function test_WithdrawByResolverDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.startPrank(bob.addr);
@@ -507,8 +434,8 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_WithdrawByResolverDstNative() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00)
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDstCustom(
+            HASHED_SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00), DST_SAFETY_DEPOSIT
         );
 
         // deploy escrow
@@ -531,9 +458,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_RescueFundsDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         assertEq(dai.balanceOf(address(dstClone)), 0);
         assertEq(address(dstClone).balance, 0);
@@ -567,9 +492,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_RescueFundsDstNative() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         assertEq(address(dstClone).balance, 0);
 
@@ -602,9 +525,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoRescueFundsEarlierDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         assertEq(address(dstClone).balance, 0);
 
@@ -635,9 +556,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoRescueFundsByAnyoneDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         assertEq(address(dstClone).balance, 0);
 
@@ -671,42 +590,33 @@ contract EscrowTest is BaseSetup {
 
     function test_NoWithdrawalWithWrongSecretSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.prank(bob.addr);
         vm.expectRevert(IBaseEscrow.InvalidSecret.selector);
-        srcClone.withdraw(WRONG_SECRET, immutables);
+        swapData.srcClone.withdraw(WRONG_SECRET, swapData.immutables);
     }
 
     function test_NoWithdrawalWithWrongSecretDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.startPrank(bob.addr);
@@ -720,9 +630,7 @@ contract EscrowTest is BaseSetup {
 
     // During non-public withdrawal period
     function test_NoWithdrawalByNonResolverDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -736,9 +644,7 @@ contract EscrowTest is BaseSetup {
 
     // During public withdrawal period
     function test_WithdrawByAnyoneDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -763,9 +669,7 @@ contract EscrowTest is BaseSetup {
 
     // During public withdrawal period
     function test_WithdrawByResolverPublicDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.startPrank(bob.addr);
@@ -790,43 +694,34 @@ contract EscrowTest is BaseSetup {
 
     function test_NoFailedNativeTokenTransferWithdrawalSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
         NoReceiveCaller caller = new NoReceiveCaller();
-        bytes memory data = abi.encodeWithSelector(IEscrowSrc.publicWithdraw.selector, SECRET, immutables);
+        bytes memory data = abi.encodeWithSelector(IEscrowSrc.publicWithdraw.selector, SECRET, swapData.immutables);
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
-        caller.arbitraryCall(address(srcClone), data);
+        caller.arbitraryCall(address(swapData.srcClone), data);
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -840,8 +735,8 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoFailedNativeTokenTransferWithdrawalDstNative() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, address(escrowFactory), bob.addr, address(0x00)
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDstCustom(
+            HASHED_SECRET, TAKING_AMOUNT, address(escrowFactory), bob.addr, address(0x00), DST_SAFETY_DEPOSIT
         );
 
         // deploy escrow
@@ -855,9 +750,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoPublicWithdrawOutsideOfAllowedPeriodDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -876,62 +769,58 @@ contract EscrowTest is BaseSetup {
 
     function test_CancelResolverSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = bob.addr.balance;
         uint256 balanceAlice = usdc.balanceOf(alice.addr);
-        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+        uint256 balanceEscrow = usdc.balanceOf(address(swapData.srcClone));
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         vm.prank(bob.addr);
         vm.expectEmit();
         emit IBaseEscrow.EscrowCancelled();
-        srcClone.cancel(immutables);
+        swapData.srcClone.cancel(swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBob + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(alice.addr), balanceAlice + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
     function test_CancelResolverSrcReceiver() public {
         address receiver = charlie.addr;
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, receiver, true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            receiver,
+            true,
+            false
+        );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         IEscrowFactory.DstImmutablesComplement memory immutablesComplement = IEscrowFactory.DstImmutablesComplement({
             maker: Address.wrap(uint160(receiver)),
@@ -943,183 +832,153 @@ contract EscrowTest is BaseSetup {
 
         vm.prank(address(limitOrderProtocol));
         vm.expectEmit();
-        emit IEscrowFactory.SrcEscrowCreated(immutables, immutablesComplement);
+        emit IEscrowFactory.SrcEscrowCreated(swapData.immutables, immutablesComplement);
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceBob = bob.addr.balance;
         uint256 balanceAlice = usdc.balanceOf(alice.addr);
         uint256 balanceReceiver = usdc.balanceOf(receiver);
-        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+        uint256 balanceEscrow = usdc.balanceOf(address(swapData.srcClone));
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         vm.prank(bob.addr);
         vm.expectEmit();
         emit IBaseEscrow.EscrowCancelled();
-        srcClone.cancel(immutables);
+        swapData.srcClone.cancel(swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBob + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(alice.addr), balanceAlice + MAKING_AMOUNT);
         assertEq(usdc.balanceOf(receiver), balanceReceiver);
-        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
     function test_CancelPublicSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         uint256 balanceThis = address(this).balance;
         uint256 balanceAlice = usdc.balanceOf(alice.addr);
-        uint256 balanceEscrow = usdc.balanceOf(address(srcClone));
+        uint256 balanceEscrow = usdc.balanceOf(address(swapData.srcClone));
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 100);
         vm.expectEmit();
         emit IBaseEscrow.EscrowCancelled();
-        srcClone.publicCancel(immutables);
+        swapData.srcClone.publicCancel(swapData.immutables);
 
         assertEq(address(this).balance, balanceThis + SRC_SAFETY_DEPOSIT);
         assertEq(usdc.balanceOf(alice.addr), balanceAlice + MAKING_AMOUNT);
-        assertEq(usdc.balanceOf(address(srcClone)), balanceEscrow - (MAKING_AMOUNT));
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), balanceEscrow - (MAKING_AMOUNT));
     }
 
     function test_NoCancelDuringWithdrawalSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // cancel
         vm.prank(bob.addr);
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.cancel(immutables);
+        swapData.srcClone.cancel(swapData.immutables);
     }
 
     function test_NoPublicCancelDuringPrivateCancellationSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // cancel during private cancellation period
         vm.warp(block.timestamp + srcTimelocks.cancellation + 100);
         vm.expectRevert(IBaseEscrow.InvalidTime.selector);
-        srcClone.publicCancel(immutables);
+        swapData.srcClone.publicCancel(swapData.immutables);
     }
 
     // During non-public cancel period
     function test_NoAnyoneCancelDuringResolverCancelSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
-        srcClone.cancel(immutables);
+        swapData.srcClone.cancel(swapData.immutables);
     }
 
     function test_CancelDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.startPrank(bob.addr);
@@ -1144,8 +1003,8 @@ contract EscrowTest is BaseSetup {
 
     function test_CancelDstDifferentTarget() public {
         address target = charlie.addr;
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, target, address(dai)
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDstCustom(
+            HASHED_SECRET, TAKING_AMOUNT, alice.addr, target, address(dai), DST_SAFETY_DEPOSIT
         );
 
         // deploy escrow
@@ -1175,8 +1034,8 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_CancelDstWithNativeToken() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0)
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDstCustom(
+            HASHED_SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0), DST_SAFETY_DEPOSIT
         );
 
         // deploy escrow
@@ -1198,9 +1057,7 @@ contract EscrowTest is BaseSetup {
 
     // Only resolver can cancel
     function test_NoCancelByAnyoneDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -1213,9 +1070,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoCancelDuringWithdrawalDst() public {
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.startPrank(bob.addr);
@@ -1229,67 +1084,51 @@ contract EscrowTest is BaseSetup {
 
     function test_NoFailedNativeTokenTransferCancelSrc() public {
         // deploy escrow
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 100);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
-        srcClone.publicCancel(immutables);
+        swapData.srcClone.publicCancel(swapData.immutables);
     }
 
     function test_NoCallsWithInvalidImmutables() public {
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            bytes memory extraData,
-            /* bytes memory extension */,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutablesSrc
-        ) = _prepareDataSrc(HASHED_SECRET, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
-        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
-        usdc.transfer(address(srcClone), MAKING_AMOUNT);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
         // deploy src escrow
         vm.prank(address(limitOrderProtocol));
         escrowFactory.postInteraction(
-            order,
+            swapData.order,
             "", // extension
-            orderHash,
+            swapData.orderHash,
             bob.addr, // taker
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0, // remainingMakingAmount
-            extraData
+            swapData.extraData
         );
 
         // deploy dst escrow
@@ -1298,9 +1137,9 @@ contract EscrowTest is BaseSetup {
 
         // withdraw src
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 10);
-        immutablesSrc.amount = TAKING_AMOUNT;
+        swapData.immutables.amount = TAKING_AMOUNT;
         vm.expectRevert(IBaseEscrow.InvalidImmutables.selector);
-        srcClone.withdraw(SECRET, immutablesSrc);
+        swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         // withdraw dst
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
@@ -1311,7 +1150,7 @@ contract EscrowTest is BaseSetup {
         // cancel src
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         vm.expectRevert(IBaseEscrow.InvalidImmutables.selector);
-        srcClone.cancel(immutablesSrc);
+        swapData.srcClone.cancel(swapData.immutables);
 
         // cancel dst
         vm.warp(block.timestamp + dstTimelocks.cancellation + 10);
@@ -1322,7 +1161,7 @@ contract EscrowTest is BaseSetup {
 
         // rescue src
         vm.expectRevert(IBaseEscrow.InvalidImmutables.selector);
-        srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, immutablesSrc);
+        swapData.srcClone.rescueFunds(address(usdc), SRC_SAFETY_DEPOSIT, swapData.immutables);
 
         // rescue dst
         vm.expectRevert(IBaseEscrow.InvalidImmutables.selector);

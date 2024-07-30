@@ -4,12 +4,9 @@ pragma solidity 0.8.23;
 import { Test } from "forge-std/Test.sol";
 
 import { IWETH, LimitOrderProtocol } from "limit-order-protocol/contracts/LimitOrderProtocol.sol";
-import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
-import { MakerTraits, MakerTraitsLib } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
-import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
 import { WrappedTokenMock } from "limit-order-protocol/contracts/mocks/WrappedTokenMock.sol";
 import { IFeeBank } from "limit-order-settlement/contracts/interfaces/IFeeBank.sol";
-import { Address, AddressLib } from "solidity-utils/contracts/libraries/AddressLib.sol";
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
 
@@ -17,89 +14,15 @@ import { EscrowDst } from "../../contracts/EscrowDst.sol";
 import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
 import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
 import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
-import { ERC20True } from "../../contracts/mocks/ERC20True.sol";
 import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
 import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
-import { Timelocks, TimelocksSettersLib } from "./libraries/TimelocksSettersLib.sol";
+import { Utils } from "./Utils.sol";
+import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
+import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
 
 
 /* solhint-disable max-states-count */
-contract BaseSetup is Test {
-    using AddressLib for Address;
-    using MakerTraitsLib for MakerTraits;
-    using TimelocksSettersLib for Timelocks;
-
-    /**
-     * Timelocks for the source chain.
-     * withdrawal: Seconds between `deployedAt` and the start of the withdrawal period.
-     * cancellation: Seconds between `deployedAt` and the start of the cancellation period.
-     * publicCancellation: Seconds between `deployedAt` and the start of the public cancellation period.
-     */
-    struct SrcTimelocks {
-        uint32 withdrawal;
-        uint32 publicWithdrawal;
-        uint32 cancellation;
-        uint32 publicCancellation;
-    }
-
-    /**
-     * Timelocks for the destination chain.
-     * withdrawal: Seconds between `deployedAt` and the start of the withdrawal period.
-     * publicWithdrawal: Seconds between `deployedAt` and the start of the public withdrawal period.
-     * cancellation: Seconds between `deployedAt` and the start of the cancellation period.
-     */
-    struct DstTimelocks {
-        uint32 withdrawal;
-        uint32 publicWithdrawal;
-        uint32 cancellation;
-    }
-
-    struct InteractionParams {
-        bytes makerAssetSuffix;
-        bytes takerAssetSuffix;
-        bytes makingAmountData;
-        bytes takingAmountData;
-        bytes predicate;
-        bytes permit;
-        bytes preInteraction;
-        bytes postInteraction;
-    }
-
-    struct MakerTraitsParams {
-        address allowedSender;
-        bool shouldCheckEpoch;
-        bool allowPartialFill;
-        bool allowMultipleFills;
-        bool usePermit2;
-        bool unwrapWeth;
-        uint40 expiry;
-        uint40 nonce;
-        uint40 series;
-    }
-
-    struct Wallet {
-        address addr;
-        uint256 privateKey;
-    }
-
-    // Limit order protocol flags
-    uint256 internal constant _NO_PARTIAL_FILLS_FLAG = 1 << 255;
-    uint256 internal constant _ALLOW_MULTIPLE_FILLS_FLAG = 1 << 254;
-    uint256 internal constant _PRE_INTERACTION_CALL_FLAG = 1 << 252;
-    uint256 internal constant _POST_INTERACTION_CALL_FLAG = 1 << 251;
-    uint256 internal constant _NEED_CHECK_EPOCH_MANAGER_FLAG = 1 << 250;
-    uint256 internal constant _HAS_EXTENSION_FLAG = 1 << 249;
-    uint256 internal constant _USE_PERMIT2_FLAG = 1 << 248;
-    uint256 internal constant _UNWRAP_WETH_FLAG = 1 << 247;
-    // Taker traits flags
-    uint256 private constant _MAKER_AMOUNT_FLAG_TT = 1 << 255;
-    uint256 private constant _UNWRAP_WETH_FLAG_TT = 1 << 254;
-    uint256 private constant _SKIP_ORDER_PERMIT_FLAG = 1 << 253;
-    uint256 private constant _USE_PERMIT2_FLAG_TT = 1 << 252;
-    uint256 private constant _ARGS_HAS_TARGET = 1 << 251;
-    uint256 private constant _ARGS_EXTENSION_LENGTH_OFFSET = 224;
-    uint256 private constant _ARGS_INTERACTION_LENGTH_OFFSET = 200;
-
+contract BaseSetup is Test, Utils {
     /* solhint-disable private-vars-leading-underscore */
     bytes32 internal constant SECRET = keccak256(abi.encodePacked("secret"));
     bytes32 internal constant HASHED_SECRET = keccak256(abi.encodePacked(SECRET));
@@ -110,10 +33,6 @@ contract BaseSetup is Test {
     uint32 internal constant RESOLVER_FEE = 100;
     uint32 internal constant RESCUE_DELAY = 604800; // 7 days
 
-    bytes32 internal constant ZKSYNC_PROFILE_HASH = keccak256(abi.encodePacked("zksync"));
-
-    Wallet[] internal users;
-    uint256 internal nextUser = uint256(keccak256(abi.encodePacked("user address")));
     Wallet internal alice;
     Wallet internal bob;
     Wallet internal charlie;
@@ -129,16 +48,24 @@ contract BaseSetup is Test {
     EscrowDst internal escrowDst;
     IFeeBank internal feeBank;
 
+    address[] internal resolvers;
+
+    Address public dstWithParts;
+
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    SrcTimelocks internal srcTimelocks = SrcTimelocks({
+    CrossChainTestLib.SrcTimelocks internal srcTimelocks = CrossChainTestLib.SrcTimelocks({
         withdrawal: 120,
         publicWithdrawal: 500,
         cancellation: 1020,
         publicCancellation: 1530
     });
-    DstTimelocks internal dstTimelocks = DstTimelocks({ withdrawal: 300, publicWithdrawal: 540, cancellation: 900 });
+    CrossChainTestLib.DstTimelocks internal dstTimelocks = CrossChainTestLib.DstTimelocks({
+        withdrawal: 300,
+        publicWithdrawal: 540,
+        cancellation: 900
+    });
     bytes internal auctionPoints = abi.encodePacked(
         uint24(800000), uint16(100),
         uint24(700000), uint16(100),
@@ -153,7 +80,7 @@ contract BaseSetup is Test {
 
     function setUp() public virtual {
         bytes32 profileHash = keccak256(abi.encodePacked(vm.envString("FOUNDRY_PROFILE")));
-        if (profileHash == ZKSYNC_PROFILE_HASH) isZkSync = true;
+        if (profileHash == CrossChainTestLib.ZKSYNC_PROFILE_HASH) isZkSync = true;
         _createUsers(3);
 
         alice = users[0];
@@ -163,12 +90,17 @@ contract BaseSetup is Test {
         charlie = users[2];
         vm.label(charlie.addr, "Charlie");
 
+        resolvers = new address[](1);
+        resolvers[0] = bob.addr;
+
         _deployTokens();
         dai.mint(bob.addr, 1000 ether);
         usdc.mint(alice.addr, 1000 ether);
         inch.mint(bob.addr, 1000 ether);
 
-        _setTimelocks();
+        (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
+
+        dstWithParts = Address.wrap(uint160(address(dai)));
 
         _deployContracts();
 
@@ -181,23 +113,6 @@ contract BaseSetup is Test {
         usdc.approve(address(limitOrderProtocol), 1000 ether);
     }
 
-    function _getNextUserAddress() internal returns (Wallet memory) {
-        address addr = vm.addr(nextUser);
-        Wallet memory user = Wallet(addr, nextUser);
-        nextUser = uint256(keccak256(abi.encodePacked(nextUser)));
-        return user;
-    }
-
-    // create users with 100 ETH balance each
-    function _createUsers(uint256 userNum) internal {
-        users = new Wallet[](userNum);
-        for (uint256 i = 0; i < userNum; i++) {
-            Wallet memory user = _getNextUserAddress();
-            vm.deal(user.addr, 100 ether);
-            users[i] = user;
-        }
-    }
-
     function _deployTokens() internal {
         dai = new TokenMock("DAI", "DAI");
         vm.label(address(dai), "DAI");
@@ -207,29 +122,6 @@ contract BaseSetup is Test {
         vm.label(address(weth), "WETH");
         inch = new TokenMock("1INCH", "1INCH");
         vm.label(address(inch), "1INCH");
-    }
-
-    function _setTimelocks() internal {
-        timelocks = TimelocksSettersLib.init(
-            srcTimelocks.withdrawal,
-            srcTimelocks.publicWithdrawal,
-            srcTimelocks.cancellation,
-            srcTimelocks.publicCancellation,
-            dstTimelocks.withdrawal,
-            dstTimelocks.publicWithdrawal,
-            dstTimelocks.cancellation,
-            uint32(block.timestamp)
-        );
-        timelocksDst = TimelocksSettersLib.init(
-            0,
-            0,
-            0,
-            0,
-            dstTimelocks.withdrawal,
-            dstTimelocks.publicWithdrawal,
-            dstTimelocks.cancellation,
-            uint32(block.timestamp)
-        );
     }
 
     function _deployContracts() internal {
@@ -250,71 +142,17 @@ contract BaseSetup is Test {
         vm.label(address(feeBank), "FeeBank");
     }
 
-    function _buidDynamicData(
-        bytes32 hashlock,
-        uint256 chainId,
-        Address token,
-        uint256 srcSafetyDeposit,
-        uint256 dstSafetyDeposit
-    ) internal view returns (bytes memory) {
-        return (
-            abi.encode(
-                hashlock,
-                chainId,
-                token,
-                (srcSafetyDeposit << 128) | dstSafetyDeposit,
-                timelocks
-            )
-        );
-    }
-
-    function _buildAuctionDetails(
-        uint24 gasBumpEstimate,
-        uint32 gasPriceEstimate,
-        uint32 startTime,
-        uint24 duration,
-        uint32 delay,
-        uint24 initialRateBump
-    ) internal view returns (bytes memory auctionDetails) {
-        auctionDetails = abi.encodePacked(
-            gasBumpEstimate,
-            gasPriceEstimate,
-            startTime + delay,
-            duration,
-            initialRateBump,
-            auctionPoints
-        );
-    }
-    function _prepareDataSrc(
-        bytes32 secret,
-        uint256 srcAmount,
-        uint256 dstAmount,
-        uint256 srcSafetyDeposit,
-        uint256 dstSafetyDeposit,
-        address receiver,
-        bool fakeOrder,
-        bool allowMultipleFills
-    ) internal returns(
-        IOrderMixin.Order memory order,
-        bytes32 orderHash,
-        bytes memory extraData,
-        bytes memory extension,
-        EscrowSrc srcClone,
-        IBaseEscrow.Immutables memory immutables
-    ) {
-        address[] memory resolvers = new address[](1);
-        resolvers[0] = bob.addr;
-        (order, orderHash, extraData, extension, srcClone, immutables) = _prepareDataSrcCustom(
-            secret,
-            srcAmount,
-            dstAmount,
-            srcSafetyDeposit,
-            dstSafetyDeposit,
-            Address.wrap(uint160(address(dai))),
-            receiver,
+    function _prepareDataSrc(bool fakeOrder, bool allowMultipleFills) internal returns(CrossChainTestLib.SwapData memory) {
+        return _prepareDataSrcCustom(
+            HASHED_SECRET,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
+            dstWithParts,
+            address(0),
             fakeOrder,
-            allowMultipleFills,
-            resolvers
+            allowMultipleFills
         );
     }
 
@@ -327,254 +165,67 @@ contract BaseSetup is Test {
         Address dstToken,
         address receiver,
         bool fakeOrder,
-        bool allowMultipleFills,
-        address[] memory resolvers
-    ) internal returns(
-        IOrderMixin.Order memory order,
-        bytes32 orderHash,
-        bytes memory extraData,
-        bytes memory extension,
-        EscrowSrc srcClone,
-        IBaseEscrow.Immutables memory immutables
-    ) {
-        extraData = _buidDynamicData(
-            hashlock,
-            block.chainid,
-            dstToken,
-            srcSafetyDeposit,
-            dstSafetyDeposit
+        bool allowMultipleFills
+    ) internal returns(CrossChainTestLib.SwapData memory swapData) {
+        swapData = CrossChainTestLib.prepareDataSrc(
+            CrossChainTestLib.OrderDetails({
+                maker: alice.addr,
+                receiver: receiver,
+                srcToken: address(usdc),
+                dstToken: dstToken,
+                srcAmount: srcAmount,
+                dstAmount: dstAmount,
+                srcSafetyDeposit: srcSafetyDeposit,
+                dstSafetyDeposit: dstSafetyDeposit,
+                resolvers: resolvers,
+                resolverFee: RESOLVER_FEE,
+                auctionDetails: CrossChainTestLib.buildAuctionDetails(
+                    0, // gasBumpEstimate
+                    0, // gasPriceEstimate
+                    uint32(block.timestamp), // startTime
+                    1800, // duration: 30 minutes
+                    0, // delay
+                    900000, // initialRateBump
+                    auctionPoints
+                )
+            }),
+            CrossChainTestLib.EscrowDetails({
+                hashlock: hashlock,
+                timelocks: timelocks,
+                fakeOrder: fakeOrder,
+                allowMultipleFills: allowMultipleFills
+            }),
+            address(escrowFactory),
+            limitOrderProtocol
         );
-
-        bytes memory whitelist = abi.encodePacked(uint32(block.timestamp)); // auction start time
-        for (uint256 i = 0; i < resolvers.length; i++) {
-            whitelist = abi.encodePacked(whitelist, uint80(uint160(resolvers[i])), uint16(0)); // resolver address, time delta
-        }
-
-        if (fakeOrder) {
-            order = IOrderMixin.Order({
-                salt: 0,
-                maker: Address.wrap(uint160(alice.addr)),
-                receiver: Address.wrap(uint160(receiver)),
-                makerAsset: Address.wrap(uint160(address(usdc))),
-                takerAsset: Address.wrap(uint160(address(dai))),
-                makingAmount: srcAmount,
-                takingAmount: dstAmount,
-                makerTraits: MakerTraits.wrap(0)
-            });
-        } else {
-            bytes memory postInteractionData = abi.encodePacked(
-                address(escrowFactory),
-                RESOLVER_FEE,
-                whitelist,
-                bytes1(0x08) | bytes1(0x01), // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
-                extraData
-            );
-
-            bytes memory auctionDetails = _buildAuctionDetails(
-                0, // gasBumpEstimate
-                0, // gasPriceEstimate
-                uint32(block.timestamp), // startTime
-                1800, // duration: 30 minutes
-                0, // delay
-                900000 // initialRateBump
-            );
-            bytes memory gettersAmountData = abi.encodePacked(address(escrowFactory), auctionDetails);
-
-            (order, extension) = _buildOrder(
-                alice.addr,
-                receiver,
-                address(usdc),
-                address(new ERC20True()),
-                srcAmount,
-                dstAmount,
-                MakerTraits.wrap(0),
-                allowMultipleFills,
-                InteractionParams("", "", gettersAmountData, gettersAmountData, "", "", "", postInteractionData),
-                ""
-            );
-
-            dstAmount = escrowFactory.getTakingAmount(order, extension, orderHash, resolvers[0], srcAmount, srcAmount, auctionDetails);
-        }
-
-        orderHash = limitOrderProtocol.hashOrder(order);
-
-        immutables = IBaseEscrow.Immutables({
-            orderHash: orderHash,
-            amount: srcAmount,
-            maker: Address.wrap(uint160(alice.addr)),
-            taker: Address.wrap(uint160(resolvers[0])),
-            token: Address.wrap(uint160(address(usdc))),
-            hashlock: hashlock,
-            safetyDeposit: srcSafetyDeposit,
-            timelocks: timelocks
-        });
-
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-        // 0x08 - whitelist length = 1, 0x01 - turn on resolver fee
-        extraData = abi.encodePacked(RESOLVER_FEE, whitelist, bytes1(0x08) | bytes1(0x01), extraData);
     }
 
     function _prepareDataDst(
-        bytes32 secret,
+    ) internal view returns (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
+        return _prepareDataDstCustom(HASHED_SECRET, TAKING_AMOUNT, alice.addr, resolvers[0], address(dai), DST_SAFETY_DEPOSIT);
+    }
+
+    function _prepareDataDstCustom(
+        bytes32 hashlock,
         uint256 amount,
         address maker,
         address taker,
-        address token
+        address token,
+        uint256 safetyDeposit
     ) internal view returns (IBaseEscrow.Immutables memory, uint256, EscrowDst) {
-        (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp) = _buildDstEscrowImmutables(
-            secret, amount, maker, taker, token
+        bytes32 orderHash = bytes32(block.timestamp); // fake order hash
+        uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
+        IBaseEscrow.Immutables memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
+            orderHash,
+            hashlock,
+            amount,
+            maker,
+            taker,
+            token,
+            safetyDeposit,
+            timelocksDst
         );
         return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
-    }
-
-    function _buildDstEscrowImmutables(
-        bytes32 secret,
-        uint256 amount,
-        address maker,
-        address taker,
-        address token
-    ) internal view returns (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp) {
-        bytes32 hashlock = keccak256(abi.encodePacked(secret));
-        uint256 safetyDeposit = amount * 10 / 100;
-        srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
-
-        immutables = IBaseEscrow.Immutables({
-            orderHash: bytes32(block.timestamp), // fake order hash
-            hashlock: hashlock,
-            maker: Address.wrap(uint160(maker)),
-            taker: Address.wrap(uint160(taker)),
-            token: Address.wrap(uint160(token)),
-            amount: amount,
-            safetyDeposit: safetyDeposit,
-            timelocks: timelocksDst
-        });
-    }
-
-    function _buildMakerTraits(MakerTraitsParams memory params) internal pure returns (MakerTraits) {
-        uint256 data = 0
-            | params.series << 160
-            | params.nonce << 120
-            | params.expiry << 80
-            | uint160(params.allowedSender) & ((1 << 80) - 1)
-            | (params.unwrapWeth == true ? _UNWRAP_WETH_FLAG : 0)
-            | (params.allowMultipleFills == true ? _ALLOW_MULTIPLE_FILLS_FLAG : 0)
-            | (params.allowPartialFill == false ? _NO_PARTIAL_FILLS_FLAG : 0)
-            | (params.shouldCheckEpoch == true ? _NEED_CHECK_EPOCH_MANAGER_FLAG : 0)
-            | (params.usePermit2 == true ? _USE_PERMIT2_FLAG : 0);
-        return MakerTraits.wrap(data);
-    }
-
-    function _buildOrder(
-        address maker,
-        address receiver,
-        address makerAsset,
-        address takerAsset,
-        uint256 makingAmount,
-        uint256 takingAmount,
-        MakerTraits makerTraits,
-        bool allowMultipleFills,
-        InteractionParams memory interactions,
-        bytes memory customData
-    ) internal pure returns (IOrderMixin.Order memory, bytes memory) {
-        MakerTraitsParams memory makerTraitsParams = MakerTraitsParams({
-            allowedSender: address(0),
-            shouldCheckEpoch: false,
-            allowPartialFill: true,
-            allowMultipleFills: allowMultipleFills,
-            usePermit2: false,
-            unwrapWeth: false,
-            expiry: 0,
-            nonce: 0,
-            series: 0
-        });
-        bytes[8] memory allInteractions = [
-            interactions.makerAssetSuffix,
-            interactions.takerAssetSuffix,
-            interactions.makingAmountData,
-            interactions.takingAmountData,
-            interactions.predicate,
-            interactions.permit,
-            interactions.preInteraction,
-            interactions.postInteraction
-        ];
-        bytes memory allInteractionsConcat = bytes.concat(
-            interactions.makerAssetSuffix,
-            interactions.takerAssetSuffix,
-            interactions.makingAmountData,
-            interactions.takingAmountData,
-            interactions.predicate,
-            interactions.permit,
-            interactions.preInteraction,
-            interactions.postInteraction,
-            customData
-        );
-
-        bytes32 offsets = 0;
-        uint256 sum = 0;
-        for (uint256 i = 0; i < allInteractions.length; i++) {
-            if (allInteractions[i].length > 0) {
-                sum += allInteractions[i].length;
-            }
-            offsets |= bytes32(sum << (i * 32));
-        }
-
-        bytes memory extension = "";
-        if (allInteractionsConcat.length > 0) {
-            extension = abi.encodePacked(offsets, allInteractionsConcat);
-        }
-        if (MakerTraits.unwrap(makerTraits) == 0) {
-            makerTraits = _buildMakerTraits(makerTraitsParams);
-        }
-
-        uint256 salt = 1;
-        if (extension.length > 0) {
-            salt = uint256(keccak256(extension)) & ((1 << 160) - 1);
-            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | _HAS_EXTENSION_FLAG);
-        }
-
-        if (interactions.preInteraction.length > 0) {
-            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | _PRE_INTERACTION_CALL_FLAG);
-        }
-
-        if (interactions.postInteraction.length > 0) {
-            makerTraits = MakerTraits.wrap(MakerTraits.unwrap(makerTraits) | _POST_INTERACTION_CALL_FLAG);
-        }
-
-        IOrderMixin.Order memory order = IOrderMixin.Order({
-            salt: salt,
-            maker: Address.wrap(uint160(maker)),
-            receiver: Address.wrap(uint160(receiver)),
-            makerAsset: Address.wrap(uint160(makerAsset)),
-            takerAsset: Address.wrap(uint160(takerAsset)),
-            makingAmount: makingAmount,
-            takingAmount: takingAmount,
-            makerTraits: makerTraits
-        });
-        return (order, extension);
-    }
-
-    function _buildTakerTraits(
-        bool makingAmount,
-        bool unwrapWeth,
-        bool skipMakerPermit,
-        bool usePermit2,
-        address target,
-        bytes memory extension,
-        bytes memory interaction,
-        uint256 threshold
-    ) internal pure returns (TakerTraits, bytes memory) {
-        uint256 data = threshold
-            | (makingAmount ? _MAKER_AMOUNT_FLAG_TT : 0)
-            | (unwrapWeth ? _UNWRAP_WETH_FLAG_TT : 0)
-            | (skipMakerPermit ? _SKIP_ORDER_PERMIT_FLAG : 0)
-            | (usePermit2 ? _USE_PERMIT2_FLAG_TT : 0)
-            | (target != address(0) ? _ARGS_HAS_TARGET : 0)
-            | (extension.length << _ARGS_EXTENSION_LENGTH_OFFSET)
-            | (interaction.length << _ARGS_INTERACTION_LENGTH_OFFSET);
-        TakerTraits traits = TakerTraits.wrap(data);
-        bytes memory targetBytes = target != address(0) ? abi.encodePacked(target) : abi.encodePacked("");
-        bytes memory args = abi.encodePacked(targetBytes, extension, interaction);
-        return (traits, args);
     }
 }
 

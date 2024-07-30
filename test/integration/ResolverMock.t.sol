@@ -2,22 +2,22 @@
 
 pragma solidity 0.8.23;
 
-import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
-import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
-import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
-import { Timelocks } from "../../contracts/libraries/TimelocksLib.sol";
-import { IResolverMock, ResolverMock } from "../../contracts/mocks/ResolverMock.sol";
-import { BaseSetup, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
+import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
+import { IResolverMock, ResolverMock } from "contracts/mocks/ResolverMock.sol";
+import { BaseSetup } from "../utils/BaseSetup.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract IntegrationResolverMockTest is BaseSetup {
     /* solhint-disable-next-line private-vars-leading-underscore */
     address private resolverMock;
-    Address public dstWithParts;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
         resolverMock = address(new ResolverMock(escrowFactory, limitOrderProtocol, address(this)));
+        resolvers[0] = address(resolverMock);
         vm.label(resolverMock, "resolverMock");
         vm.deal(resolverMock, 100 ether);
         dai.mint(resolverMock, 1000 ether);
@@ -26,60 +26,38 @@ contract IntegrationResolverMockTest is BaseSetup {
         inch.approve(address(feeBank), 1000 ether);
         feeBank.deposit(10 ether);
         vm.stopPrank();
-        dstWithParts = Address.wrap(uint160(address(dai)));
     }
 
     /* solhint-disable func-name-mixedcase */
 
     function test_MockDeploySrc() public {
         vm.warp(1710288000); // set current timestamp
-        _setTimelocks();
+        (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
-        address[] memory resolvers = new address[](1);
-        resolvers[0] = resolverMock;
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustom(
-            HASHED_SECRET,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            false,
-            resolvers
-        );
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             address(0), // target
-            extension, // extension
+            swapData.extension,
             "", // interaction
             0 // threshold
         );
 
-        immutables.timelocks = Timelocks.wrap(Timelocks.unwrap(immutables.timelocks) & ~(uint256(type(uint32).max)));
+        swapData.immutables.timelocks = Timelocks.wrap(Timelocks.unwrap(swapData.immutables.timelocks) & ~(uint256(type(uint32).max)));
 
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
 
         IResolverMock(resolverMock).deploySrc(
-            immutables,
-            order,
+            swapData.immutables,
+            swapData.order,
             r,
             vs,
             MAKING_AMOUNT,
@@ -87,51 +65,31 @@ contract IntegrationResolverMockTest is BaseSetup {
             args
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), MAKING_AMOUNT);
+        assertEq(address(swapData.srcClone).balance, SRC_SAFETY_DEPOSIT);
     }
 
     function test_MockWithdrawToSrc() public {
-        address[] memory resolvers = new address[](1);
-        resolvers[0] = resolverMock;
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustom(
-            HASHED_SECRET,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            false,
-            resolvers
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             address(0), // target
-            extension, // extension
+            swapData.extension, // swapData.extension
             "", // interaction
             0 // threshold
         );
 
         // deploy escrow
         IResolverMock(resolverMock).deploySrc(
-            immutables,
-            order,
+            swapData.immutables,
+            swapData.order,
             r,
             vs,
             MAKING_AMOUNT,
@@ -142,64 +100,44 @@ contract IntegrationResolverMockTest is BaseSetup {
         uint256 aliceBalance = usdc.balanceOf(alice.addr);
         uint256 resolverBalanceNative = resolverMock.balance;
 
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), MAKING_AMOUNT);
+        assertEq(address(swapData.srcClone).balance, SRC_SAFETY_DEPOSIT);
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);
-        targets[0] = address(srcClone);
-        arguments[0] = abi.encodePacked(srcClone.withdrawTo.selector, abi.encode(SECRET, alice.addr, immutables));
+        targets[0] = address(swapData.srcClone);
+        arguments[0] = abi.encodePacked(swapData.srcClone.withdrawTo.selector, abi.encode(SECRET, alice.addr, swapData.immutables));
 
         skip(srcTimelocks.withdrawal + 10);
         IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(usdc.balanceOf(alice.addr), aliceBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
     }
 
     function test_MockCancelSrc() public {
-        address[] memory resolvers = new address[](1);
-        resolvers[0] = resolverMock;
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustom(
-            HASHED_SECRET,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            false,
-            resolvers
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             address(0), // target
-            extension, // extension
+            swapData.extension, // swapData.extension
             "", // interaction
             0 // threshold
         );
 
         // deploy escrow
         IResolverMock(resolverMock).deploySrc(
-            immutables,
-            order,
+            swapData.immutables,
+            swapData.order,
             r,
             vs,
             MAKING_AMOUNT,
@@ -210,13 +148,13 @@ contract IntegrationResolverMockTest is BaseSetup {
         uint256 aliceBalance = usdc.balanceOf(alice.addr);
         uint256 resolverBalanceNative = resolverMock.balance;
 
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), MAKING_AMOUNT);
+        assertEq(address(swapData.srcClone).balance, SRC_SAFETY_DEPOSIT);
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);
-        targets[0] = address(srcClone);
-        arguments[0] = abi.encodePacked(srcClone.cancel.selector, abi.encode(immutables));
+        targets[0] = address(swapData.srcClone);
+        arguments[0] = abi.encodePacked(swapData.srcClone.cancel.selector, abi.encode(swapData.immutables));
 
         skip(srcTimelocks.cancellation + 10);
         // Cancel escrow
@@ -224,54 +162,36 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         assertEq(usdc.balanceOf(alice.addr), aliceBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
     }
 
     function test_MockPublicCancelSrc() public {
-        address[] memory resolvers = new address[](2);
+        resolvers = new address[](2);
         resolvers[0] = bob.addr;
         resolvers[1] = resolverMock;
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustom(
-            HASHED_SECRET,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            false,
-            resolvers
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension, // extension
+            address(swapData.srcClone), // target
+            swapData.extension, // swapData.extension
             "", // interaction
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             MAKING_AMOUNT, // amount
@@ -282,13 +202,13 @@ contract IntegrationResolverMockTest is BaseSetup {
         uint256 aliceBalance = usdc.balanceOf(alice.addr);
         uint256 resolverBalanceNative = resolverMock.balance;
 
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), MAKING_AMOUNT);
+        assertEq(address(swapData.srcClone).balance, SRC_SAFETY_DEPOSIT);
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);
-        targets[0] = address(srcClone);
-        arguments[0] = abi.encodePacked(srcClone.cancel.selector, abi.encode(immutables));
+        targets[0] = address(swapData.srcClone);
+        arguments[0] = abi.encodePacked(swapData.srcClone.cancel.selector, abi.encode(swapData.immutables));
 
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         // Resolver is bob, so unable to cancel escrow
@@ -296,57 +216,37 @@ contract IntegrationResolverMockTest is BaseSetup {
         IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
 
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 10);
-        arguments[0] = abi.encodePacked(srcClone.publicCancel.selector, abi.encode(immutables));
+        arguments[0] = abi.encodePacked(swapData.srcClone.publicCancel.selector, abi.encode(swapData.immutables));
         // Now resolver mock is able to cancel escrow
         IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(usdc.balanceOf(alice.addr), aliceBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
     }
 
     function test_MockRescueFundsSrc() public {
-        address[] memory resolvers = new address[](1);
-        resolvers[0] = resolverMock;
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IEscrowSrc srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrcCustom(
-            HASHED_SECRET,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            false,
-            resolvers
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             address(0), // target
-            extension, // extension
+            swapData.extension, // swapData.extension
             "", // interaction
             0 // threshold
         );
 
         // deploy escrow
         IResolverMock(resolverMock).deploySrc(
-            immutables,
-            order,
+            swapData.immutables,
+            swapData.order,
             r,
             vs,
             MAKING_AMOUNT,
@@ -357,15 +257,21 @@ contract IntegrationResolverMockTest is BaseSetup {
         uint256 resolverBalance = usdc.balanceOf(resolverMock);
         uint256 resolverBalanceNative = resolverMock.balance;
 
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
-        assertEq(address(srcClone).balance, SRC_SAFETY_DEPOSIT);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), MAKING_AMOUNT);
+        assertEq(address(swapData.srcClone).balance, SRC_SAFETY_DEPOSIT);
 
         address[] memory targets = new address[](2);
         bytes[] memory arguments = new bytes[](2);
-        targets[0] = address(srcClone);
-        targets[1] = address(srcClone);
-        arguments[0] = abi.encodePacked(srcClone.rescueFunds.selector, abi.encode(address(usdc), MAKING_AMOUNT, immutables));
-        arguments[1] = abi.encodePacked(srcClone.rescueFunds.selector, abi.encode(address(0), SRC_SAFETY_DEPOSIT, immutables));
+        targets[0] = address(swapData.srcClone);
+        targets[1] = address(swapData.srcClone);
+        arguments[0] = abi.encodePacked(
+            swapData.srcClone.rescueFunds.selector,
+            abi.encode(address(usdc), MAKING_AMOUNT, swapData.immutables)
+        );
+        arguments[1] = abi.encodePacked(
+            swapData.srcClone.rescueFunds.selector,
+            abi.encode(address(0), SRC_SAFETY_DEPOSIT, swapData.immutables)
+        );
 
         skip(RESCUE_DELAY + 10);
         // Rescue USDC and native tokens
@@ -373,17 +279,15 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         assertEq(usdc.balanceOf(resolverMock), resolverBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
-        assertEq(usdc.balanceOf(address(srcClone)), 0);
-        assertEq(address(srcClone).balance, 0);
+        assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
+        assertEq(address(swapData.srcClone).balance, 0);
     }
 
     function test_MockDeployDst() public {
         (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
         IBaseEscrow dstClone
-        ) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
-        );
+        ) = _prepareDataDst();
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);
@@ -405,9 +309,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
         IBaseEscrow dstClone
-        ) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
-        );
+        ) = _prepareDataDst();
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);
@@ -442,12 +344,11 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockPublicWithdrawDst() public {
+        resolvers[0] = bob.addr;
         (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
         IEscrowDst dstClone
-        ) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        ) = _prepareDataDst();
 
         vm.prank(bob.addr);
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
@@ -483,9 +384,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
         IBaseEscrow dstClone
-        ) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
-        );
+        ) = _prepareDataDst();
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);
@@ -523,9 +422,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         (IBaseEscrow.Immutables memory immutables,
         uint256 srcCancellationTimestamp,
         IBaseEscrow dstClone
-        ) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, resolverMock, address(dai)
-        );
+        ) = _prepareDataDst();
 
         address[] memory targets = new address[](1);
         bytes[] memory arguments = new bytes[](1);

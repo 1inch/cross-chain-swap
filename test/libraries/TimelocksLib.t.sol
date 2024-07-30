@@ -3,13 +3,14 @@ pragma solidity 0.8.23;
 
 import { stdError } from "forge-std/StdError.sol";
 
-import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
-import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
+import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 
-import { Timelocks } from "../../contracts/libraries/TimelocksLib.sol";
+import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { TimelocksSettersLib } from "../utils/libraries/TimelocksSettersLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 import { TimelocksLibMock } from "../utils/mocks/TimelocksLibMock.sol";
 
 contract TimelocksLibTest is BaseSetup {
@@ -52,12 +53,10 @@ contract TimelocksLibTest is BaseSetup {
     function test_NoTimelocksOverflow() public {
         vm.warp(1710159521); // make it real, it's 0 in foundry
 
-        dstTimelocks = DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 1 });
-        _setTimelocks();
+        dstTimelocks = CrossChainTestLib.DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 1 });
+        (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
-        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst(
-            SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(dai)
-        );
+        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
