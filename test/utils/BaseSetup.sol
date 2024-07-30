@@ -17,7 +17,6 @@ import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.
 import { Utils } from "./Utils.sol";
 import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
-import { WrappedTokenMock } from "./mocks/WrappedTokenMock.sol";
 
 /* solhint-disable max-states-count */
 contract BaseSetup is Test, Utils {
@@ -37,7 +36,6 @@ contract BaseSetup is Test, Utils {
 
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
-    WrappedTokenMock internal weth;
     TokenMock internal inch;
 
     LimitOrderProtocol internal limitOrderProtocol;
@@ -112,14 +110,12 @@ contract BaseSetup is Test, Utils {
         vm.label(address(dai), "DAI");
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
         vm.label(address(usdc), "USDC");
-        weth = new WrappedTokenMock("WETH", "WETH");
-        vm.label(address(weth), "WETH");
         inch = new TokenMock("1INCH", "1INCH");
         vm.label(address(inch), "1INCH");
     }
 
     function _deployContracts() internal {
-        limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
+        limitOrderProtocol = new LimitOrderProtocol(IWETH(address(0)));
 
         if (isZkSync) {
             escrowFactory = new EscrowFactoryZkSync(address(limitOrderProtocol), inch, inch, charlie.addr,  RESCUE_DELAY, RESCUE_DELAY);
