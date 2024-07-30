@@ -16,7 +16,7 @@ import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
 import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
 import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Utils } from "./Utils.sol";
-import { CrossChainLib } from "./libraries/CrossChainLib.sol";
+import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
 
 
@@ -52,13 +52,13 @@ contract BaseSetup is Test, Utils {
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
-    CrossChainLib.SrcTimelocks internal srcTimelocks = CrossChainLib.SrcTimelocks({
+    CrossChainTestLib.SrcTimelocks internal srcTimelocks = CrossChainTestLib.SrcTimelocks({
         withdrawal: 120,
         publicWithdrawal: 500,
         cancellation: 1020,
         publicCancellation: 1530
     });
-    CrossChainLib.DstTimelocks internal dstTimelocks = CrossChainLib.DstTimelocks({
+    CrossChainTestLib.DstTimelocks internal dstTimelocks = CrossChainTestLib.DstTimelocks({
         withdrawal: 300,
         publicWithdrawal: 540,
         cancellation: 900
@@ -77,7 +77,7 @@ contract BaseSetup is Test, Utils {
 
     function setUp() public virtual {
         bytes32 profileHash = keccak256(abi.encodePacked(vm.envString("FOUNDRY_PROFILE")));
-        if (profileHash == CrossChainLib.ZKSYNC_PROFILE_HASH) isZkSync = true;
+        if (profileHash == CrossChainTestLib.ZKSYNC_PROFILE_HASH) isZkSync = true;
         _createUsers(3);
 
         alice = users[0];
@@ -95,7 +95,7 @@ contract BaseSetup is Test, Utils {
         usdc.mint(alice.addr, 1000 ether);
         inch.mint(bob.addr, 1000 ether);
 
-        (timelocks, timelocksDst) = CrossChainLib.setTimelocks(srcTimelocks, dstTimelocks);
+        (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
         _deployContracts();
 
@@ -137,7 +137,7 @@ contract BaseSetup is Test, Utils {
         vm.label(address(feeBank), "FeeBank");
     }
 
-    function _prepareDataSrc(bool fakeOrder, bool allowMultipleFills) internal returns(CrossChainLib.SwapData memory) {
+    function _prepareDataSrc(bool fakeOrder, bool allowMultipleFills) internal returns(CrossChainTestLib.SwapData memory) {
         return _prepareDataSrcCustom(
             HASHED_SECRET,
             MAKING_AMOUNT,
@@ -154,7 +154,7 @@ contract BaseSetup is Test, Utils {
         bytes32 hashlock,
         bool fakeOrder, 
         bool allowMultipleFills
-    ) internal returns(CrossChainLib.SwapData memory) {
+    ) internal returns(CrossChainTestLib.SwapData memory) {
         return _prepareDataSrcCustom(
             hashlock,
             MAKING_AMOUNT,
@@ -176,9 +176,9 @@ contract BaseSetup is Test, Utils {
         address receiver,
         bool fakeOrder,
         bool allowMultipleFills
-    ) internal returns(CrossChainLib.SwapData memory swapData) {
-        swapData = CrossChainLib.prepareDataSrc(
-            CrossChainLib.OrderDetails({
+    ) internal returns(CrossChainTestLib.SwapData memory swapData) {
+        swapData = CrossChainTestLib.prepareDataSrc(
+            CrossChainTestLib.OrderDetails({
                 maker: alice.addr,
                 receiver: receiver,
                 srcToken: address(usdc),
@@ -189,7 +189,7 @@ contract BaseSetup is Test, Utils {
                 dstSafetyDeposit: dstSafetyDeposit,
                 resolvers: resolvers,
                 resolverFee: RESOLVER_FEE,
-                auctionDetails: CrossChainLib.buildAuctionDetails(
+                auctionDetails: CrossChainTestLib.buildAuctionDetails(
                     0, // gasBumpEstimate
                     0, // gasPriceEstimate
                     uint32(block.timestamp), // startTime
@@ -199,7 +199,7 @@ contract BaseSetup is Test, Utils {
                     auctionPoints
                 )
             }),
-            CrossChainLib.EscrowDetails({
+            CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,
                 timelocks: timelocks,
                 fakeOrder: fakeOrder,
@@ -225,7 +225,7 @@ contract BaseSetup is Test, Utils {
     ) internal view returns (IBaseEscrow.Immutables memory, uint256, EscrowDst) {
         bytes32 orderHash = bytes32(block.timestamp); // fake order hash
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
-        IBaseEscrow.Immutables memory escrowImmutables = CrossChainLib.buildDstEscrowImmutables(
+        IBaseEscrow.Immutables memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
             orderHash,
             hashlock,
             amount,

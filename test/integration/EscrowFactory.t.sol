@@ -7,7 +7,7 @@ import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
-import { CrossChainLib } from "../utils/libraries/CrossChainLib.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract IntegrationEscrowFactoryTest is BaseSetup {
     function setUp() public virtual override {
@@ -21,7 +21,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
         uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
             keccak256(abi.encode(secret)),
             srcAmount,
             dstAmount,
@@ -35,7 +35,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -70,7 +70,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
     }
 
     function test_DeployCloneForMakerNonWhitelistedResolverInt() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
@@ -78,7 +78,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         swapData.immutables.taker = Address.wrap(uint160(charlie.addr));
         address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -117,12 +117,12 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceDeploymentForMakerInt() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit

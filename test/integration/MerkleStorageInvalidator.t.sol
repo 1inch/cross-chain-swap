@@ -8,7 +8,7 @@ import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
-import { CrossChainLib } from "../utils/libraries/CrossChainLib.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract MerkleStorageInvalidatorIntTest is BaseSetup {
     uint256 public constant PARTS_AMOUNT = 100;
@@ -39,7 +39,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -50,7 +50,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -103,7 +103,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecretsLocal[idx];
         swapData.immutables.amount = makingAmount;
@@ -114,7 +114,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecretsLocal[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -154,7 +154,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -165,7 +165,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -206,7 +206,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -236,7 +236,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     function test_MultipleFillsNoDeploymentWithoutValidation() public {
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = 0;
         uint256 makingAmount = MAKING_AMOUNT / PARTS_AMOUNT;
@@ -246,7 +246,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -281,7 +281,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -292,7 +292,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -328,7 +328,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -362,7 +362,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -373,7 +373,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -411,7 +411,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -422,7 +422,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -466,7 +466,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -504,7 +504,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
@@ -514,7 +514,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -552,7 +552,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -563,7 +563,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -605,7 +605,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -645,7 +645,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -656,7 +656,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -701,7 +701,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -749,7 +749,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(secretsAmount << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
             rootPlusAmount,
             makingAmount,
             TAKING_AMOUNT,
@@ -769,7 +769,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedS[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit

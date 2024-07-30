@@ -11,7 +11,7 @@ import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
-import { CrossChainLib } from "../utils/libraries/CrossChainLib.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract EscrowFactoryTest is BaseSetup {
     using TimelocksLib for Timelocks;
@@ -38,7 +38,7 @@ contract EscrowFactoryTest is BaseSetup {
         vm.assume(srcAmount > 0 && dstAmount > 0);
         uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
         uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
             keccak256(abi.encode(secret)),
             srcAmount,
             dstAmount,
@@ -71,7 +71,7 @@ contract EscrowFactoryTest is BaseSetup {
 
     function testFuzz_DeployCloneForMakerWithReceiver() public {
         address receiver = charlie.addr;
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
             HASHED_SECRET,
             MAKING_AMOUNT,
             TAKING_AMOUNT,
@@ -136,7 +136,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForMaker() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
@@ -155,7 +155,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceDeploymentForMaker() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -176,7 +176,7 @@ contract EscrowFactoryTest is BaseSetup {
 
     // Only whitelisted resolver can deploy escrow
     function test_NoDeploymentForNotResolver() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -241,7 +241,7 @@ contract EscrowFactoryTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -268,7 +268,7 @@ contract EscrowFactoryTest is BaseSetup {
 
         bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;

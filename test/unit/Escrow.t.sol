@@ -10,7 +10,7 @@ import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { NoReceiveCaller } from "contracts/mocks/NoReceiveCaller.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
-import { CrossChainLib } from "../utils/libraries/CrossChainLib.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract EscrowTest is BaseSetup {
     // solhint-disable-next-line private-vars-leading-underscore
@@ -24,7 +24,7 @@ contract EscrowTest is BaseSetup {
     // Only resolver can withdraw
     function test_NoWithdrawalByAnyoneSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -49,7 +49,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoWithdrawalOutsideOfAllowedPeriodSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -98,7 +98,7 @@ contract EscrowTest is BaseSetup {
 
     function test_WithdrawSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -134,7 +134,7 @@ contract EscrowTest is BaseSetup {
 
     function test_WithdrawSrcTo() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -172,7 +172,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoPublicWithdrawalOutsideOfAllowedPeriodSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -203,7 +203,7 @@ contract EscrowTest is BaseSetup {
 
     function test_PublicWithdrawSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -237,7 +237,7 @@ contract EscrowTest is BaseSetup {
 
     function test_RescueFundsSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
         assertEq(address(swapData.srcClone).balance, 0);
@@ -281,7 +281,7 @@ contract EscrowTest is BaseSetup {
 
     function test_RescueFundsSrcNative() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
         assertEq(address(swapData.srcClone).balance, 0);
@@ -326,7 +326,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoRescueFundsEarlierSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
         assertEq(address(swapData.srcClone).balance, 0);
@@ -368,7 +368,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoRescueFundsByAnyoneSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
         assertEq(address(swapData.srcClone).balance, 0);
@@ -590,7 +590,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoWithdrawalWithWrongSecretSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -694,7 +694,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoFailedNativeTokenTransferWithdrawalSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -769,7 +769,7 @@ contract EscrowTest is BaseSetup {
 
     function test_CancelResolverSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -806,7 +806,7 @@ contract EscrowTest is BaseSetup {
     function test_CancelResolverSrcReceiver() public {
         address receiver = charlie.addr;
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrcCustom(
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
             HASHED_SECRET,
             MAKING_AMOUNT,
             TAKING_AMOUNT,
@@ -863,7 +863,7 @@ contract EscrowTest is BaseSetup {
 
     function test_CancelPublicSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -898,7 +898,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoCancelDuringWithdrawalSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -925,7 +925,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoPublicCancelDuringPrivateCancellationSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -952,7 +952,7 @@ contract EscrowTest is BaseSetup {
     // During non-public cancel period
     function test_NoAnyoneCancelDuringResolverCancelSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1083,7 +1083,7 @@ contract EscrowTest is BaseSetup {
 
     function test_NoFailedNativeTokenTransferCancelSrc() public {
         // deploy escrow
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -1109,7 +1109,7 @@ contract EscrowTest is BaseSetup {
     }
 
     function test_NoCallsWithInvalidImmutables() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
 
         (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
 

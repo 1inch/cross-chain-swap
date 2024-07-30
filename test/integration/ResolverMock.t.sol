@@ -9,7 +9,7 @@ import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { IResolverMock, ResolverMock } from "contracts/mocks/ResolverMock.sol";
 import { BaseSetup } from "../utils/BaseSetup.sol";
-import { CrossChainLib } from "../utils/libraries/CrossChainLib.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract IntegrationResolverMockTest is BaseSetup {
     /* solhint-disable-next-line private-vars-leading-underscore */
@@ -33,16 +33,16 @@ contract IntegrationResolverMockTest is BaseSetup {
 
     function test_MockDeploySrc() public {
         vm.warp(1710288000); // set current timestamp
-        (timelocks, timelocksDst) = CrossChainLib.setTimelocks(srcTimelocks, dstTimelocks);
+        (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
         resolvers[0] = resolverMock;
 
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -74,12 +74,12 @@ contract IntegrationResolverMockTest is BaseSetup {
 
     function test_MockWithdrawToSrc() public {
         resolvers[0] = resolverMock;
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -123,12 +123,12 @@ contract IntegrationResolverMockTest is BaseSetup {
 
     function test_MockCancelSrc() public {
         resolvers[0] = resolverMock;
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -175,12 +175,12 @@ contract IntegrationResolverMockTest is BaseSetup {
         resolvers = new address[](2);
         resolvers[0] = bob.addr;
         resolvers[1] = resolverMock;
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
@@ -232,12 +232,12 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockRescueFundsSrc() public {
-        CrossChainLib.SwapData memory swapData = _prepareDataSrc(false, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = CrossChainLib.buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit

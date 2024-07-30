@@ -12,7 +12,7 @@ import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTrait
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { Timelocks, TimelocksSettersLib } from "./TimelocksSettersLib.sol";
 
-library CrossChainLib {
+library CrossChainTestLib {
 
     /**
      * Timelocks for the source chain.
