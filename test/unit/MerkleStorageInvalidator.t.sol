@@ -36,9 +36,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
 
         vm.prank(address(limitOrderProtocol));
         ITakerInteraction(escrowFactory).takerInteraction(
@@ -52,7 +50,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
             abi.encode(proof, idx, hashedSecrets[idx])
         );
         (uint256 storedIndex, bytes32 storedLeaf) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(swapData.orderHash, root))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, idx + 1);
         assertEq(storedLeaf, hashedSecrets[idx]);
@@ -72,7 +70,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
 
         uint256 wrongIndex = idx + 1 < secretsAmount ? idx + 1 : idx - 1;
 

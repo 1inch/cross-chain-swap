@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
-import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
@@ -19,17 +18,17 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     bytes32 public root;
     bytes32[] public hashedSecrets = new bytes32[](SECRETS_AMOUNT);
     bytes32[] public hashedPairs = new bytes32[](SECRETS_AMOUNT);
+    bytes32 public rootPlusAmount;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
-
-        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | (PARTS_AMOUNT << 240));
 
         for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
+        rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -40,17 +39,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -112,19 +101,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairsLocal, idx);
         assert(merkle.verifyProof(root, proof, hashedPairsLocal[idx]));
 
-        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | (partsAmount << 240));
+        rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecretsLocal[idx];
         swapData.immutables.amount = makingAmount;
@@ -173,17 +152,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -263,17 +232,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     }
 
     function test_MultipleFillsNoDeploymentWithoutValidation() public {
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = 0;
         uint256 makingAmount = MAKING_AMOUNT / PARTS_AMOUNT;
@@ -316,17 +275,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -405,17 +354,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -462,17 +401,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -553,7 +482,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(swapData.orderHash, root))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, idx + 1);
     }
@@ -563,16 +492,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false, true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
@@ -618,17 +538,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -707,7 +617,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(swapData.orderHash, root))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, PARTS_AMOUNT);
     }
@@ -719,17 +629,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -767,7 +667,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(srcClone), makingAmount);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(swapData.orderHash, root))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, PARTS_AMOUNT);
 
@@ -811,7 +711,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(swapData.orderHash, root))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, SECRETS_AMOUNT);
     }
@@ -831,18 +731,10 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedP, idx);
         assert(merkle.verifyProof(root, proof, hashedP[idx]));
 
-        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | (secretsAmount << 240));
+        rootPlusAmount = bytes32(secretsAmount << 240 | uint240(uint256(root)));
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            makingAmount,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
+            rootPlusAmount, makingAmount, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true
         );
 
         swapData.immutables.hashlock = hashedS[idx];
@@ -891,17 +783,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -939,7 +821,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(srcClone), makingAmount);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(swapData.orderHash, root))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, idx + 1);
 

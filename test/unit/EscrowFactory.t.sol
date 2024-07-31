@@ -44,7 +44,6 @@ contract EscrowFactoryTest is BaseSetup {
             dstAmount,
             srcSafetyDeposit,
             dstSafetyDeposit,
-            dstWithParts,
             address(0),
             true, // fakeOrder
             false // allowMultipleFills
@@ -78,7 +77,6 @@ contract EscrowFactoryTest is BaseSetup {
             TAKING_AMOUNT,
             SRC_SAFETY_DEPOSIT,
             DST_SAFETY_DEPOSIT,
-            dstWithParts,
             receiver,
             true,
             false
@@ -239,10 +237,9 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+        bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, dstWithParts, address(0), false, true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         swapData.immutables.hashlock = hashedSecrets[idx];
         swapData.immutables.amount = makingAmount;
@@ -267,19 +264,9 @@ contract EscrowFactoryTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        dstWithParts = Address.wrap(uint256(uint160(address(dai))) | ((SECRETS_AMOUNT - 1) << 240));
+        bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
 
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            root,
-            MAKING_AMOUNT,
-            TAKING_AMOUNT,
-            SRC_SAFETY_DEPOSIT,
-            DST_SAFETY_DEPOSIT,
-            dstWithParts,
-            address(0),
-            false,
-            true
-        );
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);

@@ -27,7 +27,6 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             dstAmount,
             srcSafetyDeposit,
             dstSafetyDeposit,
-            dstWithParts,
             address(0), // receiver
             false, // fakeOrder
             false // allowMultipleFills

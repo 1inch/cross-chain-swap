@@ -57,14 +57,15 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
             // Skip the first 32 bytes of the extension containing offsets
             extraDataArgs := add(add(extension.offset, 32), sub(end, SRC_IMMUTABLES_LENGTH))
         }
-        bytes32 root = extraDataArgs.hashlockInfo;
+        uint240 rootShortened = uint240(uint256(extraDataArgs.hashlockInfo));
         TakerData calldata takerData;
         assembly ("memory-safe") {
             takerData := extraData.offset
         }
-        bytes32 key = keccak256(abi.encodePacked(orderHash, root));
+        bytes32 key = keccak256(abi.encodePacked(orderHash, rootShortened));
         if (takerData.idx < lastValidated[key].index) revert InvalidIndex();
-        if (!takerData.proof.verifyCalldata(root, keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)))) revert InvalidProof();
+        bytes32 rootCalculated = takerData.proof.processProofCalldata(keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)));
+        if (uint240(uint256(rootCalculated)) != rootShortened) revert InvalidProof();
         lastValidated[key] = LastValidated(takerData.idx + 1, takerData.secretHash);
     }
 }

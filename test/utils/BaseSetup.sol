@@ -50,8 +50,6 @@ contract BaseSetup is Test, Utils {
 
     address[] internal resolvers;
 
-    Address public dstWithParts;
-
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
 
@@ -100,8 +98,6 @@ contract BaseSetup is Test, Utils {
 
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
-        dstWithParts = Address.wrap(uint160(address(dai)));
-
         _deployContracts();
 
         vm.startPrank(bob.addr);
@@ -149,7 +145,23 @@ contract BaseSetup is Test, Utils {
             TAKING_AMOUNT,
             SRC_SAFETY_DEPOSIT,
             DST_SAFETY_DEPOSIT,
-            dstWithParts,
+            address(0),
+            fakeOrder,
+            allowMultipleFills
+        );
+    }
+
+    function _prepareDataSrcHashlock(
+        bytes32 hashlock,
+        bool fakeOrder, 
+        bool allowMultipleFills
+    ) internal returns(CrossChainTestLib.SwapData memory) {
+        return _prepareDataSrcCustom(
+            hashlock,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            SRC_SAFETY_DEPOSIT,
+            DST_SAFETY_DEPOSIT,
             address(0),
             fakeOrder,
             allowMultipleFills
@@ -162,7 +174,6 @@ contract BaseSetup is Test, Utils {
         uint256 dstAmount,
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit,
-        Address dstToken,
         address receiver,
         bool fakeOrder,
         bool allowMultipleFills
@@ -172,7 +183,7 @@ contract BaseSetup is Test, Utils {
                 maker: alice.addr,
                 receiver: receiver,
                 srcToken: address(usdc),
-                dstToken: dstToken,
+                dstToken: Address.wrap(uint160(address(dai))),
                 srcAmount: srcAmount,
                 dstAmount: dstAmount,
                 srcSafetyDeposit: srcSafetyDeposit,

@@ -812,7 +812,6 @@ contract EscrowTest is BaseSetup {
             TAKING_AMOUNT,
             SRC_SAFETY_DEPOSIT,
             DST_SAFETY_DEPOSIT,
-            dstWithParts,
             receiver,
             true,
             false

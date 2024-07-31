@@ -74,9 +74,9 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         bytes32 hashlock;
 
         if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) {
-            uint256 partsAmount = AddressLib.getUint32(extraDataArgs.dstToken, 240);
+            uint256 partsAmount = uint256(extraDataArgs.hashlockInfo) >> 240;
             if (partsAmount < 2) revert InvalidSecretsAmount();
-            bytes32 key = keccak256(abi.encodePacked(orderHash, extraDataArgs.hashlockInfo));
+            bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlockInfo))));
             LastValidated memory validated = lastValidated[key];
             hashlock = validated.leaf;
             uint256 calculatedIndex = (order.makingAmount - remainingMakingAmount + makingAmount - 1) * partsAmount / order.makingAmount;
