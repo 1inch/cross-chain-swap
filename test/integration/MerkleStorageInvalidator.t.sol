@@ -24,7 +24,6 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         BaseSetup.setUp();
 
         for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
-            // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }

@@ -27,7 +27,6 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
-        // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint256 i = 0; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
@@ -63,7 +62,6 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
-        // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint256 i = 0; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
