@@ -3,6 +3,7 @@
 pragma solidity 0.8.23;
 
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { ExtensionLib } from "limit-order-protocol/contracts/libraries/ExtensionLib.sol";
 import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
 import { MerkleProof } from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
@@ -16,6 +17,7 @@ import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol"; // solhint-d
  */
 contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];
+    using ExtensionLib for bytes;
 
     address private immutable _LIMIT_ORDER_PROTOCOL;
 
@@ -49,19 +51,14 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
         uint256 /* remainingMakingAmount */,
         bytes calldata extraData
     ) external onlyLOP {
+        bytes calldata postInteraction = extension.postInteractionTargetAndData();
         IEscrowFactory.ExtraDataArgs calldata extraDataArgs;
-        assembly ("memory-safe") {
-            let offsets := calldataload(extension.offset)
-            let bitShift := mul(7, 32) // 7 is index of PostInteractionData in ExtensionLib.DynamicField
-            let end := and(0xffffffff, shr(bitShift, offsets)) // Get the end of PostInteractionData
-            // Skip the first 32 bytes of the extension containing offsets
-            extraDataArgs := add(add(extension.offset, 32), sub(end, SRC_IMMUTABLES_LENGTH))
-        }
-        uint240 rootShortened = uint240(uint256(extraDataArgs.hashlockInfo));
         TakerData calldata takerData;
         assembly ("memory-safe") {
+            extraDataArgs := add(postInteraction.offset, sub(postInteraction.length, SRC_IMMUTABLES_LENGTH))
             takerData := extraData.offset
         }
+        uint240 rootShortened = uint240(uint256(extraDataArgs.hashlockInfo));
         bytes32 key = keccak256(abi.encodePacked(orderHash, rootShortened));
         if (takerData.idx < lastValidated[key].index) revert InvalidIndex();
         bytes32 rootCalculated = takerData.proof.processProofCalldata(keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)));
