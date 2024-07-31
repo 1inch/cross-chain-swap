@@ -3,7 +3,6 @@
 pragma solidity 0.8.23;
 
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
-
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
@@ -34,8 +33,6 @@ contract IntegrationResolverMockTest is BaseSetup {
     function test_MockDeploySrc() public {
         vm.warp(1710288000); // set current timestamp
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
-
-        resolvers[0] = resolverMock;
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
@@ -73,7 +70,6 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockWithdrawToSrc() public {
-        resolvers[0] = resolverMock;
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
@@ -122,7 +118,6 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockCancelSrc() public {
-        resolvers[0] = resolverMock;
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(false, false);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);

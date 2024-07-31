@@ -122,7 +122,6 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
         uint256 balanceEscrowNative = address(dstClone).balance;
 
-
         // deploy escrow
         vm.prank(bob.addr);
         vm.expectEmit();
@@ -238,7 +237,6 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
-
         bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
@@ -269,9 +267,6 @@ contract EscrowFactoryTest is BaseSetup {
         bytes32 rootPlusAmount = bytes32(SECRETS_AMOUNT << 240 | uint240(uint256(root)));
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
-
-        swapData.immutables.hashlock = hashedSecrets[idx];
-        swapData.immutables.amount = makingAmount;
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);

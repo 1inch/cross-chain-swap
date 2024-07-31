@@ -3,14 +3,12 @@ pragma solidity 0.8.23;
 
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
-import { MakerTraits } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
-import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract MerkleStorageInvalidatorTest is BaseSetup {
 
@@ -38,30 +36,21 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 orderHash = keccak256(abi.encode("order"));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
 
         vm.prank(address(limitOrderProtocol));
         ITakerInteraction(escrowFactory).takerInteraction(
-            IOrderMixin.Order({
-                salt: 0,
-                maker: Address.wrap(uint160(alice.addr)),
-                receiver: Address.wrap(uint160(bob.addr)),
-                makerAsset: Address.wrap(uint160(address(usdc))),
-                takerAsset: Address.wrap(uint160(address(dai))),
-                makingAmount: MAKING_AMOUNT,
-                takingAmount: TAKING_AMOUNT,
-                makerTraits: MakerTraits.wrap(0)
-            }),
-            "",
-            orderHash,
+            swapData.order,
+            swapData.extension,
+            swapData.orderHash,
             bob.addr,
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0,
-            abi.encode(root, proof, idx, hashedSecrets[idx])
+            abi.encode(proof, idx, hashedSecrets[idx])
         );
         (uint256 storedIndex, bytes32 storedLeaf) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, idx + 1);
         assertEq(storedLeaf, hashedSecrets[idx]);
@@ -81,30 +70,21 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
 
-        bytes32 orderHash = keccak256(abi.encode("order"));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
 
         uint256 wrongIndex = idx + 1 < secretsAmount ? idx + 1 : idx - 1;
 
         vm.prank(address(limitOrderProtocol));
         vm.expectRevert(IMerkleStorageInvalidator.InvalidProof.selector);
         ITakerInteraction(escrowFactory).takerInteraction(
-            IOrderMixin.Order({
-                salt: 0,
-                maker: Address.wrap(uint160(alice.addr)),
-                receiver: Address.wrap(uint160(bob.addr)),
-                makerAsset: Address.wrap(uint160(address(usdc))),
-                takerAsset: Address.wrap(uint160(address(dai))),
-                makingAmount: MAKING_AMOUNT,
-                takingAmount: TAKING_AMOUNT,
-                makerTraits: MakerTraits.wrap(0)
-            }),
-            "",
-            orderHash,
+            swapData.order,
+            swapData.extension,
+            swapData.orderHash,
             bob.addr,
             MAKING_AMOUNT,
             TAKING_AMOUNT,
             0,
-            abi.encode(root, proof, wrongIndex, hashedSecrets[wrongIndex])
+            abi.encode(proof, wrongIndex, hashedSecrets[wrongIndex])
         );
     }
 

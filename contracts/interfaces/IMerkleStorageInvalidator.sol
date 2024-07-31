@@ -12,6 +12,12 @@ interface IMerkleStorageInvalidator {
         bytes32 leaf;
     }
 
+    struct TakerData {
+        bytes32[] proof;
+        uint256 idx;
+        bytes32 secretHash;
+    }
+
     error AccessDenied();
     error InvalidIndex();
     error InvalidProof();

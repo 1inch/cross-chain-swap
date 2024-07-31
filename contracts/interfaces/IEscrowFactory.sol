@@ -14,7 +14,7 @@ import { IBaseEscrow } from "./IBaseEscrow.sol";
  */
 interface IEscrowFactory {
     struct ExtraDataArgs {
-        bytes32 hashlock; // Hash of the secret or the Merkle tree root if multiple fills are allowed
+        bytes32 hashlockInfo; // Hash of the secret or the Merkle tree root if multiple fills are allowed
         uint256 dstChainId;
         Address dstToken;
         uint256 deposits;
