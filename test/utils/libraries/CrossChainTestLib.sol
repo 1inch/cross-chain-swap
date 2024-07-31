@@ -66,7 +66,7 @@ library CrossChainTestLib {
         address maker;
         address receiver;
         address srcToken;
-        Address dstToken;
+        address dstToken;
         uint256 srcAmount;
         uint256 dstAmount;
         uint256 srcSafetyDeposit;
@@ -287,7 +287,7 @@ library CrossChainTestLib {
     function buidDynamicData(
         bytes32 hashlock,
         uint256 chainId,
-        Address token,
+        address token,
         uint256 srcSafetyDeposit,
         uint256 dstSafetyDeposit,
         Timelocks timelocks
@@ -329,7 +329,7 @@ library CrossChainTestLib {
                 maker: Address.wrap(uint160(orderDetails.maker)),
                 receiver: Address.wrap(uint160(orderDetails.receiver)),
                 makerAsset: Address.wrap(uint160(address(orderDetails.srcToken))),
-                takerAsset: orderDetails.dstToken,
+                takerAsset: Address.wrap(uint160(address(orderDetails.dstToken))),
                 makingAmount: orderDetails.srcAmount,
                 takingAmount: orderDetails.dstAmount,
                 makerTraits: MakerTraits.wrap(0)

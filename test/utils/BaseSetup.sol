@@ -6,7 +6,6 @@ import { Test } from "forge-std/Test.sol";
 import { IWETH, LimitOrderProtocol } from "limit-order-protocol/contracts/LimitOrderProtocol.sol";
 import { WrappedTokenMock } from "limit-order-protocol/contracts/mocks/WrappedTokenMock.sol";
 import { IFeeBank } from "limit-order-settlement/contracts/interfaces/IFeeBank.sol";
-import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
 
@@ -183,7 +182,7 @@ contract BaseSetup is Test, Utils {
                 maker: alice.addr,
                 receiver: receiver,
                 srcToken: address(usdc),
-                dstToken: Address.wrap(uint160(address(dai))),
+                dstToken: address(dai),
                 srcAmount: srcAmount,
                 dstAmount: dstAmount,
                 srcSafetyDeposit: srcSafetyDeposit,
