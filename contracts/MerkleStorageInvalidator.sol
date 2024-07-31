@@ -8,13 +8,13 @@ import { MerkleProof } from "openzeppelin-contracts/contracts/utils/cryptography
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IMerkleStorageInvalidator } from "./interfaces/IMerkleStorageInvalidator.sol";
-import { EscrowFactoryContext } from "./EscrowFactoryContext.sol";
+import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol"; // solhint-disable-line no-unused-import
 
 /**
  * @title Merkle Storage Invalidator contract
  * @notice Contract to invalidate hashed secrets from an order that supports multiple fills.
  */
-contract MerkleStorageInvalidator is IMerkleStorageInvalidator, EscrowFactoryContext, ITakerInteraction {
+contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];
 
     address private immutable _LIMIT_ORDER_PROTOCOL;
@@ -55,7 +55,7 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, EscrowFactoryCon
             let bitShift := mul(7, 32) // 7 is index of PostInteractionData in ExtensionLib.DynamicField
             let end := and(0xffffffff, shr(bitShift, offsets)) // Get the end of PostInteractionData
             // Skip the first 32 bytes of the extension containing offsets
-            extraDataArgs := add(add(extension.offset, 32), sub(end, _SRC_IMMUTABLES_LENGTH))
+            extraDataArgs := add(add(extension.offset, 32), sub(end, SRC_IMMUTABLES_LENGTH))
         }
         bytes32 root = extraDataArgs.hashlockInfo;
         TakerData calldata takerData;

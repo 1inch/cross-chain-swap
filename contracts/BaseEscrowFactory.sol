@@ -17,7 +17,7 @@ import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
-import { EscrowFactoryContext } from "./EscrowFactoryContext.sol";
+import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol";
 import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
 
 /**
@@ -25,7 +25,7 @@ import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  * @dev Immutable variables must be set in the constructor of the derived contracts.
  */
-abstract contract BaseEscrowFactory is IEscrowFactory, EscrowFactoryContext, ResolverValidationExtension, MerkleStorageInvalidator {
+abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtension, MerkleStorageInvalidator {
     using AddressLib for Address;
     using Clones for address;
     using ImmutablesLib for IBaseEscrow.Immutables;
@@ -61,7 +61,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, EscrowFactoryContext, Res
         uint256 remainingMakingAmount,
         bytes calldata extraData
     ) internal override(ResolverValidationExtension) {
-        uint256 superArgsLength = extraData.length - _SRC_IMMUTABLES_LENGTH;
+        uint256 superArgsLength = extraData.length - SRC_IMMUTABLES_LENGTH;
         super._postInteraction(
             order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[:superArgsLength]
         );
