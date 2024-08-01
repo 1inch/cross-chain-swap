@@ -10,7 +10,7 @@ import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 /**
  * @title Interface for the sample implementation of a Resolver contract for cross-chain swap.
  */
-interface IResolverMock {
+interface IResolverExample {
     error InvalidLength();
     error LengthMismatch();
 
