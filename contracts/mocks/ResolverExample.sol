@@ -17,7 +17,9 @@ import { Timelocks } from "../libraries/TimelocksLib.sol";
  * @title Sample implementation of a Resolver contract for cross-chain swap.
  * @dev It is important when deploying an escrow on the source chain to send the safety deposit and deploy the escrow in the same
  * transaction, since the address of the escrow depends on the block.timestamp.
- * You can find sample code for this in the {ResolverExample-deploySrc}. 
+ * You can find sample code for this in the {ResolverExample-deploySrc}.
+ * 
+ * @custom:security-contact security@1inch.io
  */
 contract ResolverExample is IResolverExample, Ownable {
     IEscrowFactory private immutable _FACTORY;
