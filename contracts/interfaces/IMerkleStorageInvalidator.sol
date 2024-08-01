@@ -7,7 +7,7 @@ pragma solidity 0.8.23;
  * @notice Interface to invalidate hashed secrets from an order that supports multiple fills.
  */
 interface IMerkleStorageInvalidator {
-    struct LastValidated {
+    struct ValidationData {
         uint256 index;
         bytes32 leaf;
     }
