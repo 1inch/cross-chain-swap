@@ -338,7 +338,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IMerkleStorageInvalidator.InvalidIndex.selector);
+        vm.expectRevert(IEscrowFactory.AlreadyUsedIndex.selector);
         limitOrderProtocol.fillOrderArgs(
             swapData.order,
             r,
@@ -826,7 +826,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
         assertEq(storedIndex, idx + 1);
 
-        // ------------ 2nd fill ------------ //
+        // ------------ 2nd fill, forged proof ------------ //
         uint256 makingAmount2 = makingAmount + 1;
         bytes32[] memory hashedSecretsLocal = new bytes32[](SECRETS_AMOUNT);
         bytes32[] memory hashedPairsLocal = new bytes32[](SECRETS_AMOUNT);
@@ -870,6 +870,32 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             makingAmount2, // amount
             takerTraits2,
             args2
+        );
+
+        // ------------ 2nd fill, no taker interaction ------------ //
+        (TakerTraits takerTraits3, bytes memory args3) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone2, // target
+            swapData.extension,
+            "", // interaction
+            0 // threshold
+        );
+
+        (success,) = srcClone2.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrowFactory.AlreadyUsedIndex.selector);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount2, // amount
+            takerTraits3,
+            args3
         );
     }
 

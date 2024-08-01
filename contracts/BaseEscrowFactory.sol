@@ -80,6 +80,13 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             LastValidated memory validated = lastValidated[key];
             hashlock = validated.leaf;
             uint256 calculatedIndex = (order.makingAmount - remainingMakingAmount + makingAmount - 1) * partsAmount / order.makingAmount;
+
+            // Check that this is not the first or the last fill.
+            if (order.makingAmount != remainingMakingAmount && remainingMakingAmount != makingAmount) {
+                uint256 calculatedIndexBefore = (order.makingAmount - remainingMakingAmount - 1) * partsAmount / order.makingAmount;
+                if (calculatedIndex <= calculatedIndexBefore) revert AlreadyUsedIndex();
+            }
+            
             if (
                 (calculatedIndex + 1 != validated.index) &&
                 (calculatedIndex + 2 != validated.index || remainingMakingAmount != makingAmount)
