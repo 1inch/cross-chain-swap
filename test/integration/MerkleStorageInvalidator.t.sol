@@ -23,7 +23,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+        for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
             // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
@@ -93,7 +93,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory hashedSecretsLocal = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairsLocal = new bytes32[](secretsAmount);
 
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint64 i = 0; i < secretsAmount; i++) {
             hashedSecretsLocal[i] = keccak256(abi.encodePacked(i));
             hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
         }
@@ -724,7 +724,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         uint256 idx = secretsAmount * (makingAmountToFill - 1) / makingAmount;
         bytes32[] memory hashedS = new bytes32[](secretsAmount);
         bytes32[] memory hashedP = new bytes32[](secretsAmount);
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint64 i = 0; i < secretsAmount; i++) {
             hashedS[i] = keccak256(abi.encodePacked(i));
             hashedP[i] = keccak256(abi.encodePacked(i, hashedS[i]));
         }
@@ -830,7 +830,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         uint256 makingAmount2 = makingAmount + 1;
         bytes32[] memory hashedSecretsLocal = new bytes32[](SECRETS_AMOUNT);
         bytes32[] memory hashedPairsLocal = new bytes32[](SECRETS_AMOUNT);
-        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+        for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecretsLocal[i] = keccak256(abi.encodePacked(keccak256(abi.encodePacked(i))));
             hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
         }

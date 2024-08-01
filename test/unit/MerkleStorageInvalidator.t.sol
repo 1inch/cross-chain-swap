@@ -28,7 +28,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint64 i = 0; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -64,7 +64,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint64 i = 0; i < secretsAmount; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -87,6 +87,48 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
             TAKING_AMOUNT,
             0,
             abi.encode(proof, wrongIndex, hashedSecrets[wrongIndex])
+        );
+    }
+
+    function test_ShortenedProofIsNotValid() public {
+        uint256 secretsAmount = 8;
+        uint256 idx = 0;
+
+        bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
+        bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
+
+        // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
+        for (uint64 i = 0; i < secretsAmount; i++) {
+            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
+        }
+        root = merkle.getRoot(hashedPairs);
+
+        // Valid proof
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+
+        // Calculate the intermediate node to pass as a value
+        bytes32 firstInterNode = merkle.hashLeafPairs(hashedPairs[idx], proof[0]);
+
+        (uint256 fakeIdx, bytes32 fakeSecretHash) =
+            uint256(firstInterNode) > uint256(proof[1]) ? (uint256(proof[1]), firstInterNode) : (uint256(firstInterNode), proof[1]);
+
+        bytes32[] memory shortenedProof = new bytes32[](1);
+        shortenedProof[0] = proof[proof.length - 1];
+
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
+
+        vm.prank(address(limitOrderProtocol));
+        vm.expectRevert();
+        ITakerInteraction(escrowFactory).takerInteraction(
+            swapData.order,
+            swapData.extension,
+            swapData.orderHash,
+            bob.addr,
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0,
+            abi.encode(shortenedProof, fakeIdx, fakeSecretHash)
         );
     }
 

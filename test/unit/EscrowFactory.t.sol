@@ -26,7 +26,7 @@ contract EscrowFactoryTest is BaseSetup {
         BaseSetup.setUp();
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
-        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+        for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }

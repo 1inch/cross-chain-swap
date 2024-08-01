@@ -14,7 +14,7 @@ interface IMerkleStorageInvalidator {
 
     struct TakerData {
         bytes32[] proof;
-        uint256 idx;
+        uint64 idx;
         bytes32 secretHash;
     }
 
