@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.23;
 
+/// @custom:security-contact security@1inch.io
 contract MinimalProxyZkSync {
     address private immutable _IMPLEMENTATION;
 

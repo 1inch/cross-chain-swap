@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title Library for ZkSync contracts.
+ * @custom:security-contact security@1inch.io
  */
 library ZkSyncLib {
     // keccak256("zksyncCreate2")
