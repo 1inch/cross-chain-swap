@@ -6,7 +6,7 @@ import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTrait
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
-import { IResolverMock, ResolverMock } from "contracts/mocks/ResolverMock.sol";
+import { IResolverExample, ResolverExample } from "contracts/mocks/ResolverExample.sol";
 import { BaseSetup } from "../utils/BaseSetup.sol";
 import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
@@ -16,7 +16,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
     function setUp() public virtual override {
         BaseSetup.setUp();
-        resolverMock = address(new ResolverMock(escrowFactory, limitOrderProtocol, address(this)));
+        resolverMock = address(new ResolverExample(escrowFactory, limitOrderProtocol, address(this)));
         resolvers[0] = address(resolverMock);
         vm.label(resolverMock, "resolverMock");
         vm.deal(resolverMock, 100 ether);
@@ -55,7 +55,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
         assertEq(address(swapData.srcClone).balance, 0);
 
-        IResolverMock(resolverMock).deploySrc(
+        IResolverExample(resolverMock).deploySrc(
             swapData.immutables,
             swapData.order,
             r,
@@ -87,7 +87,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         );
 
         // deploy escrow
-        IResolverMock(resolverMock).deploySrc(
+        IResolverExample(resolverMock).deploySrc(
             swapData.immutables,
             swapData.order,
             r,
@@ -109,7 +109,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         arguments[0] = abi.encodePacked(swapData.srcClone.withdrawTo.selector, abi.encode(SECRET, alice.addr, swapData.immutables));
 
         skip(srcTimelocks.withdrawal + 10);
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(usdc.balanceOf(alice.addr), aliceBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
@@ -135,7 +135,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         );
 
         // deploy escrow
-        IResolverMock(resolverMock).deploySrc(
+        IResolverExample(resolverMock).deploySrc(
             swapData.immutables,
             swapData.order,
             r,
@@ -158,7 +158,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         skip(srcTimelocks.cancellation + 10);
         // Cancel escrow
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(usdc.balanceOf(alice.addr), aliceBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
@@ -213,12 +213,12 @@ contract IntegrationResolverMockTest is BaseSetup {
         vm.warp(block.timestamp + srcTimelocks.cancellation + 10);
         // Resolver is bob, so unable to cancel escrow
         vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 10);
         arguments[0] = abi.encodePacked(swapData.srcClone.publicCancel.selector, abi.encode(swapData.immutables));
         // Now resolver mock is able to cancel escrow
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(usdc.balanceOf(alice.addr), aliceBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
@@ -244,7 +244,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         );
 
         // deploy escrow
-        IResolverMock(resolverMock).deploySrc(
+        IResolverExample(resolverMock).deploySrc(
             swapData.immutables,
             swapData.order,
             r,
@@ -275,7 +275,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         skip(RESCUE_DELAY + 10);
         // Rescue USDC and native tokens
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(usdc.balanceOf(resolverMock), resolverBalance + MAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + SRC_SAFETY_DEPOSIT);
@@ -298,8 +298,8 @@ contract IntegrationResolverMockTest is BaseSetup {
         assertEq(address(dstClone).balance, 0);
 
         // Approve DAI to escrowFactory
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
-        IResolverMock(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
 
         assertEq(dai.balanceOf(address(dstClone)), TAKING_AMOUNT);
         assertEq(address(dstClone).balance, DST_SAFETY_DEPOSIT);
@@ -320,8 +320,8 @@ contract IntegrationResolverMockTest is BaseSetup {
         assertEq(address(dstClone).balance, 0);
 
         // Approve DAI to escrowFactory
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
-        IResolverMock(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
 
         assertEq(dai.balanceOf(address(dstClone)), TAKING_AMOUNT);
         assertEq(address(dstClone).balance, DST_SAFETY_DEPOSIT);
@@ -335,7 +335,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         arguments[0] = abi.encodePacked(dstClone.withdraw.selector, abi.encode(SECRET, immutables));
 
         skip(dstTimelocks.withdrawal + 10);
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(dai.balanceOf(alice.addr), aliceBalance + TAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + DST_SAFETY_DEPOSIT);
@@ -367,12 +367,12 @@ contract IntegrationResolverMockTest is BaseSetup {
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         // Resolver is bob, so unable to withdraw tokens
         vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 10);
         arguments[0] = abi.encodePacked(dstClone.publicWithdraw.selector, abi.encode(SECRET, immutables));
         // Now resolver mock is able to withdraw tokens
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(dai.balanceOf(alice.addr), aliceBalance + TAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + DST_SAFETY_DEPOSIT);
@@ -395,8 +395,8 @@ contract IntegrationResolverMockTest is BaseSetup {
         assertEq(address(dstClone).balance, 0);
 
         // Approve DAI to escrowFactory
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
-        IResolverMock(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
 
         assertEq(dai.balanceOf(address(dstClone)), TAKING_AMOUNT);
         assertEq(address(dstClone).balance, DST_SAFETY_DEPOSIT);
@@ -410,7 +410,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         arguments[0] = abi.encodePacked(dstClone.cancel.selector, abi.encode(immutables));
 
         skip(dstTimelocks.cancellation + 10);
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(dai.balanceOf(resolverMock), resolverBalance + TAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + DST_SAFETY_DEPOSIT);
@@ -433,8 +433,8 @@ contract IntegrationResolverMockTest is BaseSetup {
         assertEq(address(dstClone).balance, 0);
 
         // Approve DAI to escrowFactory
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
-        IResolverMock(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).deployDst{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
 
         assertEq(dai.balanceOf(address(dstClone)), TAKING_AMOUNT);
         assertEq(address(dstClone).balance, DST_SAFETY_DEPOSIT);
@@ -451,7 +451,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
         skip(RESCUE_DELAY + 10);
         // Rescue DAI and native tokens
-        IResolverMock(resolverMock).arbitraryCalls(targets, arguments);
+        IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
         assertEq(dai.balanceOf(resolverMock), resolverBalance + TAKING_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + DST_SAFETY_DEPOSIT);
