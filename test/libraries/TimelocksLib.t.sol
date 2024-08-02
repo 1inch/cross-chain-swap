@@ -47,7 +47,7 @@ contract TimelocksLibTest is BaseSetup {
 
     function test_setDeployedAt() public {
         uint256 timestamp = block.timestamp;
-        assertEq(Timelocks.unwrap(timelocksLibMock.setDeployedAt(Timelocks.wrap(0), timestamp)), timestamp);
+        assertEq(Timelocks.unwrap(timelocksLibMock.setDeployedAt(Timelocks.wrap(0), timestamp)), timestamp << 224);
     }
 
     function test_NoTimelocksOverflow() public {

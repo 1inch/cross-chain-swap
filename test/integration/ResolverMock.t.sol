@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
+import { TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 import { IResolverExample, ResolverExample } from "contracts/mocks/ResolverExample.sol";
 import { BaseSetup } from "../utils/BaseSetup.sol";
 import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
@@ -50,7 +50,7 @@ contract IntegrationResolverMockTest is BaseSetup {
             0 // threshold
         );
 
-        swapData.immutables.timelocks = Timelocks.wrap(Timelocks.unwrap(swapData.immutables.timelocks) & ~(uint256(type(uint32).max)));
+        swapData.immutables.timelocks = TimelocksLib.setDeployedAt(swapData.immutables.timelocks, 0);
 
         assertEq(usdc.balanceOf(address(swapData.srcClone)), 0);
         assertEq(address(swapData.srcClone).balance, 0);
