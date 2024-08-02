@@ -20,7 +20,6 @@ interface IMerkleStorageInvalidator {
     }
 
     error AccessDenied();
-    error InvalidIndex();
     error InvalidProof();
 
     /**
