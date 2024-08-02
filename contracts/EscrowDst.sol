@@ -77,7 +77,17 @@ contract EscrowDst is Escrow, IEscrowDst {
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
     {
-        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
+        address token = immutables.token.get();
+        address to = immutables.maker.get();
+        uint256 amount = immutables.amount;
+        if (token == address(0)) {
+            /** We ignore the result of the call, so that the receiver cannot use revert
+             * to prevent the resolver from getting the safety deposit back.
+             * */
+            to.call{ value: amount }("");
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit Withdrawal(secret);
     }
