@@ -6,6 +6,7 @@ import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 
 /**
  * @title Library for escrow immutables.
+ * @custom:security-contact security@1inch.io
  */
 library ImmutablesLib {
     uint256 internal constant ESCROW_IMMUTABLES_SIZE = 0x100;

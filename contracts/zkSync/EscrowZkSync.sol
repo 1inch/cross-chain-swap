@@ -7,6 +7,7 @@ import { BaseEscrow } from "../BaseEscrow.sol";
 import { ImmutablesLib } from "../libraries/ImmutablesLib.sol";
 import { ZkSyncLib } from "./ZkSyncLib.sol";
 
+/// @custom:security-contact security@1inch.io
 abstract contract EscrowZkSync is BaseEscrow {
     using ImmutablesLib for Immutables;
 

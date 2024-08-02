@@ -14,6 +14,7 @@ import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol"; // solhint-d
 /**
  * @title Merkle Storage Invalidator contract
  * @notice Contract to invalidate hashed secrets from an order that supports multiple fills.
+ * @custom:security-contact security@1inch.io
  */
 contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];
@@ -60,7 +61,6 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
         }
         uint240 rootShortened = uint240(uint256(extraDataArgs.hashlockInfo));
         bytes32 key = keccak256(abi.encodePacked(orderHash, rootShortened));
-        if (takerData.idx < lastValidated[key].index) revert InvalidIndex();
         bytes32 rootCalculated = takerData.proof.processProofCalldata(keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)));
         if (uint240(uint256(rootCalculated)) != rootShortened) revert InvalidProof();
         lastValidated[key] = ValidationData(takerData.idx + 1, takerData.secretHash);

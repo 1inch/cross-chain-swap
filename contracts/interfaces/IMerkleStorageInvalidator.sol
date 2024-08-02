@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 /**
  * @title Merkle Storage Invalidator interface
  * @notice Interface to invalidate hashed secrets from an order that supports multiple fills.
+ * @custom:security-contact security@1inch.io
  */
 interface IMerkleStorageInvalidator {
     struct ValidationData {
@@ -19,7 +20,6 @@ interface IMerkleStorageInvalidator {
     }
 
     error AccessDenied();
-    error InvalidIndex();
     error InvalidProof();
 
     /**
