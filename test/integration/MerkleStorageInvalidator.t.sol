@@ -81,14 +81,34 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(usdc.balanceOf(srcClone), makingAmount);
     }
 
+    function _isValidPartialFill(
+        uint256 makingAmount,
+        uint256 remainingMakingAmount,
+        uint256 orderMakingAmount,
+        uint256 partsAmount,
+        uint256 validatedIndex
+    ) internal pure returns (bool) {
+        uint256 calculatedIndex = (orderMakingAmount - remainingMakingAmount + makingAmount - 1) * partsAmount / orderMakingAmount;
+
+        if (remainingMakingAmount == makingAmount) {
+            // The last secret must be used for the last fill.
+            return (calculatedIndex + 2 == validatedIndex);
+        } else if (orderMakingAmount != remainingMakingAmount) {
+            // Calculate the previous fill index only if this is not the first fill.
+            uint256 prevCalculatedIndex = (orderMakingAmount - remainingMakingAmount - 1) * partsAmount / orderMakingAmount;
+            if (calculatedIndex == prevCalculatedIndex) return false;
+        }
+
+        return calculatedIndex + 1 == validatedIndex;
+    }
+
     function testFuzz_MultipleFillsOneFillPassAndFail(uint256 makingAmount, uint256 partsAmount, uint256 idx) public {
         makingAmount = bound(makingAmount, 1, MAKING_AMOUNT);
         partsAmount = bound(partsAmount, 2, 100);
         idx = bound(idx, 0, partsAmount);
         uint256 secretsAmount = partsAmount + 1;
 
-        uint256 idxCalculated = partsAmount * (makingAmount - 1) / MAKING_AMOUNT;
-        bool shouldFail = (idxCalculated != idx) && ((idx != partsAmount) || (makingAmount != MAKING_AMOUNT));
+        bool shouldFail = !_isValidPartialFill(makingAmount, MAKING_AMOUNT, MAKING_AMOUNT, partsAmount, idx + 1);
 
         bytes32[] memory hashedSecretsLocal = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairsLocal = new bytes32[](secretsAmount);
@@ -131,7 +151,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         vm.prank(bob.addr);
         if (shouldFail) {
-            vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+            vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         }
         limitOrderProtocol.fillOrderArgs(
             swapData.order,
@@ -258,7 +278,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         limitOrderProtocol.fillOrderArgs(
             swapData.order,
             r,
@@ -338,7 +358,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IEscrowFactory.AlreadyUsedIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         limitOrderProtocol.fillOrderArgs(
             swapData.order,
             r,
@@ -489,7 +509,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     }
 
     function test_MultipleFillsFillLast() public {
-        uint256 idx = PARTS_AMOUNT - 1;
+        uint256 idx = PARTS_AMOUNT; // Use the "extra" secret
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -533,9 +553,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(usdc.balanceOf(srcClone), MAKING_AMOUNT);
     }
 
-    function test_MultipleFillsFillAllTwoFills() public {
-        uint256 idx = PARTS_AMOUNT - 2;
-        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / PARTS_AMOUNT;
+    function test_MultipleFillsFillAllFromLast() public {
+        uint256 idx = PARTS_AMOUNT - 1;
+        uint256 makingAmount = MAKING_AMOUNT - 1;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
@@ -578,7 +598,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(usdc.balanceOf(srcClone), makingAmount);
 
         // ------------ 2nd fill ------------ //
-        idx = PARTS_AMOUNT - 1;
+        idx = PARTS_AMOUNT; // Use the "extra" secret
         uint256 makingAmount2 = MAKING_AMOUNT - makingAmount;
         proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
@@ -620,7 +640,97 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
             keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
-        assertEq(storedIndex, PARTS_AMOUNT);
+        assertEq(storedIndex, PARTS_AMOUNT + 1);
+    }
+
+    function test_MultipleFillsFillAllTwoFills() public {
+        uint256 idx = PARTS_AMOUNT - 2;
+        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / PARTS_AMOUNT - 1;
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
+
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone, // target
+            swapData.extension,
+            interaction,
+            0 // threshold
+        );
+
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+
+        vm.prank(bob.addr);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount, // amount
+            takerTraits,
+            args
+        );
+
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
+
+        // ------------ 2nd fill ------------ //
+        idx = PARTS_AMOUNT; // Use the "extra" secret
+        uint256 makingAmount2 = MAKING_AMOUNT - makingAmount;
+        proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
+
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
+        vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
+
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone2, // target
+            swapData.extension,
+            interaction,
+            0 // threshold
+        );
+
+        (success,) = srcClone2.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount2, // amount
+            takerTraits2,
+            args2
+        );
+
+        assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
+        (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
+        );
+        assertEq(storedIndex, PARTS_AMOUNT + 1);
     }
 
     function test_MultipleFillsFillAllExtra() public {
@@ -888,7 +998,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IEscrowFactory.AlreadyUsedIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         limitOrderProtocol.fillOrderArgs(
             swapData.order,
             r,

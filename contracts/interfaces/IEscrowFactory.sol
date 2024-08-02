@@ -29,10 +29,9 @@ interface IEscrowFactory {
         uint256 chainId;
     }
 
-    error AlreadyUsedIndex();
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error InvalidSecretIndex();
+    error InvalidPartialFill();
     error InvalidSecretsAmount();
 
     /**
