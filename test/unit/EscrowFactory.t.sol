@@ -270,7 +270,7 @@ contract EscrowFactoryTest is BaseSetup {
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         escrowFactory.postInteraction(
             swapData.order,
             "", // extension

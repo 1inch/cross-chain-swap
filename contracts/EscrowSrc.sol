@@ -19,6 +19,7 @@ import { Escrow } from "./Escrow.sol";
  * @dev Funds are locked in at the time of contract deployment. For this Limit Order Protocol
  * calls the `EscrowFactory.postInteraction` function.
  * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
+ * @custom:security-contact security@1inch.io
  */
 contract EscrowSrc is Escrow, IEscrowSrc {
     using AddressLib for Address;

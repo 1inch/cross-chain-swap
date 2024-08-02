@@ -11,6 +11,7 @@ import { IBaseEscrow } from "./IBaseEscrow.sol";
 /**
  * @title Escrow Factory interface for cross-chain atomic swap.
  * @notice Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
+ * @custom:security-contact security@1inch.io
  */
 interface IEscrowFactory {
     struct ExtraDataArgs {
@@ -31,7 +32,7 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error InvalidSecretIndex();
+    error InvalidPartialFill();
     error InvalidSecretsAmount();
 
     /**
