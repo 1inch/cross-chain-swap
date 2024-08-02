@@ -8,7 +8,7 @@ pragma solidity 0.8.23;
  * @custom:security-contact security@1inch.io
  */
 interface IMerkleStorageInvalidator {
-    struct LastValidated {
+    struct ValidationData {
         uint256 index;
         bytes32 leaf;
     }

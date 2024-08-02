@@ -23,7 +23,7 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
     address private immutable _LIMIT_ORDER_PROTOCOL;
 
     /// @notice See {IMerkleStorageInvalidator-lastValidated}.
-    mapping(bytes32 => LastValidated) public lastValidated;
+    mapping(bytes32 key => ValidationData) public lastValidated;
 
     /// @notice Only limit order protocol can call this contract.
     modifier onlyLOP() {
@@ -63,6 +63,6 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
         bytes32 key = keccak256(abi.encodePacked(orderHash, rootShortened));
         bytes32 rootCalculated = takerData.proof.processProofCalldata(keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)));
         if (uint240(uint256(rootCalculated)) != rootShortened) revert InvalidProof();
-        lastValidated[key] = LastValidated(takerData.idx + 1, takerData.secretHash);
+        lastValidated[key] = ValidationData(takerData.idx + 1, takerData.secretHash);
     }
 }

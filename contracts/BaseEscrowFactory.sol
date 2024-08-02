@@ -78,7 +78,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             uint256 partsAmount = uint256(extraDataArgs.hashlockInfo) >> 240;
             if (partsAmount < 2) revert InvalidSecretsAmount();
             bytes32 key = keccak256(abi.encodePacked(orderHash, uint240(uint256(extraDataArgs.hashlockInfo))));
-            LastValidated memory validated = lastValidated[key];
+            ValidationData memory validated = lastValidated[key];
             hashlock = validated.leaf;
             if (!_isValidPartialFill(makingAmount, remainingMakingAmount, order.makingAmount, partsAmount, validated.index)) {
                 revert InvalidPartialFill();
