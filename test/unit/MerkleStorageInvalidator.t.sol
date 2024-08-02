@@ -119,7 +119,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
 
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert();
+        vm.expectRevert(IMerkleStorageInvalidator.InvalidProof.selector);
         ITakerInteraction(escrowFactory).takerInteraction(
             swapData.order,
             swapData.extension,
