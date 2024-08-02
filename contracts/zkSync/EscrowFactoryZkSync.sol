@@ -19,6 +19,7 @@ import { ZkSyncLib } from "./ZkSyncLib.sol";
 /**
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
+ * @custom:security-contact security@1inch.io
  */
 contract EscrowFactoryZkSync is BaseEscrowFactory {
     using ImmutablesLib for IBaseEscrow.Immutables;

@@ -14,6 +14,7 @@ import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol"; // solhint-d
 /**
  * @title Merkle Storage Invalidator contract
  * @notice Contract to invalidate hashed secrets from an order that supports multiple fills.
+ * @custom:security-contact security@1inch.io
  */
 contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];

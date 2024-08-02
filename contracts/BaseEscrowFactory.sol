@@ -24,6 +24,7 @@ import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
  * @title Abstract contract for escrow factory
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
  * @dev Immutable variables must be set in the constructor of the derived contracts.
+ * @custom:security-contact security@1inch.io
  */
 abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtension, MerkleStorageInvalidator {
     using AddressLib for Address;

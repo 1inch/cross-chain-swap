@@ -18,6 +18,7 @@ import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
 /**
  * @title Escrow Factory contract
  * @notice Contract to create escrow contracts for cross-chain atomic swap.
+ * @custom:security-contact security@1inch.io
  */
 contract EscrowFactory is BaseEscrowFactory {
     constructor(

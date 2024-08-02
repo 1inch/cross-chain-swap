@@ -23,6 +23,8 @@ pragma solidity ^0.8.20;
  * publicWithdrawal: Period when anyone with a secret can withdraw tokens for maker (destination chain).
  * cancellation: Period when escrow can only be cancelled by the taker.
  * publicCancellation: Period when escrow can be cancelled by anyone.
+ * 
+ * @custom:security-contact security@1inch.io
  */
 type Timelocks is uint256;
 
