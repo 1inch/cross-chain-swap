@@ -31,7 +31,7 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error InvalidSecretIndex();
+    error InvalidPartialFill();
     error InvalidSecretsAmount();
 
     /**

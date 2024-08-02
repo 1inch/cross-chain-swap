@@ -60,7 +60,6 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
         }
         uint240 rootShortened = uint240(uint256(extraDataArgs.hashlockInfo));
         bytes32 key = keccak256(abi.encodePacked(orderHash, rootShortened));
-        if (takerData.idx < lastValidated[key].index) revert InvalidIndex();
         bytes32 rootCalculated = takerData.proof.processProofCalldata(keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)));
         if (uint240(uint256(rootCalculated)) != rootShortened) revert InvalidProof();
         lastValidated[key] = LastValidated(takerData.idx + 1, takerData.secretHash);
