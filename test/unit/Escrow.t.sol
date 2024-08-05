@@ -734,7 +734,7 @@ contract EscrowTest is BaseSetup {
         dstClone.publicWithdraw(SECRET, immutables);
     }
 
-    function test_NoFailedNativeTokenTransferWithdrawalDstNative() public {
+    function test_NoRevertFailedNativeTokenTransferWithdrawalDstNative() public {
         (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDstCustom(
             HASHED_SECRET, TAKING_AMOUNT, address(escrowFactory), bob.addr, address(0x00), DST_SAFETY_DEPOSIT
         );
@@ -743,10 +743,15 @@ contract EscrowTest is BaseSetup {
         vm.startPrank(bob.addr);
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT + TAKING_AMOUNT }(immutables, srcCancellationTimestamp);
 
+        uint256 balanceBob = bob.addr.balance;
+        uint256 balanceFactory = address(escrowFactory).balance;
+
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
-        vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         dstClone.withdraw(SECRET, immutables);
+        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
+        assertEq(address(dstClone).balance, TAKING_AMOUNT);
+        assertEq(address(escrowFactory).balance, balanceFactory);
     }
 
     function test_NoPublicWithdrawOutsideOfAllowedPeriodDst() public {
