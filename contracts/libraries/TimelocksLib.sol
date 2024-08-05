@@ -42,7 +42,8 @@ library TimelocksLib {
         DstCancellation
     }
 
-    uint256 private constant DEPLOYED_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+    uint256 private constant _DEPLOYED_AT_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+    uint256 private constant _DEPLOYED_AT_OFFSET = 224;
 
     /**
      * @notice Sets the Escrow deployment timestamp.
@@ -51,7 +52,7 @@ library TimelocksLib {
      * @return The timelocks with the deployment timestamp set.
      */
     function setDeployedAt(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap((Timelocks.unwrap(timelocks) & ~uint256(DEPLOYED_MASK)) | value << 224);
+        return Timelocks.wrap((Timelocks.unwrap(timelocks) & ~uint256(_DEPLOYED_AT_MASK)) | value << _DEPLOYED_AT_OFFSET);
     }
 
     /**
@@ -61,7 +62,7 @@ library TimelocksLib {
      */
     function rescueStart(Timelocks timelocks, uint256 rescueDelay) internal pure returns (uint256) {
         unchecked {
-            return rescueDelay + uint32(Timelocks.unwrap(timelocks) >> 224);
+            return rescueDelay + (Timelocks.unwrap(timelocks) >> _DEPLOYED_AT_OFFSET);
         }
     }
 
@@ -75,6 +76,6 @@ library TimelocksLib {
         uint256 data = Timelocks.unwrap(timelocks);
         uint256 bitShift = uint256(stage) * 32;
         // The maximum uint32 value will be reached in 2106.
-        return uint32(data >> 224) + uint32(data >> bitShift);
+        return (data >> _DEPLOYED_AT_OFFSET) + uint32(data >> bitShift);
     }
 }
