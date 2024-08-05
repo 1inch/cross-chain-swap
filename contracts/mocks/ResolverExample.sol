@@ -11,14 +11,14 @@ import { RevertReasonForwarder } from "solidity-utils/contracts/libraries/Revert
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "../interfaces/IEscrowFactory.sol";
 import { IResolverExample } from "../interfaces/IResolverExample.sol";
-import { Timelocks } from "../libraries/TimelocksLib.sol";
+import { TimelocksLib } from "../libraries/TimelocksLib.sol";
 
 /**
  * @title Sample implementation of a Resolver contract for cross-chain swap.
  * @dev It is important when deploying an escrow on the source chain to send the safety deposit and deploy the escrow in the same
  * transaction, since the address of the escrow depends on the block.timestamp.
  * You can find sample code for this in the {ResolverExample-deploySrc}.
- * 
+ *
  * @custom:security-contact security@1inch.io
  */
 contract ResolverExample is IResolverExample, Ownable {
@@ -45,7 +45,7 @@ contract ResolverExample is IResolverExample, Ownable {
         bytes calldata args
     ) external onlyOwner {
         IBaseEscrow.Immutables memory immutablesMem = immutables;
-        immutablesMem.timelocks = Timelocks.wrap(Timelocks.unwrap(immutables.timelocks) | block.timestamp);
+        immutablesMem.timelocks = TimelocksLib.setDeployedAt(immutables.timelocks, block.timestamp);
         address computed = _FACTORY.addressOfEscrowSrc(immutablesMem);
         (bool success,) = address(computed).call{ value: immutablesMem.safetyDeposit }("");
         if (!success) revert IBaseEscrow.NativeTokenSendingFailure();

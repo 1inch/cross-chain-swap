@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { stdError } from "forge-std/StdError.sol";
-
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 
@@ -47,13 +45,20 @@ contract TimelocksLibTest is BaseSetup {
 
     function test_setDeployedAt() public {
         uint256 timestamp = block.timestamp;
-        assertEq(Timelocks.unwrap(timelocksLibMock.setDeployedAt(Timelocks.wrap(0), timestamp)), timestamp);
+        assertEq(Timelocks.unwrap(timelocksLibMock.setDeployedAt(Timelocks.wrap(0), timestamp)), timestamp << 224);
     }
 
     function test_NoTimelocksOverflow() public {
         vm.warp(1710159521); // make it real, it's 0 in foundry
 
-        dstTimelocks = CrossChainTestLib.DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 1 });
+        srcTimelocks = CrossChainTestLib.SrcTimelocks({
+            withdrawal: 2584807817,
+            publicWithdrawal: 2584807817,
+            cancellation: 2584807820,
+            publicCancellation:
+            2584807820
+        });
+        dstTimelocks = CrossChainTestLib.DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 2584807820 });
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
         (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst();
@@ -63,9 +68,12 @@ contract TimelocksLibTest is BaseSetup {
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutablesDst, srcCancellationTimestamp);
 
         // withdraw
+        vm.warp(block.timestamp + dstTimelocks.publicWithdrawal);
+        uint256 balanceAlice = dai.balanceOf(alice.addr);
         vm.startPrank(alice.addr);
-        vm.expectRevert(stdError.arithmeticError);
         dstClone.publicWithdraw(SECRET, immutablesDst);
+        assertEq(dai.balanceOf(address(dstClone)), 0);
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
     }
 
     /* solhint-enable func-name-mixedcase */

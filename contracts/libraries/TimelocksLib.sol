@@ -20,10 +20,10 @@ pragma solidity ^0.8.20;
  * }
  *
  * withdrawal: Period when only the taker with a secret can withdraw tokens for taker (source chain) or maker (destination chain).
- * publicWithdrawal: Period when anyone with a secret can withdraw tokens for maker (destination chain).
+ * publicWithdrawal: Period when anyone with a secret can withdraw tokens for taker (source chain) or maker (destination chain).
  * cancellation: Period when escrow can only be cancelled by the taker.
  * publicCancellation: Period when escrow can be cancelled by anyone.
- * 
+ *
  * @custom:security-contact security@1inch.io
  */
 type Timelocks is uint256;
@@ -33,7 +33,6 @@ type Timelocks is uint256;
  */
 library TimelocksLib {
     enum Stage {
-        DeployedAt,
         SrcWithdrawal,
         SrcPublicWithdrawal,
         SrcCancellation,
@@ -43,6 +42,9 @@ library TimelocksLib {
         DstCancellation
     }
 
+    uint256 private constant _DEPLOYED_AT_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+    uint256 private constant _DEPLOYED_AT_OFFSET = 224;
+
     /**
      * @notice Sets the Escrow deployment timestamp.
      * @param timelocks The timelocks to set the deployment timestamp to.
@@ -50,7 +52,7 @@ library TimelocksLib {
      * @return The timelocks with the deployment timestamp set.
      */
     function setDeployedAt(Timelocks timelocks, uint256 value) internal pure returns (Timelocks) {
-        return Timelocks.wrap((Timelocks.unwrap(timelocks) & ~uint256(type(uint32).max)) | uint32(value));
+        return Timelocks.wrap((Timelocks.unwrap(timelocks) & ~uint256(_DEPLOYED_AT_MASK)) | value << _DEPLOYED_AT_OFFSET);
     }
 
     /**
@@ -60,7 +62,7 @@ library TimelocksLib {
      */
     function rescueStart(Timelocks timelocks, uint256 rescueDelay) internal pure returns (uint256) {
         unchecked {
-            return uint32(Timelocks.unwrap(timelocks)) + rescueDelay;
+            return rescueDelay + (Timelocks.unwrap(timelocks) >> _DEPLOYED_AT_OFFSET);
         }
     }
 
@@ -74,6 +76,6 @@ library TimelocksLib {
         uint256 data = Timelocks.unwrap(timelocks);
         uint256 bitShift = uint256(stage) * 32;
         // The maximum uint32 value will be reached in 2106.
-        return uint32(data) + uint32(data >> bitShift);
+        return (data >> _DEPLOYED_AT_OFFSET) + uint32(data >> bitShift);
     }
 }
