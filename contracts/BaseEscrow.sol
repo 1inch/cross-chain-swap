@@ -14,6 +14,7 @@ import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
 /**
  * @title Base abstract Escrow contract for cross-chain atomic swap.
  * @dev {IBaseEscrow-withdraw}, {IBaseEscrow-cancel} and _validateImmutables functions must be implemented in the derived contracts.
+ * @custom:security-contact security@1inch.io
  */
 abstract contract BaseEscrow is IBaseEscrow {
     using AddressLib for Address;

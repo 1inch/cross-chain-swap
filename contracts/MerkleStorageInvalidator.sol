@@ -14,6 +14,7 @@ import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol"; // solhint-d
 /**
  * @title Merkle Storage Invalidator contract
  * @notice Contract to invalidate hashed secrets from an order that supports multiple fills.
+ * @custom:security-contact security@1inch.io
  */
 contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteraction {
     using MerkleProof for bytes32[];
@@ -22,7 +23,7 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
     address private immutable _LIMIT_ORDER_PROTOCOL;
 
     /// @notice See {IMerkleStorageInvalidator-lastValidated}.
-    mapping(bytes32 => LastValidated) public lastValidated;
+    mapping(bytes32 key => ValidationData) public lastValidated;
 
     /// @notice Only limit order protocol can call this contract.
     modifier onlyLOP() {
@@ -60,8 +61,10 @@ contract MerkleStorageInvalidator is IMerkleStorageInvalidator, ITakerInteractio
         }
         uint240 rootShortened = uint240(uint256(extraDataArgs.hashlockInfo));
         bytes32 key = keccak256(abi.encodePacked(orderHash, rootShortened));
-        bytes32 rootCalculated = takerData.proof.processProofCalldata(keccak256(abi.encodePacked(takerData.idx, takerData.secretHash)));
+        bytes32 rootCalculated = takerData.proof.processProofCalldata(
+            keccak256(abi.encodePacked(uint64(takerData.idx), takerData.secretHash))
+        );
         if (uint240(uint256(rootCalculated)) != rootShortened) revert InvalidProof();
-        lastValidated[key] = LastValidated(takerData.idx + 1, takerData.secretHash);
+        lastValidated[key] = ValidationData(takerData.idx + 1, takerData.secretHash);
     }
 }
