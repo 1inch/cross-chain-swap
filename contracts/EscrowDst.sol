@@ -79,14 +79,15 @@ contract EscrowDst is Escrow, IEscrowDst {
     {
         address token = immutables.token.get();
         address to = immutables.maker.get();
-        uint256 amount = immutables.amount;
         if (token == address(0)) {
-            /** We ignore the result of the call, so that the receiver cannot use revert
-             * to prevent the resolver from getting the safety deposit back.
-             * */
-            to.call{ value: amount }("");
+            /**
+             * @dev The result of the call is not checked intentionally. This is done to ensure that
+             * even in case of malicious receiver the withdrawal flow can not be blocked and takers
+             * will be able to get their safety deposit back.
+             **/
+            to.call{ value: immutables.amount }("");
         } else {
-            IERC20(token).safeTransfer(to, amount);
+            IERC20(token).safeTransfer(to, immutables.amount);
         }
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit Withdrawal(secret);
