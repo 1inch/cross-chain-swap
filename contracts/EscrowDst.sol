@@ -78,7 +78,18 @@ contract EscrowDst is Escrow, IEscrowDst {
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
     {
-        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
+        address token = immutables.token.get();
+        address to = immutables.maker.get();
+        if (token == address(0)) {
+            /**
+             * @dev The result of the call is not checked intentionally. This is done to ensure that
+             * even in case of malicious receiver the withdrawal flow can not be blocked and takers
+             * will be able to get their safety deposit back.
+             **/
+            to.call{ value: immutables.amount }("");
+        } else {
+            IERC20(token).safeTransfer(to, immutables.amount);
+        }
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit Withdrawal(secret);
     }
