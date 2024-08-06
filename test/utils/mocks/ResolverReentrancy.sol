@@ -62,7 +62,6 @@ contract ResolverReentrancy is Ownable {
         _r = r;
         _vs = vs;
         _takerTraits = takerTraits;
-        // _args = args;
         _LOP.fillOrderArgs(order, r, vs, amount, takerTraits, argsMem);
     }
 
