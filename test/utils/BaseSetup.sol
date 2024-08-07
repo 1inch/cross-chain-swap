@@ -126,7 +126,7 @@ contract BaseSetup is Test, Utils {
         escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
         vm.label(address(escrowSrc), "EscrowSrc");
         escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
-        vm.label(address(escrowDst), "EscrowDst");
+        // vm.label(address(escrowDst), "EscrowDst");
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
         vm.label(address(feeBank), "FeeBank");
