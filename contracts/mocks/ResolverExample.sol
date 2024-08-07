@@ -10,13 +10,18 @@ import { RevertReasonForwarder } from "solidity-utils/contracts/libraries/Revert
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "../interfaces/IEscrowFactory.sol";
-import { IResolverMock } from "../interfaces/IResolverMock.sol";
-import { Timelocks } from "../libraries/TimelocksLib.sol";
+import { IResolverExample } from "../interfaces/IResolverExample.sol";
+import { TimelocksLib } from "../libraries/TimelocksLib.sol";
 
 /**
  * @title Sample implementation of a Resolver contract for cross-chain swap.
+ * @dev It is important when deploying an escrow on the source chain to send the safety deposit and deploy the escrow in the same
+ * transaction, since the address of the escrow depends on the block.timestamp.
+ * You can find sample code for this in the {ResolverExample-deploySrc}.
+ *
+ * @custom:security-contact security@1inch.io
  */
-contract ResolverMock is IResolverMock, Ownable {
+contract ResolverExample is IResolverExample, Ownable {
     IEscrowFactory private immutable _FACTORY;
     IOrderMixin private immutable _LOP;
 
@@ -28,7 +33,7 @@ contract ResolverMock is IResolverMock, Ownable {
     receive() external payable {} // solhint-disable-line no-empty-blocks
 
     /**
-     * @notice See {IResolverMock-deploySrc}.
+     * @notice See {IResolverExample-deploySrc}.
      */
     function deploySrc(
         IBaseEscrow.Immutables calldata immutables,
@@ -40,7 +45,7 @@ contract ResolverMock is IResolverMock, Ownable {
         bytes calldata args
     ) external onlyOwner {
         IBaseEscrow.Immutables memory immutablesMem = immutables;
-        immutablesMem.timelocks = Timelocks.wrap(Timelocks.unwrap(immutables.timelocks) | block.timestamp);
+        immutablesMem.timelocks = TimelocksLib.setDeployedAt(immutables.timelocks, block.timestamp);
         address computed = _FACTORY.addressOfEscrowSrc(immutablesMem);
         (bool success,) = address(computed).call{ value: immutablesMem.safetyDeposit }("");
         if (!success) revert IBaseEscrow.NativeTokenSendingFailure();
@@ -52,14 +57,14 @@ contract ResolverMock is IResolverMock, Ownable {
     }
 
     /**
-     * @notice See {IResolverMock-deployDst}.
+     * @notice See {IResolverExample-deployDst}.
      */
     function deployDst(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external onlyOwner payable {
         _FACTORY.createDstEscrow{ value: msg.value }(dstImmutables, srcCancellationTimestamp);
     }
 
     /**
-     * @notice See {IResolverMock-arbitraryCalls}.
+     * @notice See {IResolverExample-arbitraryCalls}.
      */
     function arbitraryCalls(address[] calldata targets, bytes[] calldata arguments) external onlyOwner {
         uint256 length = targets.length;

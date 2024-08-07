@@ -13,6 +13,7 @@ import { BaseEscrow } from "./BaseEscrow.sol";
 /**
  * @title Abstract Escrow contract for cross-chain atomic swap.
  * @dev {IBaseEscrow-withdraw} and {IBaseEscrow-cancel} functions must be implemented in the derived contracts.
+ * @custom:security-contact security@1inch.io
  */
 abstract contract Escrow is BaseEscrow, IEscrow {
     using ImmutablesLib for Immutables;

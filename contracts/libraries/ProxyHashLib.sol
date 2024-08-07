@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title Library to compute the hash of the proxy bytecode.
+ * @custom:security-contact security@1inch.io
  */
 library ProxyHashLib {
     /**

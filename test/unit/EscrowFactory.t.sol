@@ -25,7 +25,8 @@ contract EscrowFactoryTest is BaseSetup {
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+        // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
+        for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
@@ -121,7 +122,6 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 balanceBob = dai.balanceOf(bob.addr);
         uint256 balanceEscrow = dai.balanceOf(address(dstClone));
         uint256 balanceEscrowNative = address(dstClone).balance;
-
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -238,7 +238,6 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 idx = SECRETS_AMOUNT * (makingAmount - 1) / MAKING_AMOUNT;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
-
         bytes32 rootPlusAmount = bytes32(uint256(0) << 240 | uint240(uint256(root)));
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
@@ -270,11 +269,8 @@ contract EscrowFactoryTest is BaseSetup {
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        swapData.immutables.hashlock = hashedSecrets[idx];
-        swapData.immutables.amount = makingAmount;
-
         vm.prank(address(limitOrderProtocol));
-        vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         escrowFactory.postInteraction(
             swapData.order,
             "", // extension
