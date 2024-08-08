@@ -26,3 +26,6 @@ libs = ['lib']
 fallback_oz = true
 is_system = false
 mode = "3"
+
+[profile.zksync.fuzz]
+runs = 256
