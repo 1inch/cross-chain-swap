@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.26;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { AddressLib, Address } from "solidity-utils/libraries/AddressLib.sol";
-import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
+import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
@@ -14,6 +14,7 @@ import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
 /**
  * @title Base abstract Escrow contract for cross-chain atomic swap.
  * @dev {IBaseEscrow-withdraw}, {IBaseEscrow-cancel} and _validateImmutables functions must be implemented in the derived contracts.
+ * @custom:security-contact security@1inch.io
  */
 abstract contract BaseEscrow is IBaseEscrow {
     using AddressLib for Address;

@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.26;
 
-import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { Timelocks, TimelocksLib } from "../../../contracts/libraries/TimelocksLib.sol";
 
 /**
  * @title Library with setters for Timelocks.
@@ -30,7 +30,7 @@ library TimelocksSettersLib {
         uint32 deployedAt
     ) internal pure returns (Timelocks) {
         return Timelocks.wrap(
-            deployedAt
+            (uint256(deployedAt) << 224)
                 | (uint256(srcWithdrawal) << (uint256(TimelocksLib.Stage.SrcWithdrawal) * 32))
                 | (uint256(srcPublicWithdrawal) << (uint256(TimelocksLib.Stage.SrcPublicWithdrawal) * 32))
                 | (uint256(srcCancellation) << (uint256(TimelocksLib.Stage.SrcCancellation) * 32))

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { Address } from "solidity-utils/libraries/AddressLib.sol";
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
@@ -11,10 +11,11 @@ import { IBaseEscrow } from "./IBaseEscrow.sol";
 /**
  * @title Escrow Factory interface for cross-chain atomic swap.
  * @notice Interface to deploy escrow contracts for the destination chain and to get the deterministic address of escrow on both chains.
+ * @custom:security-contact security@1inch.io
  */
 interface IEscrowFactory {
     struct ExtraDataArgs {
-        bytes32 hashlock; // Hash of the secret or the Merkle tree root if multiple fills are allowed
+        bytes32 hashlockInfo; // Hash of the secret or the Merkle tree root if multiple fills are allowed
         uint256 dstChainId;
         Address dstToken;
         uint256 deposits;
@@ -31,7 +32,7 @@ interface IEscrowFactory {
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
-    error InvalidSecretIndex();
+    error InvalidPartialFill();
     error InvalidSecretsAmount();
 
     /**

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
 import { Merkle } from "murky/src/Merkle.sol";
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
 
-import { BaseSetup, EscrowSrc, IOrderMixin, TakerTraits } from "../utils/BaseSetup.sol";
+import { BaseSetup } from "../utils/BaseSetup.sol";
+import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract MerkleStorageInvalidatorIntTest is BaseSetup {
     uint256 public constant PARTS_AMOUNT = 100;
@@ -17,15 +18,18 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     bytes32 public root;
     bytes32[] public hashedSecrets = new bytes32[](SECRETS_AMOUNT);
     bytes32[] public hashedPairs = new bytes32[](SECRETS_AMOUNT);
+    bytes32 public rootPlusAmount;
 
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        for (uint256 i = 0; i < SECRETS_AMOUNT; i++) {
+        for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
+            // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
+        rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -36,45 +40,36 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         uint256 resolverCredit = feeBank.availableCredit(bob.addr);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -83,7 +78,28 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
 
         assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
+    }
+
+    function _isValidPartialFill(
+        uint256 makingAmount,
+        uint256 remainingMakingAmount,
+        uint256 orderMakingAmount,
+        uint256 partsAmount,
+        uint256 validatedIndex
+    ) internal pure returns (bool) {
+        uint256 calculatedIndex = (orderMakingAmount - remainingMakingAmount + makingAmount - 1) * partsAmount / orderMakingAmount;
+
+        if (remainingMakingAmount == makingAmount) {
+            // The last secret must be used for the last fill.
+            return (calculatedIndex + 2 == validatedIndex);
+        } else if (orderMakingAmount != remainingMakingAmount) {
+            // Calculate the previous fill index only if this is not the first fill.
+            uint256 prevCalculatedIndex = (orderMakingAmount - remainingMakingAmount - 1) * partsAmount / orderMakingAmount;
+            if (calculatedIndex == prevCalculatedIndex) return false;
+        }
+
+        return calculatedIndex + 1 == validatedIndex;
     }
 
     function testFuzz_MultipleFillsOneFillPassAndFail(uint256 makingAmount, uint256 partsAmount, uint256 idx) public {
@@ -92,13 +108,12 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         idx = bound(idx, 0, partsAmount);
         uint256 secretsAmount = partsAmount + 1;
 
-        uint256 idxCalculated = partsAmount * (makingAmount - 1) / MAKING_AMOUNT;
-        bool shouldFail = (idxCalculated != idx) && ((idx != partsAmount) || (makingAmount != MAKING_AMOUNT));
+        bool shouldFail = !_isValidPartialFill(makingAmount, MAKING_AMOUNT, MAKING_AMOUNT, partsAmount, idx + 1);
 
         bytes32[] memory hashedSecretsLocal = new bytes32[](secretsAmount);
         bytes32[] memory hashedPairsLocal = new bytes32[](secretsAmount);
 
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint64 i = 0; i < secretsAmount; i++) {
             hashedSecretsLocal[i] = keccak256(abi.encodePacked(i));
             hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
         }
@@ -107,46 +122,39 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairsLocal, idx);
         assert(merkle.verifyProof(root, proof, hashedPairsLocal[idx]));
 
-        bytes32 rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
+        rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        immutables.hashlock = hashedSecretsLocal[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+        swapData.immutables.hashlock = hashedSecretsLocal[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecretsLocal[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecretsLocal[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(bob.addr);
         if (shouldFail) {
-            vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+            vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         }
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -155,7 +163,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
 
         if (!shouldFail) {
-            assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+            assertEq(usdc.balanceOf(srcClone), makingAmount);
         }
     }
 
@@ -165,43 +173,34 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -209,7 +208,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
 
         // ------------ 2nd fill ------------ //
         uint256 makingAmount2 = MAKING_AMOUNT * 2 / 3 - makingAmount;
@@ -217,22 +216,22 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount2;
-        address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (v, r, s) = vm.sign(alice.privateKey, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             srcClone2, // target
-            extension,
+            swapData.extension,
             interaction,
             0 // threshold
         );
@@ -242,7 +241,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount2, // amount
@@ -254,43 +253,34 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     }
 
     function test_MultipleFillsNoDeploymentWithoutValidation() public {
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
-
-        immutables.hashlock = 0;
+        swapData.immutables.hashlock = 0;
         uint256 makingAmount = MAKING_AMOUNT / PARTS_AMOUNT;
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension, // extension
+            srcClone, // target
+            swapData.extension, // extension
             "", // interaction
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IEscrowFactory.InvalidSecretIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -306,43 +296,34 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -350,25 +331,25 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
 
         // ------------ 2nd fill ------------ //
         uint256 makingAmount2 = fraction / 2;
-        immutables.amount = makingAmount2;
-        address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (v, r, s) = vm.sign(alice.privateKey, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             srcClone2, // target
-            extension,
+            swapData.extension,
             interaction,
             0 // threshold
         );
@@ -377,9 +358,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         assertEq(success, true);
 
         vm.prank(bob.addr);
-        vm.expectRevert(IMerkleStorageInvalidator.InvalidIndex.selector);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount2, // amount
@@ -394,45 +375,36 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         uint256 resolverCredit = feeBank.availableCredit(bob.addr);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -441,7 +413,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
 
         assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
     }
 
     function test_MultipleFillsFillFirstTwoFills() public {
@@ -450,45 +422,36 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         uint256 resolverCredit = feeBank.availableCredit(bob.addr);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -497,7 +460,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
 
         assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
 
         // ------------ 2nd fill ------------ //
         idx = 1;
@@ -505,22 +468,22 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount2;
-        address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (v, r, s) = vm.sign(alice.privateKey, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             srcClone2, // target
-            extension,
+            swapData.extension,
             interaction,
             0 // threshold
         );
@@ -530,7 +493,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount2, // amount
@@ -540,54 +503,45 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, idx + 1);
     }
 
     function test_MultipleFillsFillLast() public {
-        uint256 idx = PARTS_AMOUNT - 1;
+        uint256 idx = PARTS_AMOUNT; // Use the "extra" secret
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         uint256 resolverCredit = feeBank.availableCredit(bob.addr);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             MAKING_AMOUNT, // amount
@@ -596,53 +550,44 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
 
         assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
-        assertEq(usdc.balanceOf(address(srcClone)), MAKING_AMOUNT);
+        assertEq(usdc.balanceOf(srcClone), MAKING_AMOUNT);
     }
 
-    function test_MultipleFillsFillAllTwoFills() public {
-        uint256 idx = PARTS_AMOUNT - 2;
-        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / PARTS_AMOUNT;
+    function test_MultipleFillsFillAllFromLast() public {
+        uint256 idx = PARTS_AMOUNT - 1;
+        uint256 makingAmount = MAKING_AMOUNT - 1;
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -650,30 +595,30 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
 
         // ------------ 2nd fill ------------ //
-        idx = PARTS_AMOUNT - 1;
+        idx = PARTS_AMOUNT; // Use the "extra" secret
         uint256 makingAmount2 = MAKING_AMOUNT - makingAmount;
         proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount2;
-        address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (v, r, s) = vm.sign(alice.privateKey, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             srcClone2, // target
-            extension,
+            swapData.extension,
             interaction,
             0 // threshold
         );
@@ -683,7 +628,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount2, // amount
@@ -693,9 +638,99 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
-        assertEq(storedIndex, PARTS_AMOUNT);
+        assertEq(storedIndex, PARTS_AMOUNT + 1);
+    }
+
+    function test_MultipleFillsFillAllTwoFills() public {
+        uint256 idx = PARTS_AMOUNT - 2;
+        uint256 makingAmount = MAKING_AMOUNT * (idx + 1) / PARTS_AMOUNT - 1;
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
+
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone, // target
+            swapData.extension,
+            interaction,
+            0 // threshold
+        );
+
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+
+        vm.prank(bob.addr);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount, // amount
+            takerTraits,
+            args
+        );
+
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
+
+        // ------------ 2nd fill ------------ //
+        idx = PARTS_AMOUNT; // Use the "extra" secret
+        uint256 makingAmount2 = MAKING_AMOUNT - makingAmount;
+        proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
+
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
+        vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
+
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone2, // target
+            swapData.extension,
+            interaction,
+            0 // threshold
+        );
+
+        (success,) = srcClone2.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount2, // amount
+            takerTraits2,
+            args2
+        );
+
+        assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
+        (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
+        );
+        assertEq(storedIndex, PARTS_AMOUNT + 1);
     }
 
     function test_MultipleFillsFillAllExtra() public {
@@ -705,44 +740,35 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        bytes32 rootPlusAmount = bytes32(PARTS_AMOUNT << 240 | uint240(uint256(root)));
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, MAKING_AMOUNT, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount, // amount
@@ -750,9 +776,9 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
             args
         );
 
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmount);
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
         (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, PARTS_AMOUNT);
 
@@ -761,22 +787,22 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         proof = merkle.getProof(hashedPairs, idx);
         assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
 
-        immutables.hashlock = hashedSecrets[idx];
-        immutables.amount = makingAmount2;
-        address srcClone2 = address(EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables)));
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (v, r, s) = vm.sign(alice.privateKey, orderHash);
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
         vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedSecrets[idx]));
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
 
-        (TakerTraits takerTraits2, bytes memory args2) = _buildTakerTraits(
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
             srcClone2, // target
-            extension,
+            swapData.extension,
             interaction,
             0 // threshold
         );
@@ -786,7 +812,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmount2, // amount
@@ -796,7 +822,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         assertEq(usdc.balanceOf(address(srcClone2)), makingAmount2);
         (storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
-            keccak256(abi.encodePacked(orderHash, uint240(uint256(root))))
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
         );
         assertEq(storedIndex, SECRETS_AMOUNT);
     }
@@ -808,7 +834,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         uint256 idx = secretsAmount * (makingAmountToFill - 1) / makingAmount;
         bytes32[] memory hashedS = new bytes32[](secretsAmount);
         bytes32[] memory hashedP = new bytes32[](secretsAmount);
-        for (uint256 i = 0; i < secretsAmount; i++) {
+        for (uint64 i = 0; i < secretsAmount; i++) {
             hashedS[i] = keccak256(abi.encodePacked(i));
             hashedP[i] = keccak256(abi.encodePacked(i, hashedS[i]));
         }
@@ -816,45 +842,40 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory proof = merkle.getProof(hashedP, idx);
         assert(merkle.verifyProof(root, proof, hashedP[idx]));
 
-        bytes32 rootPlusAmount = bytes32(secretsAmount << 240 | uint240(uint256(root)));
+        rootPlusAmount = bytes32(secretsAmount << 240 | uint240(uint256(root)));
 
-        (
-            IOrderMixin.Order memory order,
-            bytes32 orderHash,
-            /* bytes memory extraData */,
-            bytes memory extension,
-            IBaseEscrow srcClone,
-            IBaseEscrow.Immutables memory immutables
-        ) = _prepareDataSrc(rootPlusAmount, makingAmount, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
+            rootPlusAmount, makingAmount, TAKING_AMOUNT, SRC_SAFETY_DEPOSIT, DST_SAFETY_DEPOSIT, address(0), false, true
+        );
 
-        immutables.hashlock = hashedS[idx];
-        immutables.amount = makingAmountToFill;
-        srcClone = EscrowSrc(escrowFactory.addressOfEscrowSrc(immutables));
+        swapData.immutables.hashlock = hashedS[idx];
+        swapData.immutables.amount = makingAmountToFill;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, orderHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
 
-        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(root, proof, idx, hashedS[idx]));
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedS[idx]));
 
-        (TakerTraits takerTraits, bytes memory args) = _buildTakerTraits(
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
             true, // makingAmount
             false, // unwrapWeth
             false, // skipMakerPermit
             false, // usePermit2
-            address(srcClone), // target
-            extension,
+            srcClone, // target
+            swapData.extension,
             interaction,
             0 // threshold
         );
 
-        (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
 
         uint256 resolverCredit = feeBank.availableCredit(bob.addr);
 
         vm.prank(bob.addr);
         limitOrderProtocol.fillOrderArgs(
-            order,
+            swapData.order,
             r,
             vs,
             makingAmountToFill, // amount
@@ -863,7 +884,129 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         );
 
         assertEq(feeBank.availableCredit(bob.addr), resolverCredit);
-        assertEq(usdc.balanceOf(address(srcClone)), makingAmountToFill);
+        assertEq(usdc.balanceOf(srcClone), makingAmountToFill);
+    }
+
+    function test_MultipleFillsNoReuseOfSecrets() public {
+        uint256 idx = 0;
+        uint256 onePart = MAKING_AMOUNT / PARTS_AMOUNT;
+        uint256 makingAmount = onePart / 2 - 1;
+        bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+        assert(merkle.verifyProof(root, proof, hashedPairs[idx]));
+
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(rootPlusAmount, false, true);
+
+        swapData.immutables.hashlock = hashedSecrets[idx];
+        swapData.immutables.amount = makingAmount;
+        address srcClone = escrowFactory.addressOfEscrowSrc(swapData.immutables);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
+        bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        bytes memory interaction = abi.encodePacked(escrowFactory, abi.encode(proof, idx, hashedSecrets[idx]));
+
+        (TakerTraits takerTraits, bytes memory args) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone, // target
+            swapData.extension,
+            interaction,
+            0 // threshold
+        );
+
+        (bool success,) = srcClone.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+
+        vm.prank(bob.addr);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount, // amount
+            takerTraits,
+            args
+        );
+
+        assertEq(usdc.balanceOf(srcClone), makingAmount);
+        (uint256 storedIndex,) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
+            keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
+        );
+        assertEq(storedIndex, idx + 1);
+
+        // ------------ 2nd fill, forged proof ------------ //
+        uint256 makingAmount2 = makingAmount + 1;
+        bytes32[] memory hashedSecretsLocal = new bytes32[](SECRETS_AMOUNT);
+        bytes32[] memory hashedPairsLocal = new bytes32[](SECRETS_AMOUNT);
+        for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
+            hashedSecretsLocal[i] = keccak256(abi.encodePacked(keccak256(abi.encodePacked(i))));
+            hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
+        }
+        bytes32 rootLocal = merkle.getRoot(hashedPairsLocal);
+
+        bytes32[] memory proofLocal = merkle.getProof(hashedPairsLocal, idx);
+        assert(merkle.verifyProof(rootLocal, proofLocal, hashedPairsLocal[idx]));
+
+        swapData.immutables.amount = makingAmount2;
+        address srcClone2 = escrowFactory.addressOfEscrowSrc(swapData.immutables);
+
+        (v, r, s) = vm.sign(alice.privateKey, swapData.orderHash);
+        vs = bytes32((uint256(v - 27) << 255)) | s;
+
+        interaction = abi.encodePacked(escrowFactory, abi.encode(proofLocal, idx + 1, hashedSecretsLocal[idx]));
+
+        (TakerTraits takerTraits2, bytes memory args2) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone2, // target
+            swapData.extension,
+            interaction,
+            0 // threshold
+        );
+
+        (success,) = srcClone2.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        vm.expectRevert(IMerkleStorageInvalidator.InvalidProof.selector);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount2, // amount
+            takerTraits2,
+            args2
+        );
+
+        // ------------ 2nd fill, no taker interaction ------------ //
+        (TakerTraits takerTraits3, bytes memory args3) = CrossChainTestLib.buildTakerTraits(
+            true, // makingAmount
+            false, // unwrapWeth
+            false, // skipMakerPermit
+            false, // usePermit2
+            srcClone2, // target
+            swapData.extension,
+            "", // interaction
+            0 // threshold
+        );
+
+        (success,) = srcClone2.call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+
+        vm.prank(bob.addr);
+        vm.expectRevert(IEscrowFactory.InvalidPartialFill.selector);
+        limitOrderProtocol.fillOrderArgs(
+            swapData.order,
+            r,
+            vs,
+            makingAmount2, // amount
+            takerTraits3,
+            args3
+        );
     }
 
     /* solhint-enable func-name-mixedcase */

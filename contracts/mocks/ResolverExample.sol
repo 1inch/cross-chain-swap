@@ -2,27 +2,26 @@
 
 pragma solidity 0.8.26;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
+import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
-import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
-import { IWETH } from "solidity-utils/interfaces/IWETH.sol";
-import { RevertReasonForwarder } from "solidity-utils/libraries/RevertReasonForwarder.sol";
-import { SafeERC20 } from "solidity-utils/libraries/SafeERC20.sol";
+import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
+import { RevertReasonForwarder } from "solidity-utils/contracts/libraries/RevertReasonForwarder.sol";
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "../interfaces/IEscrowFactory.sol";
-import { IResolverMock } from "../interfaces/IResolverMock.sol";
-import { Timelocks } from "../libraries/TimelocksLib.sol";
+import { IResolverExample } from "../interfaces/IResolverExample.sol";
+import { TimelocksLib } from "../libraries/TimelocksLib.sol";
 
 /**
  * @title Sample implementation of a Resolver contract for cross-chain swap.
+ * @dev It is important when deploying an escrow on the source chain to send the safety deposit and deploy the escrow in the same
+ * transaction, since the address of the escrow depends on the block.timestamp.
+ * You can find sample code for this in the {ResolverExample-deploySrc}.
+ *
+ * @custom:security-contact security@1inch.io
  */
-contract ResolverMock is IResolverMock, Ownable {
-    using SafeERC20 for IERC20;
-    using SafeERC20 for IWETH;
-
+contract ResolverExample is IResolverExample, Ownable {
     IEscrowFactory private immutable _FACTORY;
     IOrderMixin private immutable _LOP;
 
@@ -34,7 +33,7 @@ contract ResolverMock is IResolverMock, Ownable {
     receive() external payable {} // solhint-disable-line no-empty-blocks
 
     /**
-     * @notice See {IResolverMock-deploySrc}.
+     * @notice See {IResolverExample-deploySrc}.
      */
     function deploySrc(
         IBaseEscrow.Immutables calldata immutables,
@@ -46,7 +45,7 @@ contract ResolverMock is IResolverMock, Ownable {
         bytes calldata args
     ) external onlyOwner {
         IBaseEscrow.Immutables memory immutablesMem = immutables;
-        immutablesMem.timelocks = Timelocks.wrap(Timelocks.unwrap(immutables.timelocks) | block.timestamp);
+        immutablesMem.timelocks = TimelocksLib.setDeployedAt(immutables.timelocks, block.timestamp);
         address computed = _FACTORY.addressOfEscrowSrc(immutablesMem);
         (bool success,) = address(computed).call{ value: immutablesMem.safetyDeposit }("");
         if (!success) revert IBaseEscrow.NativeTokenSendingFailure();
@@ -58,14 +57,14 @@ contract ResolverMock is IResolverMock, Ownable {
     }
 
     /**
-     * @notice See {IResolverMock-deployDst}.
+     * @notice See {IResolverExample-deployDst}.
      */
     function deployDst(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external onlyOwner payable {
         _FACTORY.createDstEscrow{ value: msg.value }(dstImmutables, srcCancellationTimestamp);
     }
 
     /**
-     * @notice See {IResolverMock-arbitraryCalls}.
+     * @notice See {IResolverExample-arbitraryCalls}.
      */
     function arbitraryCalls(address[] calldata targets, bytes[] calldata arguments) external onlyOwner {
         uint256 length = targets.length;

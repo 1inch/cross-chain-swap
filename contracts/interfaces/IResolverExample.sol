@@ -2,15 +2,16 @@
 
 pragma solidity 0.8.26;
 
-import { IOrderMixin } from "limit-order-protocol/interfaces/IOrderMixin.sol";
-import { TakerTraits } from "limit-order-protocol/libraries/TakerTraitsLib.sol";
+import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 
 /**
  * @title Interface for the sample implementation of a Resolver contract for cross-chain swap.
+ * @custom:security-contact security@1inch.io
  */
-interface IResolverMock {
+interface IResolverExample {
     error InvalidLength();
     error LengthMismatch();
 
