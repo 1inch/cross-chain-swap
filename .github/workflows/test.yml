@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: matter-labs/foundry-zksync
-          ref: 'dev'
+          ref: '${{ vars.FOUNDRY_ZKSYNC_COMMIT }}'
           path: 'foundry-zksync'
 
       - name: Install Foundry for zksync
@@ -79,7 +79,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: matter-labs/foundry-zksync
-          ref: 'dev'
+          ref: '${{ vars.FOUNDRY_ZKSYNC_COMMIT }}'
           path: 'foundry-zksync'
 
       - name: Install Foundry for zksync
