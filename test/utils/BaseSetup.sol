@@ -78,11 +78,11 @@ contract BaseSetup is Test, Utils {
         _createUsers(3);
 
         alice = users[0];
-        vm.label(alice.addr, "Alice");
+        // vm.label(alice.addr, "Alice");
         bob = users[1];
-        vm.label(bob.addr, "Bob");
+        // vm.label(bob.addr, "Bob");
         charlie = users[2];
-        vm.label(charlie.addr, "Charlie");
+        // vm.label(charlie.addr, "Charlie");
 
         resolvers = new address[](1);
         resolvers[0] = bob.addr;
@@ -107,11 +107,11 @@ contract BaseSetup is Test, Utils {
 
     function _deployTokens() internal {
         dai = new TokenMock("DAI", "DAI");
-        vm.label(address(dai), "DAI");
+        // vm.label(address(dai), "DAI");
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
-        vm.label(address(usdc), "USDC");
+        // vm.label(address(usdc), "USDC");
         inch = new TokenMock("1INCH", "1INCH");
-        vm.label(address(inch), "1INCH");
+        // vm.label(address(inch), "1INCH");
     }
 
     function _deployContracts() internal {
@@ -122,14 +122,14 @@ contract BaseSetup is Test, Utils {
         } else {
             escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, inch, charlie.addr, RESCUE_DELAY, RESCUE_DELAY);
         }
-        vm.label(address(escrowFactory), "EscrowFactory");
+        // vm.label(address(escrowFactory), "EscrowFactory");
         escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
-        vm.label(address(escrowSrc), "EscrowSrc");
+        // vm.label(address(escrowSrc), "EscrowSrc");
         escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
         // vm.label(address(escrowDst), "EscrowDst");
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
-        vm.label(address(feeBank), "FeeBank");
+        // vm.label(address(feeBank), "FeeBank");
     }
 
     function _prepareDataSrc(bool fakeOrder, bool allowMultipleFills) internal returns(CrossChainTestLib.SwapData memory) {
