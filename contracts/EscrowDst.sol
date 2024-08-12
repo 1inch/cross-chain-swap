@@ -91,6 +91,6 @@ contract EscrowDst is Escrow, IEscrowDst {
             IERC20(token).safeTransfer(to, immutables.amount);
         }
         _ethTransfer(msg.sender, immutables.safetyDeposit);
-        emit Withdrawal(secret);
+        emit EscrowWithdrawal(secret);
     }
 }

@@ -124,7 +124,7 @@ contract EscrowTest is BaseSetup {
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.prank(bob.addr);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
@@ -424,7 +424,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         dstClone.withdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -449,7 +449,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         dstClone.withdraw(SECRET, immutables);
 
         assertEq(alice.addr.balance, balanceAlice + TAKING_AMOUNT);
@@ -658,7 +658,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 100);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         IEscrowDst(address(dstClone)).publicWithdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -683,7 +683,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 100);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         dstClone.withdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
