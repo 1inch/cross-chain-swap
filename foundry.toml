@@ -18,8 +18,11 @@ multiline_func_header = 'params_first'
 wrap_comments = true
 
 [fuzz]
-runs = 256
+runs = 1024
 
 [profile.zksync]
 src = 'contracts'
-
+libs = ['lib']
+fallback_oz = true
+is_system = false
+mode = "3"
