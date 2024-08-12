@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { Escrow, EscrowSrc } from "../EscrowSrc.sol";
 import { EscrowZkSync } from "./EscrowZkSync.sol";
