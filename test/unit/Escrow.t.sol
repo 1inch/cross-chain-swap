@@ -201,9 +201,17 @@ contract EscrowTest is BaseSetup {
         swapData.srcClone.publicWithdraw(SECRET, swapData.immutables);
     }
 
+    function _keccakBytes32(bytes32 secret) private pure returns (bytes32 ret) {
+        assembly ("memory-safe") {
+            mstore(0, secret)
+            ret := keccak256(0, 0x20)
+        }
+    }
+
     function test_PublicWithdrawSrc() public {
+        bytes32 hashlock = _keccakBytes32(SECRET);
         // deploy escrow
-        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(hashlock, true, false);
 
         (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
