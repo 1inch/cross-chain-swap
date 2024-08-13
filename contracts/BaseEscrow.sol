@@ -22,8 +22,6 @@ abstract contract BaseEscrow is IBaseEscrow {
     using TimelocksLib for Timelocks;
     using ImmutablesLib for Immutables;
 
-    error Results(bytes32 hashlock, bytes32 hashed);
-
     /// @notice See {IBaseEscrow-RESCUE_DELAY}.
     uint256 public immutable RESCUE_DELAY;
     /// @notice See {IBaseEscrow-FACTORY}.
@@ -44,7 +42,6 @@ abstract contract BaseEscrow is IBaseEscrow {
     }
 
     modifier onlyValidSecret(bytes32 secret, Immutables calldata immutables) {
-        revert Results(immutables.hashlock, _keccakBytes32(secret));
         if (_keccakBytes32(secret) != immutables.hashlock) revert InvalidSecret();
         _;
     }
