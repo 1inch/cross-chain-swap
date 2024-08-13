@@ -21,7 +21,7 @@ import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
 /* solhint-disable max-states-count */
 contract BaseSetup is Test, Utils {
     /* solhint-disable private-vars-leading-underscore */
-    bytes32 internal constant SECRET = keccak256(abi.encodePacked(uint256(123)));
+    bytes32 internal constant SECRET = keccak256(abi.encodePacked("secret"));
     bytes32 internal constant HASHED_SECRET = keccak256(abi.encodePacked(SECRET));
     uint256 internal constant MAKING_AMOUNT = 0.3 ether;
     uint256 internal constant TAKING_AMOUNT = 0.5 ether;
