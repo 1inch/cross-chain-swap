@@ -38,8 +38,8 @@ contract EscrowFactoryZkSync is BaseEscrowFactory {
     BaseExtension(limitOrderProtocol)
     ResolverValidationExtension(feeToken, accessToken, owner)
     MerkleStorageInvalidator(limitOrderProtocol) {
-        ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrcZkSync(rescueDelaySrc));
-        ESCROW_DST_IMPLEMENTATION = address(new EscrowDstZkSync(rescueDelayDst));
+        ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrcZkSync(rescueDelaySrc, accessToken));
+        ESCROW_DST_IMPLEMENTATION = address(new EscrowDstZkSync(rescueDelayDst, accessToken));
         ESCROW_SRC_INPUT_HASH = keccak256(abi.encode(ESCROW_SRC_IMPLEMENTATION));
         ESCROW_DST_INPUT_HASH = keccak256(abi.encode(ESCROW_DST_IMPLEMENTATION));
         MinimalProxyZkSync proxySrc = new MinimalProxyZkSync(ESCROW_SRC_IMPLEMENTATION);

@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import { Test } from "forge-std/Test.sol";
 
 import { IWETH, LimitOrderProtocol } from "limit-order-protocol/contracts/LimitOrderProtocol.sol";
-import { WrappedTokenMock } from "limit-order-protocol/contracts/mocks/WrappedTokenMock.sol";
 import { IFeeBank } from "limit-order-settlement/contracts/interfaces/IFeeBank.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
@@ -38,7 +37,6 @@ contract BaseSetup is Test, Utils {
 
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
-    WrappedTokenMock internal weth;
     TokenMock internal inch;
 
     LimitOrderProtocol internal limitOrderProtocol;
@@ -113,28 +111,29 @@ contract BaseSetup is Test, Utils {
         vm.label(address(dai), "DAI");
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
         vm.label(address(usdc), "USDC");
-        weth = new WrappedTokenMock("WETH", "WETH");
-        vm.label(address(weth), "WETH");
         inch = new TokenMock("1INCH", "1INCH");
         vm.label(address(inch), "1INCH");
     }
 
     function _deployContracts() internal {
-        limitOrderProtocol = new LimitOrderProtocol(IWETH(weth));
+        limitOrderProtocol = new LimitOrderProtocol(IWETH(address(0)));
 
         if (isZkSync) {
             escrowFactory = new EscrowFactoryZkSync(address(limitOrderProtocol), inch, inch, charlie.addr,  RESCUE_DELAY, RESCUE_DELAY);
         } else {
             escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, inch, charlie.addr, RESCUE_DELAY, RESCUE_DELAY);
         }
-        vm.label(address(escrowFactory), "EscrowFactory");
         escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
-        vm.label(address(escrowSrc), "EscrowSrc");
         escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
-        vm.label(address(escrowDst), "EscrowDst");
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
-        vm.label(address(feeBank), "FeeBank");
+       
+        if (!isZkSync) {
+            vm.label(address(escrowFactory), "EscrowFactory");
+            vm.label(address(escrowSrc), "EscrowSrc");
+            vm.label(address(escrowDst), "EscrowDst");
+            vm.label(address(feeBank), "FeeBank");
+        }
     }
 
     function _prepareDataSrc(bool fakeOrder, bool allowMultipleFills) internal returns(CrossChainTestLib.SwapData memory) {
