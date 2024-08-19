@@ -61,7 +61,7 @@ abstract contract BaseEscrow is IBaseEscrow {
     }
 
     modifier onlyAccessTokenHolder() {
-        if(_ACCESS_TOKEN.balanceOf(msg.sender) == 0) revert InvalidCaller();
+        if (_ACCESS_TOKEN.balanceOf(msg.sender) == 0) revert InvalidCaller();
         _;
     }
 
