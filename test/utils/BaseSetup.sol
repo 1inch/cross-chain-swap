@@ -38,6 +38,7 @@ contract BaseSetup is Test, Utils {
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
     TokenMock internal inch;
+    TokenMock internal accessToken;
 
     LimitOrderProtocol internal limitOrderProtocol;
     BaseEscrowFactory internal escrowFactory;
@@ -92,6 +93,7 @@ contract BaseSetup is Test, Utils {
         dai.mint(bob.addr, 1000 ether);
         usdc.mint(alice.addr, 1000 ether);
         inch.mint(bob.addr, 1000 ether);
+        accessToken.mint(bob.addr, 1);
 
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
@@ -113,15 +115,19 @@ contract BaseSetup is Test, Utils {
         vm.label(address(usdc), "USDC");
         inch = new TokenMock("1INCH", "1INCH");
         vm.label(address(inch), "1INCH");
+        accessToken = new TokenMock("ACCESS", "ACCESS");
+        vm.label(address(accessToken), "ACCESS");
     }
 
     function _deployContracts() internal {
         limitOrderProtocol = new LimitOrderProtocol(IWETH(address(0)));
 
         if (isZkSync) {
-            escrowFactory = new EscrowFactoryZkSync(address(limitOrderProtocol), inch, inch, charlie.addr,  RESCUE_DELAY, RESCUE_DELAY);
+            escrowFactory = new EscrowFactoryZkSync(
+                address(limitOrderProtocol), inch, accessToken, charlie.addr,  RESCUE_DELAY, RESCUE_DELAY
+            );
         } else {
-            escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, inch, charlie.addr, RESCUE_DELAY, RESCUE_DELAY);
+            escrowFactory = new EscrowFactory(address(limitOrderProtocol), inch, accessToken, charlie.addr, RESCUE_DELAY, RESCUE_DELAY);
         }
         escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
         escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());

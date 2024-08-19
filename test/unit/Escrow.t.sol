@@ -18,7 +18,7 @@ contract EscrowTest is BaseSetup {
 
     function setUp() public virtual override {
         BaseSetup.setUp();
-        inch.mint(address(this), 1);
+        accessToken.mint(address(this), 1);
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -716,7 +716,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
         NoReceiveCaller caller = new NoReceiveCaller();
-        inch.mint(address(caller), 1);
+        accessToken.mint(address(caller), 1);
         bytes memory data = abi.encodeWithSelector(IEscrowSrc.publicWithdraw.selector, SECRET, swapData.immutables);
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         caller.arbitraryCall(address(swapData.srcClone), data);
@@ -731,7 +731,7 @@ contract EscrowTest is BaseSetup {
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 10);
-        inch.mint(address(escrowFactory), 1);
+        accessToken.mint(address(escrowFactory), 1);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         dstClone.publicWithdraw(SECRET, immutables);
@@ -1111,7 +1111,7 @@ contract EscrowTest is BaseSetup {
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 100);
-        inch.mint(address(escrowFactory), 1);
+        accessToken.mint(address(escrowFactory), 1);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         swapData.srcClone.publicCancel(swapData.immutables);

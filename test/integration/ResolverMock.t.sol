@@ -22,6 +22,7 @@ contract IntegrationResolverMockTest is BaseSetup {
         vm.deal(resolverMock, 100 ether);
         dai.mint(resolverMock, 1000 ether);
         inch.mint(resolverMock, 1000 ether);
+        accessToken.mint(resolverMock, 1);
         vm.startPrank(resolverMock);
         inch.approve(address(feeBank), 1000 ether);
         feeBank.deposit(10 ether);
