@@ -13,6 +13,7 @@ build
 # foundry
 cache_forge
 out
+broadcast
 
 # zkSync
 zkout
