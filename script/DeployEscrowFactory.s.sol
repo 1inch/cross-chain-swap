@@ -3,14 +3,10 @@
 pragma solidity 0.8.23;
 
 import { Script } from "forge-std/Script.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
-import { ICreate3Deployer } from "limit-order-settlement/contracts/interfaces/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "solidity-utils/contracts/interfaces/ICreate3Deployer.sol";
 
 import { EscrowFactory } from "contracts/EscrowFactory.sol";
-import { ResolverExample } from "contracts/mocks/ResolverExample.sol";
-import { ERC20TrueBalance } from "contracts/mocks/ERC20TrueBalance.sol";
 
 // solhint-disable no-console
 import { console } from "forge-std/console.sol";
@@ -26,9 +22,9 @@ contract DeployEscrowFactory is Script {
     mapping(uint256 => address) public FEE_TOKEN;
     
     function run() external {
-        FEE_TOKEN[1] = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // Mainnet
-        FEE_TOKEN[56] = 0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3; // BSC
-        FEE_TOKEN[137] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063; // Polygon
+        FEE_TOKEN[1] = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // Mainnet (DAI)
+        FEE_TOKEN[56] = 0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3; // BSC (DAI)
+        FEE_TOKEN[137] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063; // Polygon (DAI)
         FEE_TOKEN[43114] = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70; // Avalanche (DAI)
         FEE_TOKEN[100] = 0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d; // Gnosis (wXDAI)
         FEE_TOKEN[42161] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1; // Arbitrum One (DAI)
@@ -41,7 +37,7 @@ contract DeployEscrowFactory is Script {
         address feeToken = FEE_TOKEN[block.chainid];
 
         vm.startBroadcast(deployerPK);
-        CREATE3_DEPLOYER.deploy(
+        address escrowFactory = CREATE3_DEPLOYER.deploy(
             CROSSCHAIN_SALT,
             abi.encodePacked(
                 type(EscrowFactory).creationCode,
@@ -50,8 +46,7 @@ contract DeployEscrowFactory is Script {
         );
         vm.stopBroadcast();
 
-        EscrowFactory escrowFactory = EscrowFactory(CREATE3_DEPLOYER.addressOf(CROSSCHAIN_SALT));
-        console.log("Escrow Factory deployed at: ", address(escrowFactory));
+        console.log("Escrow Factory deployed at: ", escrowFactory);
     }
 }
 // solhint-enable no-console
