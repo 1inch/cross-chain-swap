@@ -175,7 +175,8 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         uint256 calculatedIndex = (orderMakingAmount - remainingMakingAmount + makingAmount - 1) * partsAmount / orderMakingAmount;
 
         if (remainingMakingAmount == makingAmount) {
-            // A secret with index i + 1 must be used for the last order fill where i is the index of the secret for the last part.
+            // If the order is filled to completion, a secret with index i + 1 must be used
+            // where i is the index of the secret for the last part.
             return (calculatedIndex + 2 == validatedIndex);
         } else if (orderMakingAmount != remainingMakingAmount) {
             // Calculate the previous fill index only if this is not the first fill.
