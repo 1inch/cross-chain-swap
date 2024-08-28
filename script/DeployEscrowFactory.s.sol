@@ -32,11 +32,10 @@ contract DeployEscrowFactory is Script {
         FEE_TOKEN[8453] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb; // Base (DAI)
 
         address deployer = vm.envAddress("DEPLOYER_ADDRESS");
-        uint256 deployerPK = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address feeBankOwner = deployer;
         address feeToken = FEE_TOKEN[block.chainid];
 
-        vm.startBroadcast(deployerPK);
+        vm.startBroadcast();
         address escrowFactory = CREATE3_DEPLOYER.deploy(
             CROSSCHAIN_SALT,
             abi.encodePacked(

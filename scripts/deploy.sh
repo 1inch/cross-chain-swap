@@ -29,4 +29,13 @@ fi
 echo "Provided chain: $1"
 echo "RPC URL: $rpc_url"
 
-forge script script/DeployEscrowFactory.s.sol --fork-url $rpc_url --broadcast -vvvv
+keystore="$HOME/.foundry-keystores/$2"
+echo "Keystore: $keystore"
+if [ -e "$keystore" ]; then
+    echo "Keystore provided"
+else
+    echo "Keystore not provided"
+    exit 1
+fi
+
+forge script script/DeployEscrowFactory.s.sol --fork-url $rpc_url --keystore $keystore --broadcast -vvvv
