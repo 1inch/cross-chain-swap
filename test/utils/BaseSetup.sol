@@ -202,8 +202,7 @@ contract BaseSetup is Test, Utils {
                     0, // delay
                     900000, // initialRateBump
                     auctionPoints
-                ),
-                nonce: 0
+                )
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,

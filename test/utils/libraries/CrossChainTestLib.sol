@@ -74,7 +74,6 @@ library CrossChainTestLib {
         address[] resolvers;
         uint32 resolverFee;
         bytes auctionDetails;
-        uint40 nonce;
     }
 
     struct EscrowDetails {
@@ -358,7 +357,7 @@ library CrossChainTestLib {
                 escrowDetails.allowMultipleFills,
                 InteractionParams("", "", gettersAmountData, gettersAmountData, "", "", "", postInteractionData),
                 "",
-                orderDetails.nonce
+                0
             );
         }
 

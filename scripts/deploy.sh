@@ -6,7 +6,7 @@ set -e # exit on error
 if [ -f .env.deployment ]; then
     source .env.deployment
 else
-    echo -e "${EC}Error: .env.deployment file not found${NC}"
+    echo "Error: .env.deployment file not found"
     exit 1
 fi
 
