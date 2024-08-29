@@ -13,10 +13,10 @@ import { console } from "forge-std/console.sol";
 
 contract DeployEscrowFactory is Script {
     uint32 public constant RESCUE_DELAY = 691200; // 8 days
-    bytes32 public constant CROSSCHAIN_SALT = keccak256("1inch Cross-Chain");
+    bytes32 public constant CROSSCHAIN_SALT = keccak256("1inch EscrowFactory");
     
     address public constant LOP = 0x111111125421cA6dc452d289314280a0f8842A65; // All chains
-    address public constant ACCESS_TOKEN = 0xACCE5500001E226153D70A6D014CE9ddDc100d42; // All chains
+    address public constant ACCESS_TOKEN = 0xACCe550000159e70908C0499a1119D04e7039C28; // All chains
     ICreate3Deployer public constant CREATE3_DEPLOYER = ICreate3Deployer(0x65B3Db8bAeF0215A1F9B14c506D2a3078b2C84AE); // All chains
 
     mapping(uint256 => address) public FEE_TOKEN;
