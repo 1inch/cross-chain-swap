@@ -159,9 +159,9 @@ library CrossChainTestLib {
 
     function buildMakerTraits(MakerTraitsParams memory params) internal pure returns (MakerTraits) {
         uint256 data = 0
-            | params.series << 160
-            | params.nonce << 120
-            | params.expiry << 80
+            | uint256(params.series) << 160
+            | uint256(params.nonce) << 120
+            | uint256(params.expiry) << 80
             | uint160(params.allowedSender) & ((1 << 80) - 1)
             | (params.unwrapWeth == true ? _UNWRAP_WETH_FLAG : 0)
             | (params.allowMultipleFills == true ? _ALLOW_MULTIPLE_FILLS_FLAG : 0)
@@ -205,7 +205,8 @@ library CrossChainTestLib {
         MakerTraits makerTraits,
         bool allowMultipleFills,
         InteractionParams memory interactions,
-        bytes memory customData
+        bytes memory customData,
+        uint40 nonce
     ) internal pure returns (IOrderMixin.Order memory, bytes memory) {
         MakerTraitsParams memory makerTraitsParams = MakerTraitsParams({
             allowedSender: address(0),
@@ -215,7 +216,7 @@ library CrossChainTestLib {
             usePermit2: false,
             unwrapWeth: false,
             expiry: 0,
-            nonce: 0,
+            nonce: nonce,
             series: 0
         });
         bytes[8] memory allInteractions = [
@@ -355,7 +356,8 @@ library CrossChainTestLib {
                 MakerTraits.wrap(0),
                 escrowDetails.allowMultipleFills,
                 InteractionParams("", "", gettersAmountData, gettersAmountData, "", "", "", postInteractionData),
-                ""
+                "",
+                0
             );
         }
 
