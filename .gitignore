@@ -8,11 +8,13 @@ build
 .coverage_artifacts
 .idea
 .env
+.env.deployment
 .DS_Store
 
 # foundry
 cache_forge
 out
+broadcast
 
 # zkSync
 zkout

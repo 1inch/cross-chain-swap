@@ -37,7 +37,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
       - name: Run tests
         run: FOUNDRY_PROFILE=default forge test -vvv --gas-report
-  
+
   test-zksync:
     runs-on: macos-latest
     steps:
@@ -52,7 +52,7 @@ jobs:
 
       - name: Install Foundry for zksync
         run: cd foundry-zksync && ./install-foundry-zksync
-  
+
       - name: Run tests
         run: FOUNDRY_PROFILE=zksync forge test -vvv --zksync
 

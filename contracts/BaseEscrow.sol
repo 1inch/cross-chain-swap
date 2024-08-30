@@ -22,13 +22,17 @@ abstract contract BaseEscrow is IBaseEscrow {
     using TimelocksLib for Timelocks;
     using ImmutablesLib for Immutables;
 
+    // Token that is used to access public withdraw or cancel functions.
+    IERC20 private immutable _ACCESS_TOKEN;
+
     /// @notice See {IBaseEscrow-RESCUE_DELAY}.
     uint256 public immutable RESCUE_DELAY;
     /// @notice See {IBaseEscrow-FACTORY}.
     address public immutable FACTORY = msg.sender;
 
-    constructor(uint32 rescueDelay) {
+    constructor(uint32 rescueDelay, IERC20 accessToken) {
         RESCUE_DELAY = rescueDelay;
+        _ACCESS_TOKEN = accessToken;
     }
 
     modifier onlyTaker(Immutables calldata immutables) {
@@ -53,6 +57,11 @@ abstract contract BaseEscrow is IBaseEscrow {
 
     modifier onlyBefore(uint256 stop) {
         if (block.timestamp >= stop) revert InvalidTime();
+        _;
+    }
+
+    modifier onlyAccessTokenHolder() {
+        if (_ACCESS_TOKEN.balanceOf(msg.sender) == 0) revert InvalidCaller();
         _;
     }
 

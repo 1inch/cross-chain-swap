@@ -18,6 +18,7 @@ contract EscrowTest is BaseSetup {
 
     function setUp() public virtual override {
         BaseSetup.setUp();
+        accessToken.mint(address(this), 1);
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -124,7 +125,7 @@ contract EscrowTest is BaseSetup {
         vm.warp(block.timestamp + srcTimelocks.withdrawal + 100);
         vm.prank(bob.addr);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         swapData.srcClone.withdraw(SECRET, swapData.immutables);
 
         assertEq(bob.addr.balance, balanceBobNative + SRC_SAFETY_DEPOSIT);
@@ -424,7 +425,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         dstClone.withdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -449,7 +450,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         dstClone.withdraw(SECRET, immutables);
 
         assertEq(alice.addr.balance, balanceAlice + TAKING_AMOUNT);
@@ -658,7 +659,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 100);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         IEscrowDst(address(dstClone)).publicWithdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -683,7 +684,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 100);
         vm.expectEmit();
-        emit IBaseEscrow.Withdrawal(SECRET);
+        emit IBaseEscrow.EscrowWithdrawal(SECRET);
         dstClone.withdraw(SECRET, immutables);
 
         assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
@@ -715,6 +716,7 @@ contract EscrowTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
         NoReceiveCaller caller = new NoReceiveCaller();
+        accessToken.mint(address(caller), 1);
         bytes memory data = abi.encodeWithSelector(IEscrowSrc.publicWithdraw.selector, SECRET, swapData.immutables);
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         caller.arbitraryCall(address(swapData.srcClone), data);
@@ -729,12 +731,13 @@ contract EscrowTest is BaseSetup {
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 10);
+        accessToken.mint(address(escrowFactory), 1);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         dstClone.publicWithdraw(SECRET, immutables);
     }
 
-    function test_NoRevertFailedNativeTokenTransferWithdrawalDstNative() public {
+    function test_NoFailedNativeTokenTransferWithdrawalDstNative() public {
         (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDstCustom(
             HASHED_SECRET, TAKING_AMOUNT, address(escrowFactory), bob.addr, address(0x00), DST_SAFETY_DEPOSIT
         );
@@ -744,14 +747,14 @@ contract EscrowTest is BaseSetup {
         escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT + TAKING_AMOUNT }(immutables, srcCancellationTimestamp);
 
         uint256 balanceBob = bob.addr.balance;
-        uint256 balanceFactory = address(escrowFactory).balance;
+        uint256 balanceEscrow = address(dstClone).balance;
 
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
+        vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         dstClone.withdraw(SECRET, immutables);
-        assertEq(bob.addr.balance, balanceBob + DST_SAFETY_DEPOSIT);
-        assertEq(address(dstClone).balance, TAKING_AMOUNT);
-        assertEq(address(escrowFactory).balance, balanceFactory);
+        assertEq(bob.addr.balance, balanceBob);
+        assertEq(address(dstClone).balance, balanceEscrow);
     }
 
     function test_NoPublicWithdrawOutsideOfAllowedPeriodDst() public {
@@ -1108,6 +1111,7 @@ contract EscrowTest is BaseSetup {
 
         // cancel
         vm.warp(block.timestamp + srcTimelocks.publicCancellation + 100);
+        accessToken.mint(address(escrowFactory), 1);
         vm.prank(address(escrowFactory));
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
         swapData.srcClone.publicCancel(swapData.immutables);
@@ -1170,6 +1174,52 @@ contract EscrowTest is BaseSetup {
         // rescue dst
         vm.expectRevert(IBaseEscrow.InvalidImmutables.selector);
         dstClone.rescueFunds(address(dai), DST_SAFETY_DEPOSIT, immutablesDst);
+    }
+
+    function test_NoPublicCallsByAnyone() public {
+        CrossChainTestLib.SwapData memory swapData = _prepareDataSrc(true, false);
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IBaseEscrow dstClone) = _prepareDataDst();
+
+        (bool success,) = address(swapData.srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
+        assertEq(success, true);
+        usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
+
+        // deploy escrow, source chain
+        vm.prank(address(limitOrderProtocol));
+        escrowFactory.postInteraction(
+            swapData.order,
+            "", // extension
+            swapData.orderHash,
+            bob.addr, // taker
+            MAKING_AMOUNT,
+            TAKING_AMOUNT,
+            0, // remainingMakingAmount
+            swapData.extraData
+        );
+
+        // deploy escrow, destination chain
+        vm.prank(bob.addr);
+        escrowFactory.createDstEscrow{ value: DST_SAFETY_DEPOSIT }(immutables, srcCancellationTimestamp);
+
+        //--- Source chain ---//
+        // public withdraw
+        vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
+        vm.prank(alice.addr);
+        vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
+        swapData.srcClone.publicWithdraw(SECRET, swapData.immutables);
+
+        // public cancel
+        vm.warp(block.timestamp + srcTimelocks.publicCancellation + 100);
+        vm.prank(alice.addr);
+        vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
+        swapData.srcClone.publicCancel(swapData.immutables);
+
+        //--- Destination chain ---//
+        // public withdraw
+        vm.warp(block.timestamp + dstTimelocks.publicWithdrawal + 100);
+        vm.prank(alice.addr);
+        vm.expectRevert(IBaseEscrow.InvalidCaller.selector);
+        IEscrowDst(address(dstClone)).publicWithdraw(SECRET, immutables);
     }
 
     /* solhint-enable func-name-mixedcase */

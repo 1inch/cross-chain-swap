@@ -24,6 +24,7 @@
     "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
     "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\"",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
-    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync"
+    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync",
+    "deploy": "./scripts/deploy.sh"
   }
 }
