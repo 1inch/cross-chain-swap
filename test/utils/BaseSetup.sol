@@ -81,7 +81,7 @@ contract BaseSetup is Test, Utils {
         alice = users[0];
         bob = users[1];
         charlie = users[2];
-        if (isZkSync) {
+        if (true) {
             vm.label(alice.addr, "Alice");
             vm.label(bob.addr, "Bob");
             vm.label(charlie.addr, "Charlie");
@@ -114,8 +114,8 @@ contract BaseSetup is Test, Utils {
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
         inch = new TokenMock("1INCH", "1INCH");
         accessToken = new TokenMock("ACCESS", "ACCESS");
-        
-        if (!isZkSync) {
+
+        if (true) {
             vm.label(address(dai), "DAI");
             vm.label(address(usdc), "USDC");
             vm.label(address(inch), "1INCH");
@@ -138,7 +138,7 @@ contract BaseSetup is Test, Utils {
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
 
-        if (!isZkSync) {
+        if (true) {
             vm.label(address(escrowFactory), "EscrowFactory");
             vm.label(address(escrowSrc), "EscrowSrc");
             vm.label(address(escrowDst), "EscrowDst");
