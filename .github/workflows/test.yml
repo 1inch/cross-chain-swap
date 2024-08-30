@@ -39,7 +39,7 @@ jobs:
         run: FOUNDRY_PROFILE=default forge test -vvv --gas-report
 
   test-zksync:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,7 +71,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   coverage-zksync:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
