@@ -132,7 +132,7 @@ contract BaseSetup is Test, Utils {
         escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
-       
+
         if (!isZkSync) {
             vm.label(address(escrowFactory), "EscrowFactory");
             vm.label(address(escrowSrc), "EscrowSrc");
@@ -156,7 +156,7 @@ contract BaseSetup is Test, Utils {
 
     function _prepareDataSrcHashlock(
         bytes32 hashlock,
-        bool fakeOrder, 
+        bool fakeOrder,
         bool allowMultipleFills
     ) internal returns(CrossChainTestLib.SwapData memory) {
         return _prepareDataSrcCustom(
