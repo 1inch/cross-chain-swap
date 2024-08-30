@@ -79,11 +79,13 @@ contract BaseSetup is Test, Utils {
         _createUsers(3);
 
         alice = users[0];
-        vm.label(alice.addr, "Alice");
         bob = users[1];
-        vm.label(bob.addr, "Bob");
         charlie = users[2];
-        vm.label(charlie.addr, "Charlie");
+        if (isZkSync) {
+            vm.label(alice.addr, "Alice");
+            vm.label(bob.addr, "Bob");
+            vm.label(charlie.addr, "Charlie");
+        }
 
         resolvers = new address[](1);
         resolvers[0] = bob.addr;
@@ -109,13 +111,16 @@ contract BaseSetup is Test, Utils {
 
     function _deployTokens() internal {
         dai = new TokenMock("DAI", "DAI");
-        vm.label(address(dai), "DAI");
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
-        vm.label(address(usdc), "USDC");
         inch = new TokenMock("1INCH", "1INCH");
-        vm.label(address(inch), "1INCH");
         accessToken = new TokenMock("ACCESS", "ACCESS");
-        vm.label(address(accessToken), "ACCESS");
+        
+        if (!isZkSync) {
+            vm.label(address(dai), "DAI");
+            vm.label(address(usdc), "USDC");
+            vm.label(address(inch), "1INCH");
+            vm.label(address(accessToken), "ACCESS");
+        }
     }
 
     function _deployContracts() internal {
