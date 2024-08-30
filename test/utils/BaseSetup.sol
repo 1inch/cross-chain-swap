@@ -135,7 +135,6 @@ contract BaseSetup is Test, Utils {
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
 
-
         vm.label(address(escrowFactory), "EscrowFactory");
         vm.label(address(escrowSrc), "EscrowSrc");
         vm.label(address(escrowDst), "EscrowDst");
