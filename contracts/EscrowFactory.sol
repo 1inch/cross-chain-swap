@@ -32,8 +32,8 @@ contract EscrowFactory is BaseEscrowFactory {
     BaseExtension(limitOrderProtocol)
     ResolverValidationExtension(feeToken, accessToken, owner)
     MerkleStorageInvalidator(limitOrderProtocol) {
-        ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrc(rescueDelaySrc));
-        ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst));
+        ESCROW_SRC_IMPLEMENTATION = address(new EscrowSrc(rescueDelaySrc, accessToken));
+        ESCROW_DST_IMPLEMENTATION = address(new EscrowDst(rescueDelayDst, accessToken));
         _PROXY_SRC_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_SRC_IMPLEMENTATION);
         _PROXY_DST_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(ESCROW_DST_IMPLEMENTATION);
     }

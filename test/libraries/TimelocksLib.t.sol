@@ -70,6 +70,7 @@ contract TimelocksLibTest is BaseSetup {
         // withdraw
         vm.warp(block.timestamp + dstTimelocks.publicWithdrawal);
         uint256 balanceAlice = dai.balanceOf(alice.addr);
+        accessToken.mint(alice.addr, 1);
         vm.startPrank(alice.addr);
         dstClone.publicWithdraw(SECRET, immutablesDst);
         assertEq(dai.balanceOf(address(dstClone)), 0);

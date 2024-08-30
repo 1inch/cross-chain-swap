@@ -97,6 +97,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
 
             uint256 resolverCredit = feeBank.availableCredit(bob.addr);
             inch.mint(charlie.addr, 1000 ether);
+            accessToken.mint(charlie.addr, 1);
 
             vm.startPrank(charlie.addr);
             inch.approve(address(feeBank), 1000 ether);
