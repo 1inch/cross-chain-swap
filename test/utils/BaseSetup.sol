@@ -18,7 +18,6 @@ import { Utils } from "./Utils.sol";
 import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
 
-
 /* solhint-disable max-states-count */
 contract BaseSetup is Test, Utils {
     /* solhint-disable private-vars-leading-underscore */
@@ -80,10 +79,11 @@ contract BaseSetup is Test, Utils {
         _createUsers(3);
 
         alice = users[0];
-        vm.label(alice.addr, "Alice");
         bob = users[1];
-        vm.label(bob.addr, "Bob");
         charlie = users[2];
+
+        vm.label(alice.addr, "Alice");
+        vm.label(bob.addr, "Bob");
         vm.label(charlie.addr, "Charlie");
 
         resolvers = new address[](1);
@@ -110,12 +110,13 @@ contract BaseSetup is Test, Utils {
 
     function _deployTokens() internal {
         dai = new TokenMock("DAI", "DAI");
-        vm.label(address(dai), "DAI");
         usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
-        vm.label(address(usdc), "USDC");
         inch = new TokenMock("1INCH", "1INCH");
-        vm.label(address(inch), "1INCH");
         accessToken = new TokenMock("ACCESS", "ACCESS");
+
+        vm.label(address(dai), "DAI");
+        vm.label(address(usdc), "USDC");
+        vm.label(address(inch), "1INCH");
         vm.label(address(accessToken), "ACCESS");
     }
 
@@ -133,13 +134,12 @@ contract BaseSetup is Test, Utils {
         escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
 
         feeBank = IFeeBank(escrowFactory.FEE_BANK());
-       
-        if (!isZkSync) {
-            vm.label(address(escrowFactory), "EscrowFactory");
-            vm.label(address(escrowSrc), "EscrowSrc");
-            vm.label(address(escrowDst), "EscrowDst");
-            vm.label(address(feeBank), "FeeBank");
-        }
+
+
+        vm.label(address(escrowFactory), "EscrowFactory");
+        vm.label(address(escrowSrc), "EscrowSrc");
+        vm.label(address(escrowDst), "EscrowDst");
+        vm.label(address(feeBank), "FeeBank");
     }
 
     function _prepareDataSrc(bool fakeOrder, bool allowMultipleFills) internal returns(CrossChainTestLib.SwapData memory) {
@@ -157,7 +157,7 @@ contract BaseSetup is Test, Utils {
 
     function _prepareDataSrcHashlock(
         bytes32 hashlock,
-        bool fakeOrder, 
+        bool fakeOrder,
         bool allowMultipleFills
     ) internal returns(CrossChainTestLib.SwapData memory) {
         return _prepareDataSrcCustom(
