@@ -1,0 +1,144 @@
+{
+  "address": "0xDA0000d4000015A526378bB6faFc650Cea5966F8",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x8e6c5e3122e935ea4ac758af8e6b606fc3b5399ad8f1fe5838210614ec366819",
+  "receipt": {
+    "to": "0xD935a2bb926019E0ed6fb31fbD5b1Bbb7c05bf65",
+    "from": "0x56E44874F624EbDE6efCc783eFD685f0FBDC6dcF",
+    "contractAddress": null,
+    "transactionIndex": 0,
+    "gasUsed": "202293",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x19e28512a747f067b5d7c6bbcce7115dc56d6c9fd66c18eaad360d3156f43e03",
+    "transactionHash": "0x8e6c5e3122e935ea4ac758af8e6b606fc3b5399ad8f1fe5838210614ec366819",
+    "logs": [],
+    "blockNumber": 126809133,
+    "cumulativeGasUsed": "0",
+    "status": 1
+  },
+  "args": [],
+  "numDeployments": 1,
+  "bytecode": "0x60808060405234610016576101da908161001b8239f35b5f80fdfe60806040526004361015610011575f80fd5b5f3560e01c8063095ea7b31461009f57806323b872dd146100db57806370a08231146100a4578063a9059cbb1461009f5763dd62ed3e14610050575f80fd5b3461009b5760407ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b57610087610127565b5061009061014a565b5060206040515f8152f35b5f80fd5b61016d565b3461009b5760207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b57610090610127565b3461009b5760607ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b57610112610127565b5061011b61014a565b50602060405160018152f35b6004359073ffffffffffffffffffffffffffffffffffffffff8216820361009b57565b6024359073ffffffffffffffffffffffffffffffffffffffff8216820361009b57565b3461009b5760407ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b5761011b61012756fea2646970667358221220b9f54a192e44e1c4f4b231ddf080441810dc4e2d317e3c2cedcaac4306de7bcd64736f6c63430008170033",
+  "deployedBytecode": "0x60806040526004361015610011575f80fd5b5f3560e01c8063095ea7b31461009f57806323b872dd146100db57806370a08231146100a4578063a9059cbb1461009f5763dd62ed3e14610050575f80fd5b3461009b5760407ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b57610087610127565b5061009061014a565b5060206040515f8152f35b5f80fd5b61016d565b3461009b5760207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b57610090610127565b3461009b5760607ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b57610112610127565b5061011b61014a565b50602060405160018152f35b6004359073ffffffffffffffffffffffffffffffffffffffff8216820361009b57565b6024359073ffffffffffffffffffffffffffffffffffffffff8216820361009b57565b3461009b5760407ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc36011261009b5761011b61012756fea2646970667358221220b9f54a192e44e1c4f4b231ddf080441810dc4e2d317e3c2cedcaac4306de7bcd64736f6c63430008170033"
+}
