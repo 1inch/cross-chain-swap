@@ -18,13 +18,13 @@
     "coverage": "mkdir -p coverage && FOUNDRY_PROFILE=default forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:zksync": "mkdir -p coverage && FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --report-file coverage/lcov.info",
     "coverage:html": "bash scripts/coverage.sh",
+    "deploy": "./scripts/deploy.sh",
     "doc": "forge doc --build --out documentation",
     "gasreport": "FOUNDRY_PROFILE=default forge test -vvv --gas-report",
     "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\"",
     "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
     "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\"",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
-    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync",
-    "deploy": "./scripts/deploy.sh"
+    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync"
   }
 }
