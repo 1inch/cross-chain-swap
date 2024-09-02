@@ -20,6 +20,7 @@ chains["gnosis"]="$GNOSIS_RPC_URL"
 chains["arbitrum"]="$ARBITRUM_RPC_URL"
 chains["optimism"]="$OPTIMISM_RPC_URL"
 chains["base"]="$BASE_RPC_URL"
+chains["zksync"]="$ZKSYNC_RPC_URL"
 
 rpc_url="${chains["$1"]}"
 if [ -z "$rpc_url" ]; then
@@ -38,4 +39,8 @@ else
     exit 1
 fi
 
-forge script script/DeployEscrowFactory.s.sol --fork-url $rpc_url --keystore $keystore --broadcast -vvvv
+if [ "$1" = "zksync" ]; then
+    forge script script/DeployEscrowFactoryZkSync.s.sol --zksync --fork-url $rpc_url --keystore $keystore --broadcast -vvvv
+else
+    forge script script/DeployEscrowFactory.s.sol --fork-url $rpc_url --keystore $keystore --broadcast -vvvv
+fi
