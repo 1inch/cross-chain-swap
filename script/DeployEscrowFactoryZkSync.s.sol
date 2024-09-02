@@ -32,8 +32,6 @@ contract DeployEscrowFactoryZkSync is Script {
         vm.stopBroadcast();
 
         console.log("Escrow Factory deployed at: ", address(escrowFactory));
-        console.log("EscrowSrcZkSync deployed at: ", escrowFactory.ESCROW_SRC_IMPLEMENTATION());
-        console.log("EscrowSrcZkSync deployed at: ", escrowFactory.ESCROW_DST_IMPLEMENTATION());
     }
 }
 // solhint-enable no-console
