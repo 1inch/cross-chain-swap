@@ -19,7 +19,7 @@ contract DeployEscrowFactory is Script {
     address public constant ACCESS_TOKEN = 0xACCe550000159e70908C0499a1119D04e7039C28; // All chains
     ICreate3Deployer public constant CREATE3_DEPLOYER = ICreate3Deployer(0x65B3Db8bAeF0215A1F9B14c506D2a3078b2C84AE); // All chains
 
-    mapping(uint256 => address) public FEE_TOKEN;
+    mapping(uint256 => address) public FEE_TOKEN; // solhint-disable-line var-name-mixedcase
     
     function run() external {
         FEE_TOKEN[1] = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // Mainnet (DAI)
