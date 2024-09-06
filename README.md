@@ -36,7 +36,7 @@ The time periods in which certain escrow operations are available are defined by
 After a period set when `EscrowSrc` and `EscrowDst` contracts are deployed, Resolver has an option to withdraw assets that are accidentally stuck on a contract. The `rescueFunds` function is implemented for this purpose.
 
 ### Partial fills
-Order can be split into a number of equal parts and can be partially filled. For `N` parts there will be generated `N + 1` secrets to be used later in escrows. Each secret is indexed and prorated to the cumulative values of all fills done. A Merkle tree is built from all secrets where the leaf is `keccak256(index, hashedSecret)`. Each Resolver has a copy of the created Merkle tree and uses it to fill part of the order. Index of the hashed secret used to create escrows corresponds to the fill percentage. The order is always completed with the secret with index `N`, because the secret `N-1` could have been used earlier.
+Order can be split into a number of equal parts and can be partially filled. For `N` parts there will be generated `N + 1` secrets to be used later in escrows. Each secret is indexed and prorated to the cumulative values of all fills done. A Merkle tree is built from all secrets where the leaf is `keccak256(index, hashedSecret)`. Each Resolver has a copy of the created Merkle tree and uses it to fill part of the order. Index of the hashed secret used to create escrows corresponds to the fill percentage. The secret with index `N` should be used for final complete fill.
 
 For example, if the order is divided into four parts (25% each), the index of the required hashed secret is:
 - `0` for (0%, 25%] fill
