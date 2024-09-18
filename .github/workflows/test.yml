@@ -51,7 +51,7 @@ jobs:
           path: 'foundry-zksync'
 
       - name: Install Foundry for zksync
-        run: cd foundry-zksync && ./install-foundry-zksync
+        run: ./foundry-zksync/install-foundry-zksync
 
       - name: Run tests
         run: FOUNDRY_PROFILE=zksync forge test -vvv --zksync
@@ -83,7 +83,7 @@ jobs:
           path: 'foundry-zksync'
 
       - name: Install Foundry for zksync
-        run: cd foundry-zksync && ./install-foundry-zksync
+        run: ./foundry-zksync/install-foundry-zksync
       - name: Run coverage
         run: yarn coverage:zksync
       - uses: codecov/codecov-action@v4
