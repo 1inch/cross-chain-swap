@@ -35,6 +35,18 @@ The time periods in which certain escrow operations are available are defined by
 ### Rescue funds
 After a period set when `EscrowSrc` and `EscrowDst` contracts are deployed, Resolver has an option to withdraw assets that are accidentally stuck on a contract. The `rescueFunds` function is implemented for this purpose.
 
+### Partial fills
+Order can be split into a number of equal parts and can be partially filled. For `N` parts there will be generated `N + 1` secrets to be used later in escrows. Each secret is indexed and prorated to the cumulative values of all fills done. A Merkle tree is built from all secrets where the leaf is `keccak256(index, hashedSecret)`. Each Resolver has a copy of the created Merkle tree and uses it to fill part of the order. Index of the hashed secret used to create escrows corresponds to the fill percentage. The secret with index `N` should be used for final complete fill.
+
+For example, if the order is divided into four parts (25% each), the index of the required hashed secret is:
+- `0` for (0%, 25%] fill
+- `1` for (25%, 50%]
+- `2` for (50%, 75%]
+- `3` for (75%, 100%), `N-1`
+- `4` for 100% completion, `N`
+
+Hashlock cannot be reused, so if order part completion was unsuccessful and escrows were cancelled, other secrets should be used. Thus, the next attempt must include at least the unfilled amount from the failed attempt plus some extra tokens to result in the next index of hashed secret.
+
 ### Contracts deployed once for the chain
 For each chain participating in the Atomic Swap mechanism, one copy of the `EscrowSrc`, `EscrowDst` and `EscrowFactory` contracts is deployed. They each contain a set of functions that need to be called to execute the swap.
 
