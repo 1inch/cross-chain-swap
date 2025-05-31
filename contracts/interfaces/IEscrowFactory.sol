@@ -50,6 +50,13 @@ interface IEscrowFactory {
      * @param taker The address of the taker.
      */
     event DstEscrowCreated(address escrow, bytes32 hashlock, Address taker);
+    /**
+     * @notice Emitted when a non-EVM recipient is specified.
+     * @param orderHash The hash of the order.
+     * @param recipient The 32-byte recipient address on the non-EVM chain.
+     * @param chainId The destination chain ID.
+     */
+    event NonEVMRecipient(bytes32 indexed orderHash, bytes32 recipient, uint256 chainId);
 
     /* solhint-disable func-name-mixedcase */
     /// @notice Returns the address of implementation on the source chain.

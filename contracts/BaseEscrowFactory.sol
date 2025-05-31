@@ -77,6 +77,11 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         bool receiverIsZero = Address.unwrap(receiver) == 0;
 
         if (dstChainIsNotEVM && receiverIsZero) revert InvalidReceiverAddress();
+        
+        // For non-EVM chains, dstRecipient must be provided
+        if (dstChainIsNotEVM && extraDataArgs.dstRecipient == bytes32(0)) {
+            revert InvalidReceiverAddress();
+        }
 
         bytes32 hashlock;
 
@@ -105,7 +110,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
-            maker: receiver.get() == address(0) ? order.maker : receiver,
+            maker: dstChainIsNotEVM ? Address.wrap(0) : (receiver.get() == address(0) ? order.maker : receiver),
             amount: takingAmount,
             token: extraDataArgs.dstToken,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
@@ -113,6 +118,11 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);
+        
+        // Emit additional event for non-EVM recipient
+        if (dstChainIsNotEVM) {
+            emit NonEVMRecipient(orderHash, extraDataArgs.dstRecipient, extraDataArgs.dstChainId & CHAIN_ID_MASK);
+        }
 
         bytes32 salt = immutables.hashMem();
         address escrow = _deployEscrow(salt, 0, ESCROW_SRC_IMPLEMENTATION);
