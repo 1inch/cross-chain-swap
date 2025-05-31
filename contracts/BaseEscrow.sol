@@ -46,7 +46,7 @@ abstract contract BaseEscrow is IBaseEscrow {
     }
 
     modifier onlyValidSecret(bytes32 secret, Immutables calldata immutables) {
-        if (_keccakBytes32(secret) != immutables.hashlock) revert InvalidSecret();
+        if (_sha256Bytes32(secret) != immutables.hashlock) revert InvalidSecret();
         _;
     }
 
@@ -103,14 +103,11 @@ abstract contract BaseEscrow is IBaseEscrow {
     function _validateImmutables(Immutables calldata immutables) internal view virtual;
 
     /**
-     * @dev Computes the Keccak-256 hash of the secret.
+     * @dev Computes the SHA-256 hash of the secret.
      * @param secret The secret that unlocks the escrow.
-     * @return ret The computed hash.
+     * @return The computed hash.
      */
-    function _keccakBytes32(bytes32 secret) private pure returns (bytes32 ret) {
-        assembly ("memory-safe") {
-            mstore(0, secret)
-            ret := keccak256(0, 0x20)
-        }
+    function _sha256Bytes32(bytes32 secret) private pure returns (bytes32) {
+        return sha256(abi.encode(secret));
     }
 }
