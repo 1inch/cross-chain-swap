@@ -34,22 +34,30 @@ struct ExtraDataArgs {
 ```
 
 #### Update postInteraction logic
-In `BaseEscrowFactory.postInteraction()`, modify the logic to handle non-EVM addresses:
+In `BaseEscrowFactory._postInteraction()`, modify the logic to handle non-EVM addresses:
 
 ```solidity
+// After line 75, enhance the non-EVM chain handling:
 bool dstChainIsNotEVM = (extraDataArgs.dstChainId >> 255) == 1;
 
 if (dstChainIsNotEVM) {
     // For non-EVM chains, dstRecipient must be provided
     require(extraDataArgs.dstRecipient != bytes32(0), "Invalid non-EVM recipient");
-    
-    // Emit the non-EVM recipient in events for off-chain monitoring
-    // The immutablesComplement.maker field won't be used on non-EVM chains
-    // Instead, the off-chain infrastructure will use dstRecipient
-} else {
-    // Existing EVM logic
-    Address receiver = order.receiver;
-    maker = receiver.get() == address(0) ? order.maker : receiver;
+    // The receiver check at line 79 already ensures receiver is zero for non-EVM
+}
+
+// Later in the function, when setting up immutablesComplement (around line 107):
+DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
+    maker: dstChainIsNotEVM ? Address.wrap(0) : (receiver.get() == address(0) ? order.maker : receiver),
+    amount: takingAmount,
+    token: extraDataArgs.dstToken,
+    safetyDeposit: extraDataArgs.deposits & type(uint128).max,
+    chainId: extraDataArgs.dstChainId & CHAIN_ID_MASK
+});
+
+// Emit additional event for non-EVM recipient if needed
+if (dstChainIsNotEVM) {
+    emit NonEVMRecipient(orderHash, extraDataArgs.dstRecipient, extraDataArgs.dstChainId & CHAIN_ID_MASK);
 }
 ```
 
@@ -80,6 +88,10 @@ event NonEVMRecipient(bytes32 indexed orderHash, bytes32 recipient, uint256 chai
 
 Update `IEscrowFactory.sol` to reflect the new `ExtraDataArgs` structure.
 
+### 5. Update Constants
+
+Update `SRC_IMMUTABLES_LENGTH` in `EscrowFactoryContext.sol` from 160 to 192 (adding 32 bytes for dstRecipient).
+
 ## Test Updates
 
 All tests must be updated to use SHA-256 instead of Keccak-256.
@@ -104,6 +116,31 @@ bytes32 hashlock = keccak256(abi.encode(secret));
 // New (SHA-256)
 bytes32 secret = bytes32(uint256(1));
 bytes32 hashlock = sha256(abi.encode(secret));
+```
+
+### Test Helper Function Updates
+In `test/utils/libraries/CrossChainTestLib.sol`, update the `buidDynamicData` function:
+```solidity
+function buidDynamicData(
+    bytes32 hashlock,
+    uint256 chainId,
+    address token,
+    uint256 srcSafetyDeposit,
+    uint256 dstSafetyDeposit,
+    Timelocks timelocks,
+    bytes32 dstRecipient  // NEW parameter
+) internal pure returns (bytes memory) {
+    return (
+        abi.encode(
+            hashlock,
+            chainId,
+            token,
+            (srcSafetyDeposit << 128) | dstSafetyDeposit,
+            timelocks,
+            dstRecipient  // NEW field
+        )
+    );
+}
 ```
 
 ## Gas Considerations
