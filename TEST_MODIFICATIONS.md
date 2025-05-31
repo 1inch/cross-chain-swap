@@ -66,6 +66,8 @@ function generateSecrets(uint256 count) internal pure returns (bytes32[] memory 
 
 ## Running Tests
 
+**Important**: You must set the `FOUNDRY_PROFILE` environment variable to run tests:
+
 ```bash
 # Run all tests with verbose output
 FOUNDRY_PROFILE=default forge test -vvv
@@ -79,6 +81,8 @@ FOUNDRY_PROFILE=default forge test --match-test test_WithdrawSrc -vvv
 # Gas report
 FOUNDRY_PROFILE=default forge test --gas-report
 ```
+
+**Note**: Without `FOUNDRY_PROFILE=default`, tests will fail with "environment variable not found" error.
 
 ## Expected Changes in Gas Costs
 

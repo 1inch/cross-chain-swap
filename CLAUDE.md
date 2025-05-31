@@ -105,6 +105,7 @@ All tests must be updated to use SHA-256 instead of Keccak-256.
 
 ### Running Tests
 ```bash
+# Required: Set FOUNDRY_PROFILE environment variable
 FOUNDRY_PROFILE=default forge test -vvv
 ```
 

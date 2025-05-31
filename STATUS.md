@@ -29,6 +29,8 @@
   - ✅ `test_NoWithdrawalWithWrongSecret` - Wrong secrets rejected
   - ✅ Multiple unit tests verified working
 
+**Test Command**: `FOUNDRY_PROFILE=default forge test -vvv`
+
 #### 3. Git Commits ✅
 All changes properly committed with descriptive messages:
 - Replace Keccak-256 with SHA-256 in BaseEscrow.sol
