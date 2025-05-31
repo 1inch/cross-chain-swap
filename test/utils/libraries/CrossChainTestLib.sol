@@ -293,13 +293,34 @@ library CrossChainTestLib {
         uint256 dstSafetyDeposit,
         Timelocks timelocks
     ) internal pure returns (bytes memory) {
+        return buidDynamicDataWithRecipient(
+            hashlock,
+            chainId,
+            token,
+            srcSafetyDeposit,
+            dstSafetyDeposit,
+            timelocks,
+            bytes32(0) // dstRecipient - zero for EVM chains
+        );
+    }
+    
+    function buidDynamicDataWithRecipient(
+        bytes32 hashlock,
+        uint256 chainId,
+        address token,
+        uint256 srcSafetyDeposit,
+        uint256 dstSafetyDeposit,
+        Timelocks timelocks,
+        bytes32 dstRecipient
+    ) internal pure returns (bytes memory) {
         return (
             abi.encode(
                 hashlock,
                 chainId,
                 token,
                 (srcSafetyDeposit << 128) | dstSafetyDeposit,
-                timelocks
+                timelocks,
+                dstRecipient
             )
         );
     }
