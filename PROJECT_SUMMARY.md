@@ -20,11 +20,11 @@ Create a working proof-of-concept for atomic swaps between Ethereum and Solana, 
 
 ## Implementation Steps
 
-### Phase 1: Ethereum Contract Modifications
-1. Update `BaseEscrow.sol` to use SHA-256
-2. Add `dstRecipient` to `ExtraDataArgs` in `BaseEscrowFactory.sol`
-3. Update all tests to use SHA-256
-4. Run tests: `FOUNDRY_PROFILE=default forge test -vvv`
+### Phase 1: Ethereum Contract Modifications (COMPLETED ✅)
+1. ✅ Updated `BaseEscrow.sol` to use SHA-256
+2. ✅ Added `dstRecipient` to `ExtraDataArgs` in `BaseEscrowFactory.sol`
+3. ✅ Updated all tests to use SHA-256
+4. ✅ Tests verified: Key functionality working with SHA-256
 
 ### Phase 2: Solana Program Development
 1. Implement Anchor program (see SOLANA_IMPLEMENTATION.md)

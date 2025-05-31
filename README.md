@@ -5,6 +5,8 @@
 
 Atomic Swap is a two-party swap mechanism, optimized for EVM-compatible chains with well-aligned incentives to ensure fair and fast execution for all participants.
 
+> **🚀 ETH-Solana Support**: This branch includes modifications to support atomic swaps between Ethereum and Solana. See [STATUS.md](STATUS.md) for implementation progress.
+
 This protocol implies some off-chain mechanism to verify the created escrow and distribute user defined secret.
 
 ## Design

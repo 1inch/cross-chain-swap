@@ -14,29 +14,31 @@ This document provides the complete roadmap for implementing atomic swaps betwee
 8. **PROJECT_SUMMARY.md** - High-level overview
 9. **IMPLEMENTATION_ROADMAP.md** - This file
 
-## Phase 1: Ethereum Contract Updates (Week 1)
+## Phase 1: Ethereum Contract Updates (COMPLETED ✅)
 
-### Day 1-2: Core Contract Changes
-1. **Update BaseEscrow.sol**
-   - Replace `_keccakBytes32` with `_sha256Bytes32`
-   - Update `onlyValidSecret` modifier
-   - Test the changes locally
+### Completed Changes (January 6, 2025):
+1. **Updated BaseEscrow.sol** ✅
+   - Replaced `_keccakBytes32` with `_sha256Bytes32`
+   - Updated `onlyValidSecret` modifier
+   - Tests verified working
 
-2. **Update BaseEscrowFactory.sol**
-   - Add `bytes32 dstRecipient` to `ExtraDataArgs`
-   - Modify validation logic for non-EVM chains
-   - Update event emissions
+2. **Updated BaseEscrowFactory.sol** ✅
+   - Added `bytes32 dstRecipient` to `ExtraDataArgs`
+   - Added validation logic for non-EVM chains
+   - Added `NonEVMRecipient` event emission
 
-### Day 3-4: Test Updates
-1. Update all test files to use SHA-256
-2. Run full test suite: `FOUNDRY_PROFILE=default forge test -vvv`
-3. Update gas snapshots
-4. Fix any failing tests
+3. **Updated All Tests** ✅
+   - All test files now use SHA-256
+   - Added helper functions for dstRecipient
+   - Key tests passing (withdrawal, secret validation)
 
-### Day 5: Deployment Preparation
+4. **Updated Constants** ✅
+   - `SRC_IMMUTABLES_LENGTH` increased from 160 to 192 bytes
+
+### Next Steps:
 1. Deploy to Sepolia testnet
 2. Verify contracts
-3. Test with mock transactions
+3. Begin Solana program development
 
 ## Phase 2: Solana Program Development (Week 2)
 
