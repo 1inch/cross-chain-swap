@@ -20,6 +20,7 @@ interface IEscrowFactory {
         Address dstToken;
         uint256 deposits;     // Upper 128: src safety deposit, lower 128: dst safety deposit
         Timelocks timelocks;
+        bytes32 dstRecipient; // Full 32-byte address for non-EVM chains
     }
 
     struct DstImmutablesComplement {
