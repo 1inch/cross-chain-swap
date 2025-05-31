@@ -6,11 +6,11 @@ The CLI tool coordinates atomic swaps between Ethereum and Solana, managing the 
 ## Architecture
 
 ### Technology Stack
-- **Language**: TypeScript/Node.js
-- **Ethereum**: ethers.js v6
+- **Runtime**: Deno (TypeScript)
+- **Ethereum**: viem
 - **Solana**: @solana/web3.js, @project-serum/anchor
-- **CLI Framework**: Commander.js
-- **Storage**: LevelDB for local state persistence
+- **CLI Framework**: Deno's built-in CLI capabilities
+- **Storage**: Deno KV for local state persistence
 - **Monitoring**: WebSocket connections to both chains
 
 ### Core Modules
@@ -41,19 +41,31 @@ src/
 ### 1. SwapCoordinator Class
 
 ```typescript
-import { ethers } from 'ethers';
+import { createPublicClient, createWalletClient, http, type PublicClient, type WalletClient } from 'viem';
+import { mainnet } from 'viem/chains';
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { Program, AnchorProvider } from '@project-serum/anchor';
 
 export class SwapCoordinator {
-    private ethereumProvider: ethers.Provider;
+    private ethereumClient: PublicClient;
+    private ethereumWallet: WalletClient;
     private solanaConnection: Connection;
-    private db: Level;
+    private db: Deno.Kv;
     
     constructor(config: SwapConfig) {
-        this.ethereumProvider = new ethers.JsonRpcProvider(config.ethereumRpc);
+        this.ethereumClient = createPublicClient({
+            chain: mainnet,
+            transport: http(config.ethereumRpc)
+        });
+        this.ethereumWallet = createWalletClient({
+            chain: mainnet,
+            transport: http(config.ethereumRpc)
+        });
         this.solanaConnection = new Connection(config.solanaRpc);
-        this.db = new Level('./swap-state');
+    }
+    
+    async init() {
+        this.db = await Deno.openKv('./swap-state.db');
     }
     
     async createSwap(params: CreateSwapParams): Promise<SwapOrder> {
@@ -62,16 +74,20 @@ export class SwapCoordinator {
         
         // 2. Generate secret and hashlock
         const secret = this.generateSecret();
-        const hashlock = ethers.sha256(ethers.AbiCoder.defaultAbiCoder().encode(['bytes32'], [secret]));
+        const hashlock = keccak256(encodeAbiParameters(
+            [{ type: 'bytes32' }],
+            [secret as `0x${string}`]
+        ));
+        // Note: Will be updated to sha256 in contract changes
         
         // 3. Encode Solana recipient address
         const solanaRecipient = this.encodeSolanaAddress(params.solanaRecipient);
         
         // 4. Create order structure
         const order = {
-            salt: ethers.randomBytes(32),
+            salt: `0x${[...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join('')}` as `0x${string}`,
             maker: params.ethereumMaker,
-            receiver: ethers.ZeroAddress, // Must be zero for non-EVM
+            receiver: zeroAddress, // Must be zero for non-EVM
             makerAsset: params.sourceToken,
             takerAsset: DUMMY_TOKEN,
             makingAmount: params.sourceAmount,
@@ -83,7 +99,7 @@ export class SwapCoordinator {
         const extraDataArgs = {
             hashlockInfo: hashlock,
             dstChainId: this.encodeSolanaChainId(),
-            dstToken: ethers.ZeroAddress, // Not used for Solana
+            dstToken: zeroAddress, // Not used for Solana
             deposits: this.encodeDeposits(params.srcDeposit, params.dstDeposit),
             timelocks: params.timelocks,
             dstRecipient: solanaRecipient, // 32-byte Solana address
@@ -92,9 +108,10 @@ export class SwapCoordinator {
         // 6. Sign order
         const signedOrder = await this.signOrder(order, extraDataArgs);
         
-        // 7. Store swap state
-        await this.saveSwapState({
-            orderId: this.computeOrderId(order),
+        // 7. Store swap state in Deno KV
+        const orderId = this.computeOrderId(order);
+        await this.db.set(['swaps', orderId], {
+            orderId,
             order: signedOrder,
             secret,
             hashlock,
@@ -107,7 +124,9 @@ export class SwapCoordinator {
     }
     
     async fillSwap(orderId: string, resolverKeys: ResolverKeys): Promise<void> {
-        const swap = await this.loadSwapState(orderId);
+        const swapEntry = await this.db.get(['swaps', orderId]);
+        if (!swapEntry.value) throw new Error('Swap not found');
+        const swap = swapEntry.value;
         
         // 1. Fill on Ethereum (creates EscrowSrc)
         console.log('Filling order on Ethereum...');
@@ -128,8 +147,10 @@ export class SwapCoordinator {
             timelocks: swap.timelocks,
         }, resolverKeys.solana);
         
-        // 4. Update state
-        await this.updateSwapState(orderId, {
+        // 4. Update state in Deno KV
+        const currentEntry = await this.db.get(['swaps', orderId]);
+        await this.db.set(['swaps', orderId], {
+            ...currentEntry.value,
             state: 'filled',
             ethereumEscrow: escrowAddress,
             solanaTx,
@@ -141,10 +162,16 @@ export class SwapCoordinator {
     }
     
     async withdrawWithSecret(orderId: string, secret: string): Promise<void> {
-        const swap = await this.loadSwapState(orderId);
+        const swapEntry = await this.db.get(['swaps', orderId]);
+        if (!swapEntry.value) throw new Error('Swap not found');
+        const swap = swapEntry.value;
         
         // Verify secret
-        const hashlock = ethers.sha256(ethers.AbiCoder.defaultAbiCoder().encode(['bytes32'], [secret]));
+        const hashlock = keccak256(encodeAbiParameters(
+            [{ type: 'bytes32' }],
+            [secret as `0x${string}`]
+        ));
+        // Note: Will be updated to sha256 in contract changes
         if (hashlock !== swap.hashlock) {
             throw new Error('Invalid secret');
         }
@@ -155,7 +182,9 @@ export class SwapCoordinator {
             this.withdrawSolana(swap, secret),
         ]);
         
-        await this.updateSwapState(orderId, {
+        const currentEntry = await this.db.get(['swaps', orderId]);
+        await this.db.set(['swaps', orderId], {
+            ...currentEntry.value,
             state: 'completed',
             completedAt: Date.now(),
         });
@@ -173,7 +202,8 @@ export class SwapCoordinator {
     }
     
     private generateSecret(): string {
-        return '0x' + ethers.randomBytes(32).toString('hex');
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        return '0x' + [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
     }
 }
 ```
@@ -182,11 +212,14 @@ export class SwapCoordinator {
 
 ```typescript
 export class SwapMonitor {
-    private ethereumWatcher: ethers.WebSocketProvider;
+    private ethereumClient: PublicClient;
     private solanaWatcher: Connection;
+    private db: Deno.Kv;
     
     async startMonitoring(swapId: string): Promise<void> {
-        const swap = await this.loadSwapState(swapId);
+        const swapEntry = await this.db.get(['swaps', swapId]);
+        if (!swapEntry.value) throw new Error('Swap not found');
+        const swap = swapEntry.value;
         
         // Monitor Ethereum events
         this.monitorEthereum(swap);
@@ -199,22 +232,28 @@ export class SwapMonitor {
     }
     
     private async monitorEthereum(swap: SwapState): Promise<void> {
-        const escrowContract = new ethers.Contract(
-            swap.ethereumEscrow,
-            ESCROW_ABI,
-            this.ethereumWatcher
-        );
-        
-        // Listen for withdrawal events
-        escrowContract.on('EscrowWithdrawal', async (secret) => {
-            console.log('Secret revealed on Ethereum:', secret);
-            await this.handleSecretRevealed(swap, secret);
+        // Watch for withdrawal events using viem
+        const unwatch = this.ethereumClient.watchContractEvent({
+            address: swap.ethereumEscrow,
+            abi: ESCROW_ABI,
+            eventName: 'EscrowWithdrawal',
+            onLogs: async (logs) => {
+                for (const log of logs) {
+                    console.log('Secret revealed on Ethereum:', log.args.secret);
+                    await this.handleSecretRevealed(swap, log.args.secret);
+                }
+            },
         });
         
-        // Listen for cancellation
-        escrowContract.on('EscrowCancelled', async () => {
-            console.log('Escrow cancelled on Ethereum');
-            await this.handleCancellation(swap, 'ethereum');
+        // Watch for cancellation events
+        const unwatchCancel = this.ethereumClient.watchContractEvent({
+            address: swap.ethereumEscrow,
+            abi: ESCROW_ABI,
+            eventName: 'EscrowCancelled',
+            onLogs: async () => {
+                console.log('Escrow cancelled on Ethereum');
+                await this.handleCancellation(swap, 'ethereum');
+            },
         });
     }
     
@@ -250,8 +289,10 @@ export class SwapMonitor {
             }
         }
         
-        // Update state
-        await this.updateSwapState(swap.id, {
+        // Update state in Deno KV
+        const currentEntry = await this.db.get(['swaps', swap.id]);
+        await this.db.set(['swaps', swap.id], {
+            ...currentEntry.value,
             secret,
             secretRevealedAt: Date.now(),
             state: 'secret_revealed',
@@ -264,61 +305,73 @@ export class SwapMonitor {
 
 ```typescript
 // create.ts
-export const createCommand = new Command('create')
-    .description('Create a new ETH to Solana swap')
-    .requiredOption('--eth-amount <amount>', 'Amount of ETH to swap')
-    .requiredOption('--sol-amount <amount>', 'Amount of SOL to receive')
-    .requiredOption('--sol-recipient <address>', 'Solana recipient address')
-    .requiredOption('--eth-key <key>', 'Ethereum private key')
-    .option('--timeout <hours>', 'Swap timeout in hours', '24')
-    .action(async (options) => {
-        const coordinator = new SwapCoordinator(config);
-        
-        const swap = await coordinator.createSwap({
-            ethereumMaker: deriveAddress(options.ethKey),
-            sourceToken: WETH_ADDRESS,
-            sourceAmount: ethers.parseEther(options.ethAmount),
-            destAmount: parseFloat(options.solAmount) * LAMPORTS_PER_SOL,
-            solanaRecipient: options.solRecipient,
-            timelocks: calculateTimelocks(options.timeout),
-            srcDeposit: ethers.parseEther('0.1'),
-            dstDeposit: 0.1 * LAMPORTS_PER_SOL,
-        });
-        
-        console.log('Swap created!');
-        console.log('Order ID:', swap.orderId);
-        console.log('Share this with the resolver to fill the swap');
+import { parseArgs } from "https://deno.land/std/cli/parse_args.ts";
+import { parseEther } from 'viem';
+
+export async function createCommand(args: string[]) {
+    const flags = parseArgs(args, {
+        string: ['eth-amount', 'sol-amount', 'sol-recipient', 'eth-key', 'timeout'],
+        default: { timeout: '24' },
     });
+    
+    if (!flags['eth-amount'] || !flags['sol-amount'] || !flags['sol-recipient'] || !flags['eth-key']) {
+        console.error('Missing required arguments');
+        Deno.exit(1);
+    }
+    
+    const coordinator = new SwapCoordinator(config);
+    await coordinator.init();
+    
+    const swap = await coordinator.createSwap({
+        ethereumMaker: deriveAddress(flags['eth-key']),
+        sourceToken: WETH_ADDRESS,
+        sourceAmount: parseEther(flags['eth-amount']),
+        destAmount: parseFloat(flags['sol-amount']) * LAMPORTS_PER_SOL,
+        solanaRecipient: flags['sol-recipient'],
+        timelocks: calculateTimelocks(flags.timeout),
+        srcDeposit: parseEther('0.1'),
+        dstDeposit: 0.1 * LAMPORTS_PER_SOL,
+    });
+    
+    console.log('Swap created!');
+    console.log('Order ID:', swap.orderId);
+    console.log('Share this with the resolver to fill the swap');
+}
 
 // monitor.ts
-export const monitorCommand = new Command('monitor')
-    .description('Monitor active swaps')
-    .option('--watch', 'Continuously watch for updates')
-    .action(async (options) => {
-        const coordinator = new SwapCoordinator(config);
-        const swaps = await coordinator.getActiveSwaps();
-        
-        if (options.watch) {
-            // Real-time monitoring
-            for (const swap of swaps) {
-                coordinator.startMonitoring(swap.id);
-            }
-            
-            // Keep process alive
-            setInterval(() => {
-                console.log('Monitoring', swaps.length, 'active swaps...');
-            }, 10000);
-        } else {
-            // One-time status check
-            console.table(swaps.map(s => ({
-                id: s.id.slice(0, 8) + '...',
-                state: s.state,
-                created: new Date(s.createdAt).toLocaleString(),
-                ethAmount: ethers.formatEther(s.order.makingAmount),
-                solAmount: s.order.takingAmount / LAMPORTS_PER_SOL,
-            })));
-        }
+import { parseArgs } from "https://deno.land/std/cli/parse_args.ts";
+import { formatEther } from 'viem';
+
+export async function monitorCommand(args: string[]) {
+    const flags = parseArgs(args, {
+        boolean: ['watch'],
     });
+    
+    const coordinator = new SwapCoordinator(config);
+    await coordinator.init();
+    const swaps = await coordinator.getActiveSwaps();
+    
+    if (flags.watch) {
+        // Real-time monitoring
+        for (const swap of swaps) {
+            coordinator.startMonitoring(swap.id);
+        }
+        
+        // Keep process alive
+        setInterval(() => {
+            console.log('Monitoring', swaps.length, 'active swaps...');
+        }, 10000);
+    } else {
+        // One-time status check
+        console.table(swaps.map(s => ({
+            id: s.id.slice(0, 8) + '...',
+            state: s.state,
+            created: new Date(s.createdAt).toLocaleString(),
+            ethAmount: formatEther(s.order.makingAmount),
+            solAmount: s.order.takingAmount / LAMPORTS_PER_SOL,
+        })));
+    }
+}
 ```
 
 ### 4. Configuration
@@ -341,16 +394,16 @@ export interface SwapConfig {
 
 // Load from environment
 export const config: SwapConfig = {
-    ethereumRpc: process.env.ETH_RPC || 'http://localhost:8545',
-    solanaRpc: process.env.SOLANA_RPC || 'http://localhost:8899',
-    ethereumChainId: parseInt(process.env.ETH_CHAIN_ID || '1'),
+    ethereumRpc: Deno.env.get('ETH_RPC') || 'http://localhost:8545',
+    solanaRpc: Deno.env.get('SOLANA_RPC') || 'http://localhost:8899',
+    ethereumChainId: parseInt(Deno.env.get('ETH_CHAIN_ID') || '1'),
     contracts: {
-        limitOrderProtocol: process.env.LIMIT_ORDER_PROTOCOL || '0x...',
-        escrowFactory: process.env.ESCROW_FACTORY || '0x...',
+        limitOrderProtocol: Deno.env.get('LIMIT_ORDER_PROTOCOL') || '0x...',
+        escrowFactory: Deno.env.get('ESCROW_FACTORY') || '0x...',
     },
     solanaProgram: {
-        programId: process.env.SOLANA_PROGRAM_ID || '...',
-        idl: require('./idl.json'),
+        programId: Deno.env.get('SOLANA_PROGRAM_ID') || '...',
+        idl: JSON.parse(await Deno.readTextFile('./idl.json')),
     },
 };
 ```
@@ -416,11 +469,22 @@ eth-sol-swap cancel --order-id 0x123...
 
 ## Deployment
 
-1. Build: `npm run build`
-2. Package: `npm pack`
-3. Install globally: `npm install -g eth-sol-swap`
-4. Configure: Set environment variables
-5. Test on testnet first
+1. Install Deno: https://deno.land/manual/getting_started/installation
+2. Set permissions in deno.json:
+   ```json
+   {
+     "permissions": {
+       "env": true,
+       "net": true,
+       "read": true,
+       "write": ["./swap-state.db"]
+     }
+   }
+   ```
+3. Run directly: `deno run --allow-all main.ts`
+4. Or compile: `deno compile --allow-all main.ts -o eth-sol-swap`
+5. Configure: Set environment variables
+6. Test on testnet first
 
 ## Future Enhancements
 
