@@ -29,7 +29,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint64 i = 0; i < secretsAmount; i++) {
-            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedSecrets[i] = sha256(abi.encode(bytes32(uint256(i))));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
@@ -65,7 +65,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint64 i = 0; i < secretsAmount; i++) {
-            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedSecrets[i] = sha256(abi.encode(bytes32(uint256(i))));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
@@ -99,7 +99,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint64 i = 0; i < secretsAmount; i++) {
-            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedSecrets[i] = sha256(abi.encode(bytes32(uint256(i))));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);

@@ -27,7 +27,7 @@ contract EscrowFactoryTest is BaseSetup {
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
-            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedSecrets[i] = sha256(abi.encode(bytes32(uint256(i))));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
@@ -40,7 +40,7 @@ contract EscrowFactoryTest is BaseSetup {
         uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
         uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            keccak256(abi.encode(secret)),
+            sha256(abi.encode(secret)),
             srcAmount,
             dstAmount,
             srcSafetyDeposit,

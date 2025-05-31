@@ -24,7 +24,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;
 
         CrossChainTestLib.SwapData memory swapData = _prepareDataSrcCustom(
-            keccak256(abi.encode(secret)),
+            sha256(abi.encode(secret)),
             srcAmount,
             dstAmount,
             srcSafetyDeposit,

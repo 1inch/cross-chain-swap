@@ -25,7 +25,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
 
         for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
             // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
-            hashedSecrets[i] = keccak256(abi.encodePacked(i));
+            hashedSecrets[i] = sha256(abi.encode(bytes32(uint256(i))));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
         root = merkle.getRoot(hashedPairs);
@@ -114,7 +114,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory hashedPairsLocal = new bytes32[](secretsAmount);
 
         for (uint64 i = 0; i < secretsAmount; i++) {
-            hashedSecretsLocal[i] = keccak256(abi.encodePacked(i));
+            hashedSecretsLocal[i] = sha256(abi.encode(bytes32(uint256(i))));
             hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
         }
 
@@ -941,7 +941,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
         bytes32[] memory hashedSecretsLocal = new bytes32[](SECRETS_AMOUNT);
         bytes32[] memory hashedPairsLocal = new bytes32[](SECRETS_AMOUNT);
         for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
-            hashedSecretsLocal[i] = keccak256(abi.encodePacked(keccak256(abi.encodePacked(i))));
+            hashedSecretsLocal[i] = sha256(abi.encode(sha256(abi.encode(bytes32(uint256(i))))));
             hashedPairsLocal[i] = keccak256(abi.encodePacked(i, hashedSecretsLocal[i]));
         }
         bytes32 rootLocal = merkle.getRoot(hashedPairsLocal);

@@ -14,7 +14,7 @@ import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
 contract EscrowTest is BaseSetup {
     // solhint-disable-next-line private-vars-leading-underscore
-    bytes32 internal constant WRONG_SECRET = keccak256(abi.encodePacked("wrong secret"));
+    bytes32 internal constant WRONG_SECRET = bytes32(uint256(999));
 
     function setUp() public virtual override {
         BaseSetup.setUp();
