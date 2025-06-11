@@ -31,6 +31,8 @@ contract DeployEscrowFactory is Script {
         FEE_TOKEN[10] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1; // Optimism (DAI)
         FEE_TOKEN[8453] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb; // Base (DAI)
         FEE_TOKEN[59144] = 0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00d5; // Linea (DAI)
+        FEE_TOKEN[146] = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894; // Sonic (USDC)
+        FEE_TOKEN[130] = 0x20CAb320A855b39F724131C69424240519573f81; // Unichain (DAI)
 
         address deployer = vm.envAddress("DEPLOYER_ADDRESS");
         address feeBankOwner = deployer;

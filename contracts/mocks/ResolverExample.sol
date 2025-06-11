@@ -1,4 +1,13 @@
 // SPDX-License-Identifier: MIT
+/*──────────────────────────────────────────────────────────────────────────────
+ * WARNING!
+ * ----------
+ * This smart-contract code has **NOT** undergone a formal security audit and
+ * may contain bugs, vulnerabilities, or other defects. It is provided solely
+ * as an illustrative example.  No warranties, express or implied, are given.
+ * You assume all risks associated with deploying, interacting with, or
+ * relying upon this code.  USE AT YOUR OWN RISK.
+ *──────────────────────────────────────────────────────────────────────────────*/
 
 pragma solidity 0.8.23;
 

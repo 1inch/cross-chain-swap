@@ -14,7 +14,6 @@ contract CancelDst is Script {
         address deployer = vm.envAddress("DEPLOYER_ADDRESS");
         uint256 deployerPK = vm.envUint("DEPLOYER_PRIVATE_KEY");
         IResolverExample resolver = IResolverExample(vm.envAddress("RESOLVER"));
-        // address srcToken = vm.envAddress("TOKEN_SRC");
         address dstToken = address(0); // ETH
         bytes32 orderHash = vm.envBytes32("ORDER_HASH");
         Timelocks timelocks = Timelocks.wrap(vm.envUint("TIMELOCKS"));
