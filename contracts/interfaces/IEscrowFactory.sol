@@ -22,9 +22,7 @@ interface IEscrowFactory {
         Address integratorFeeRecipient;
         uint256 deposits;
         Timelocks timelocks;
-        uint256 integratorFee; // Integrator fee percentage in 1e5
-        uint256 integratorShare; // Integrator share percentage in 1e2
-        uint256 protocolFee; // Protocol fee percentage in 1e5
+        uint256 packedFees;
     }
 
     struct DstImmutablesComplement {
@@ -35,9 +33,7 @@ interface IEscrowFactory {
         Address integratorFeeRecipient;
         uint256 safetyDeposit;
         uint256 chainId;
-        uint256 integratorFee; // Integrator fee percentage in 1e5
-        uint256 integratorShare; // Integrator share percentage in 1e2
-        uint256 protocolFee; // Protocol fee percentage in 1e5
+        uint256 packedFees;
     }
 
     error InsufficientEscrowBalance();

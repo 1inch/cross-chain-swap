@@ -8,6 +8,7 @@ import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { PackedFeesLib } from "contracts/libraries/PackedFeesLib.sol";
 
 contract CancelDst is Script {
     function run() external {
@@ -30,6 +31,8 @@ contract CancelDst is Script {
         uint256 dstAmount = 1; // 1 USDC
         uint256 safetyDeposit = 1;
 
+        uint256 packedFees = PackedFeesLib.pack(protocolFee, integratorFee, integratorShare);
+
         IBaseEscrow.Immutables memory immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
             amount: dstAmount,
@@ -41,9 +44,7 @@ contract CancelDst is Script {
             hashlock: hashlock,
             safetyDeposit: safetyDeposit,
             timelocks: timelocks,
-            protocolFee: protocolFee,
-            integratorFee: integratorFee,
-            integratorShare: integratorShare
+            packedFees: packedFees
         });
 
         address escrow = vm.envAddress("ESCROW_DST");

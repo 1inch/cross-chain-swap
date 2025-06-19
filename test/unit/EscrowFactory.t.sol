@@ -95,9 +95,7 @@ contract EscrowFactoryTest is BaseSetup {
             chainId: block.chainid,
             protocolFeeRecipient: swapData.immutables.protocolFeeRecipient,
             integratorFeeRecipient: swapData.immutables.integratorFeeRecipient,
-            protocolFee: swapData.immutables.protocolFee,
-            integratorFee: swapData.immutables.integratorFee,
-            integratorShare: swapData.immutables.integratorShare
+            packedFees: swapData.immutables.packedFees
         });
 
         vm.prank(address(limitOrderProtocol));

@@ -14,6 +14,7 @@ import { ResolverValidationExtension } from "limit-order-settlement/contracts/ex
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
+import { PackedFeesLib } from "./libraries/PackedFeesLib.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
@@ -32,6 +33,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
     using ImmutablesLib for IBaseEscrow.Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
+    using PackedFeesLib for uint256;
 
     /// @notice See {IEscrowFactory-ESCROW_SRC_IMPLEMENTATION}.
     address public immutable ESCROW_SRC_IMPLEMENTATION;
@@ -87,7 +89,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             hashlock = extraDataArgs.hashlockInfo;
         }
 
-        if (extraDataArgs.integratorShare > ImmutablesLib._BASE_1E2) revert InvalidIntegratorShare();
+        if (extraDataArgs.packedFees.getIntegratorShare() > ImmutablesLib._BASE_1E2) revert InvalidIntegratorShare();
 
         IBaseEscrow.Immutables memory immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
@@ -100,9 +102,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             amount: makingAmount,
             safetyDeposit: extraDataArgs.deposits >> 128,
             timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp),
-            protocolFee: extraDataArgs.protocolFee,
-            integratorFee: extraDataArgs.integratorFee,
-            integratorShare: extraDataArgs.integratorShare
+            packedFees: extraDataArgs.packedFees
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
@@ -113,9 +113,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             integratorFeeRecipient: extraDataArgs.integratorFeeRecipient,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
             chainId: extraDataArgs.dstChainId,
-            protocolFee: extraDataArgs.protocolFee,
-            integratorFee: extraDataArgs.integratorFee,
-            integratorShare: extraDataArgs.integratorShare
+            packedFees: extraDataArgs.packedFees
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);

@@ -9,7 +9,7 @@ import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
-
+import { PackedFeesLib } from "contracts/libraries/PackedFeesLib.sol";
 
 contract CancelSrc is Script {
     function run() external {
@@ -33,6 +33,8 @@ contract CancelSrc is Script {
         uint256 srcAmount = 1; // 1 USDC
         uint256 safetyDeposit = 1;
 
+        uint256 packedFees = PackedFeesLib.pack(protocolFee, integratorFee, integratorShare);
+
         IBaseEscrow.Immutables memory immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
             amount: srcAmount,
@@ -44,9 +46,7 @@ contract CancelSrc is Script {
             hashlock: hashlock,
             safetyDeposit: safetyDeposit,
             timelocks: timelocks,
-            protocolFee: protocolFee,
-            integratorFee: integratorFee,
-            integratorShare: integratorShare
+            packedFees: packedFees
         });
 
         // address escrow = vm.envAddress("ESCROW_SRC");

@@ -6,6 +6,7 @@ import { BaseEscrowFactory } from "../../../contracts/BaseEscrowFactory.sol";
 import { EscrowSrc } from "../../../contracts/EscrowSrc.sol";
 import { IBaseEscrow } from "../../../contracts/interfaces/IBaseEscrow.sol";
 import { ERC20True } from "../../../contracts/mocks/ERC20True.sol";
+import { PackedFeesLib } from "../../../contracts/libraries/PackedFeesLib.sol";
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { MakerTraits } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
@@ -299,9 +300,7 @@ library CrossChainTestLib {
         Timelocks timelocks,
         address protocolFeeRecipient,
         address integratorFeeRecipient,
-        uint256 protocolFee,
-        uint256 integratorFee,
-        uint256 integratorShare
+        uint256 packedFees
     ) internal pure returns (bytes memory) {
         return (
             abi.encode(
@@ -312,9 +311,7 @@ library CrossChainTestLib {
                 integratorFeeRecipient,
                 (srcSafetyDeposit << 128) | dstSafetyDeposit,
                 timelocks,
-                protocolFee,
-                integratorFee,
-                integratorShare
+                packedFees
             )
         );
     }
@@ -325,6 +322,8 @@ library CrossChainTestLib {
         address factory,
         IOrderMixin limitOrderProtocol
     ) internal returns(SwapData memory swapData) {
+        uint256 packedFees = PackedFeesLib.pack(orderDetails.protocolFee, orderDetails.integratorFee, orderDetails.integratorShare);
+
         swapData.extraData = buidDynamicData(
             escrowDetails.hashlock,
             block.chainid,
@@ -334,9 +333,7 @@ library CrossChainTestLib {
             escrowDetails.timelocks,
             orderDetails.protocolFeeRecipient,
             orderDetails.integratorFeeRecipient,
-            orderDetails.protocolFee,
-            orderDetails.integratorFee,
-            orderDetails.integratorShare
+            packedFees
         );
 
         bytes memory whitelist = abi.encodePacked(uint32(block.timestamp)); // auction start time
@@ -394,9 +391,7 @@ library CrossChainTestLib {
             timelocks: escrowDetails.timelocks,
             protocolFeeRecipient: Address.wrap(uint160(orderDetails.protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(orderDetails.integratorFeeRecipient)),
-            protocolFee: orderDetails.protocolFee,
-            integratorFee: orderDetails.integratorFee,
-            integratorShare: orderDetails.integratorShare
+            packedFees: packedFees
         });
 
         swapData.srcClone = EscrowSrc(BaseEscrowFactory(factory).addressOfEscrowSrc(swapData.immutables));
@@ -419,6 +414,8 @@ library CrossChainTestLib {
         uint256 integratorFee,
         uint256 integratorShare
     ) internal pure returns (IBaseEscrow.Immutables memory immutables) {
+        uint256 packedFees = PackedFeesLib.pack(protocolFee, integratorFee, integratorShare);
+
         immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
             hashlock: hashlock,
@@ -430,9 +427,7 @@ library CrossChainTestLib {
             timelocks: timelocks,
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
-            protocolFee: protocolFee,
-            integratorFee: integratorFee,
-            integratorShare: integratorShare
+            packedFees: packedFees
         });
     }
 }

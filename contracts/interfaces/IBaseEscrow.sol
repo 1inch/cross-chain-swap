@@ -23,9 +23,7 @@ interface IBaseEscrow {
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
-        uint256 protocolFee;
-        uint256 integratorFee;
-        uint256 integratorShare;
+        uint256 packedFees;
     }
 
     /**

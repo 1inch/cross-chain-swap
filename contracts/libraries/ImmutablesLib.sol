@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { PackedFeesLib } from "./PackedFeesLib.sol";
 
 /**
  * @title Library for escrow immutables.
@@ -11,8 +12,9 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
  */
 library ImmutablesLib {
     using Math for uint256;
+    using PackedFeesLib for uint256;
 
-    uint256 internal constant ESCROW_IMMUTABLES_SIZE = 0x1A0;
+    uint256 internal constant ESCROW_IMMUTABLES_SIZE = 0x160;
 
     /// @dev Allows fees in range [1e-5, 0.65535]
     uint256 internal constant _BASE_1E5 = 1e5;
@@ -45,10 +47,11 @@ library ImmutablesLib {
     function getFeeAmounts(
         IBaseEscrow.Immutables calldata immutables
     ) internal pure returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount) {
-        uint256 denominator = _BASE_1E5 + immutables.integratorFee + immutables.protocolFee;
-        uint256 integratorFeeTotal = immutables.amount.mulDiv(immutables.integratorFee, denominator);
-        integratorFeeAmount = integratorFeeTotal.mulDiv(immutables.integratorShare, _BASE_1E2);
-        protocolFeeAmount = immutables.amount.mulDiv(immutables.protocolFee, denominator) + integratorFeeAmount;
+        (uint256 protocolFee, uint256 integratorFee, uint256 integratorShare) = immutables.packedFees.unpack();
+        uint256 denominator = _BASE_1E5 + integratorFee + protocolFee;
+        uint256 integratorFeeTotal = immutables.amount.mulDiv(integratorFee, denominator);
+        integratorFeeAmount = integratorFeeTotal.mulDiv(integratorShare, _BASE_1E2);
+        protocolFeeAmount = immutables.amount.mulDiv(protocolFee, denominator) + integratorFeeAmount;
         integratorFeeAmount = integratorFeeTotal - integratorFeeAmount;
     }
 }
