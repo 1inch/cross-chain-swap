@@ -41,7 +41,25 @@ library ImmutablesLib {
             ret := keccak256(immutables, ESCROW_IMMUTABLES_SIZE)
         }
     }
-
+    /**
+     * @notice Calculates the integrator and protocol fee amounts based on immutable fee configuration.
+     * @dev This function assumes that `integratorFee`, `protocolFee`, and `integratorShare`
+     *      are expressed in basis points (1e5 = 100%) and percentages (1e2 = 100%) respectively.
+     *
+     *      The total fee is proportionally split between the protocol and integrator.
+     *      The integrator only keeps a portion of their assigned fee based on `integratorShare`.
+     *
+     * @param immutables Struct containing:
+     *        - `amount`: the total amount on which fees are based,
+     *        - `integratorFee`: fee requested by the integrator (in basis points),
+     *        - `protocolFee`: fee for the protocol (in basis points),
+     *        - `integratorShare`: % share of the integratorFee retained by the integrator.
+     *
+     * @return integratorFeeAmount Final amount retained by the integrator
+     *         (after applying the integratorShare to the integratorFeeTotal).
+     * @return protocolFeeAmount Final amount allocated to the protocol
+     *         (includes its own fee plus the remaining part of the integrator’s fee).
+     */
     function getFeeAmounts(
         IBaseEscrow.Immutables calldata immutables
     ) internal pure returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount) {
