@@ -92,7 +92,12 @@ contract EscrowFactoryTest is BaseSetup {
             amount: TAKING_AMOUNT,
             token: Address.wrap(uint160(address(dai))),
             safetyDeposit: DST_SAFETY_DEPOSIT,
-            chainId: block.chainid
+            chainId: block.chainid,
+            protocolFeeRecipient: swapData.immutables.protocolFeeRecipient,
+            integratorFeeRecipient: swapData.immutables.integratorFeeRecipient,
+            protocolFee: swapData.immutables.protocolFee,
+            integratorFee: swapData.immutables.integratorFee,
+            integratorShare: swapData.immutables.integratorShare
         });
 
         vm.prank(address(limitOrderProtocol));
@@ -116,7 +121,15 @@ contract EscrowFactoryTest is BaseSetup {
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
         (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDstCustom(
-            secret, amount, alice.addr, bob.addr, address(dai), safetyDeposit
+            secret, 
+            amount, 
+            alice.addr, 
+            bob.addr, 
+            address(dai), 
+            safetyDeposit,             
+            PROTOCOL_FEE, 
+            INTEGRATOR_FEE, 
+            INTEGRATOR_SHARES
         );
         uint256 balanceBobNative = bob.addr.balance;
         uint256 balanceBob = dai.balanceOf(bob.addr);
@@ -224,7 +237,15 @@ contract EscrowFactoryTest is BaseSetup {
 
     function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
         (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDstCustom(
-            HASHED_SECRET, TAKING_AMOUNT, alice.addr, bob.addr, address(0x00), DST_SAFETY_DEPOSIT
+            HASHED_SECRET, 
+            TAKING_AMOUNT, 
+            alice.addr, 
+            bob.addr, 
+            address(0x00), 
+            DST_SAFETY_DEPOSIT,
+            PROTOCOL_FEE, 
+            INTEGRATOR_FEE, 
+            INTEGRATOR_SHARES
         );
 
         // deploy escrow

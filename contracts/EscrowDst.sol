@@ -6,6 +6,8 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
+import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
+
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
@@ -22,6 +24,7 @@ import { Escrow } from "./Escrow.sol";
 contract EscrowDst is Escrow, IEscrowDst {
     using SafeERC20 for IERC20;
     using AddressLib for Address;
+    using ImmutablesLib for Immutables;
     using TimelocksLib for Timelocks;
 
     constructor(uint32 rescueDelay, IERC20 accessToken) BaseEscrow(rescueDelay, accessToken) {}
@@ -79,7 +82,16 @@ contract EscrowDst is Escrow, IEscrowDst {
         onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
     {
-        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
+        (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = immutables.getFeeAmounts();
+
+        if (integratorFeeAmount > 0) {
+            _uniTransfer(immutables.token.get(), immutables.integratorFeeRecipient.get(), integratorFeeAmount);
+        }
+        if (protocolFeeAmount > 0) {
+            _uniTransfer(immutables.token.get(), immutables.protocolFeeRecipient.get(), protocolFeeAmount);
+        }
+
+        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount - integratorFeeAmount - protocolFeeAmount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowWithdrawal(secret);
     }

@@ -18,22 +18,33 @@ interface IEscrowFactory {
         bytes32 hashlockInfo; // Hash of the secret or the Merkle tree root if multiple fills are allowed
         uint256 dstChainId;
         Address dstToken;
+        Address protocolFeeRecipient;
+        Address integratorFeeRecipient;
         uint256 deposits;
         Timelocks timelocks;
+        uint256 integratorFee; // Integrator fee percentage in 1e5
+        uint256 integratorShare; // Integrator share percentage in 1e2
+        uint256 protocolFee; // Protocol fee percentage in 1e5
     }
 
     struct DstImmutablesComplement {
         Address maker;
         uint256 amount;
         Address token;
+        Address protocolFeeRecipient;
+        Address integratorFeeRecipient;
         uint256 safetyDeposit;
         uint256 chainId;
+        uint256 integratorFee; // Integrator fee percentage in 1e5
+        uint256 integratorShare; // Integrator share percentage in 1e2
+        uint256 protocolFee; // Protocol fee percentage in 1e5
     }
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
     error InvalidPartialFill();
     error InvalidSecretsAmount();
+    error InvalidIntegratorShare();
 
     /**
      * @notice Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain.

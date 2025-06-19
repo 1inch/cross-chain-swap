@@ -74,7 +74,10 @@ contract TimelocksLibTest is BaseSetup {
         vm.startPrank(alice.addr);
         dstClone.publicWithdraw(SECRET, immutablesDst);
         assertEq(dai.balanceOf(address(dstClone)), 0);
-        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT);
+
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT - FEES_AMOUNT);
+        assertEq(dai.balanceOf(protocolFeeReceiver), PROTOCOL_FEE_AMOUNT);
+        assertEq(dai.balanceOf(integratorFeeReceiver), FEES_AMOUNT - PROTOCOL_FEE_AMOUNT);
     }
 
     /* solhint-enable func-name-mixedcase */

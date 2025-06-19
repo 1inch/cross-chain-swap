@@ -7,7 +7,6 @@ import { IWETH, LimitOrderProtocol } from "limit-order-protocol/contracts/LimitO
 import { IFeeBank } from "limit-order-settlement/contracts/interfaces/IFeeBank.sol";
 import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
 import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
-
 import { EscrowDst } from "../../contracts/EscrowDst.sol";
 import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
 import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
@@ -17,6 +16,7 @@ import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.
 import { Utils } from "./Utils.sol";
 import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
+import { FeeProxy } from "./FeeProxy.sol";
 
 /* solhint-disable max-states-count */
 contract BaseSetup is Test, Utils {
@@ -29,6 +29,14 @@ contract BaseSetup is Test, Utils {
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
     uint32 internal constant RESCUE_DELAY = 604800; // 7 days
+    uint256 internal constant PROTOCOL_FEE = 25;
+    uint256 internal constant INTEGRATOR_FEE = 25; 
+    uint256 internal constant INTEGRATOR_SHARES = 25;
+    uint256 internal constant FEES_AMOUNT = 249875062468764;
+    uint256 internal constant PROTOCOL_FEE_AMOUNT = 156171914042977;
+
+    uint256 internal constant BASE_1E5 = 1e5;
+    uint256 internal constant BASE_1E2 = 100;
 
     Wallet internal alice;
     Wallet internal bob;
@@ -49,6 +57,11 @@ contract BaseSetup is Test, Utils {
 
     Timelocks internal timelocks;
     Timelocks internal timelocksDst;
+
+    address internal integratorFeeReceiver;
+    address internal protocolFeeReceiver;
+
+    FeeProxy feeProxy;
 
     CrossChainTestLib.SrcTimelocks internal srcTimelocks = CrossChainTestLib.SrcTimelocks({
         withdrawal: 120,
@@ -76,7 +89,7 @@ contract BaseSetup is Test, Utils {
     function setUp() public virtual {
         bytes32 profileHash = keccak256(abi.encodePacked(vm.envString("FOUNDRY_PROFILE")));
         if (profileHash == CrossChainTestLib.ZKSYNC_PROFILE_HASH) isZkSync = true;
-        _createUsers(3);
+        _createUsers(5);
 
         alice = users[0];
         bob = users[1];
@@ -88,6 +101,11 @@ contract BaseSetup is Test, Utils {
 
         resolvers = new address[](1);
         resolvers[0] = bob.addr;
+
+        integratorFeeReceiver = users[3].addr;
+        protocolFeeReceiver = users[4].addr;
+
+        feeProxy = new FeeProxy();
 
         _deployTokens();
         dai.mint(bob.addr, 1000 ether);
@@ -201,7 +219,12 @@ contract BaseSetup is Test, Utils {
                     0, // delay
                     900000, // initialRateBump
                     auctionPoints
-                )
+                ),
+                protocolFeeRecipient: protocolFeeReceiver,
+                integratorFeeRecipient: integratorFeeReceiver,
+                protocolFee: PROTOCOL_FEE,
+                integratorFee: INTEGRATOR_FEE,
+                integratorShare: INTEGRATOR_SHARES
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,
@@ -216,7 +239,17 @@ contract BaseSetup is Test, Utils {
 
     function _prepareDataDst(
     ) internal view returns (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
-        return _prepareDataDstCustom(HASHED_SECRET, TAKING_AMOUNT, alice.addr, resolvers[0], address(dai), DST_SAFETY_DEPOSIT);
+        return _prepareDataDstCustom(
+            HASHED_SECRET, 
+            TAKING_AMOUNT, 
+            alice.addr, 
+            resolvers[0],
+            address(dai), 
+            DST_SAFETY_DEPOSIT, 
+            PROTOCOL_FEE, 
+            INTEGRATOR_FEE,
+            INTEGRATOR_SHARES
+        );
     }
 
     function _prepareDataDstCustom(
@@ -225,7 +258,10 @@ contract BaseSetup is Test, Utils {
         address maker,
         address taker,
         address token,
-        uint256 safetyDeposit
+        uint256 safetyDeposit,
+        uint256 protocolFee,
+        uint256 integratorFee,
+        uint256 integratorShares
     ) internal view returns (IBaseEscrow.Immutables memory, uint256, EscrowDst) {
         bytes32 orderHash = bytes32(block.timestamp); // fake order hash
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
@@ -237,7 +273,12 @@ contract BaseSetup is Test, Utils {
             taker,
             token,
             safetyDeposit,
-            timelocksDst
+            timelocksDst,
+            protocolFeeReceiver,
+            integratorFeeReceiver,
+            protocolFee,
+            integratorFee,
+            integratorShares
         );
         return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
     }

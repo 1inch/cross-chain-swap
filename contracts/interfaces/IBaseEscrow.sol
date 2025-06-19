@@ -18,9 +18,14 @@ interface IBaseEscrow {
         Address maker;
         Address taker;
         Address token;
+        Address protocolFeeRecipient;
+        Address integratorFeeRecipient;
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
+        uint256 protocolFee;
+        uint256 integratorFee;
+        uint256 integratorShare;
     }
 
     /**

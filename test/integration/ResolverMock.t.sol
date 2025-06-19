@@ -338,7 +338,9 @@ contract IntegrationResolverMockTest is BaseSetup {
         skip(dstTimelocks.withdrawal + 10);
         IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
-        assertEq(dai.balanceOf(alice.addr), aliceBalance + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(alice.addr), aliceBalance + TAKING_AMOUNT - FEES_AMOUNT);
+        assertEq(dai.balanceOf(protocolFeeReceiver), PROTOCOL_FEE_AMOUNT);
+        assertEq(dai.balanceOf(integratorFeeReceiver), FEES_AMOUNT - PROTOCOL_FEE_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + DST_SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(address(dstClone)), 0);
         assertEq(address(dstClone).balance, 0);
@@ -375,7 +377,9 @@ contract IntegrationResolverMockTest is BaseSetup {
         // Now resolver mock is able to withdraw tokens
         IResolverExample(resolverMock).arbitraryCalls(targets, arguments);
 
-        assertEq(dai.balanceOf(alice.addr), aliceBalance + TAKING_AMOUNT);
+        assertEq(dai.balanceOf(alice.addr), aliceBalance + TAKING_AMOUNT - FEES_AMOUNT);
+        assertEq(dai.balanceOf(protocolFeeReceiver), PROTOCOL_FEE_AMOUNT);
+        assertEq(dai.balanceOf(integratorFeeReceiver), FEES_AMOUNT - PROTOCOL_FEE_AMOUNT);
         assertEq(resolverMock.balance, resolverBalanceNative + DST_SAFETY_DEPOSIT);
         assertEq(dai.balanceOf(address(dstClone)), 0);
         assertEq(address(dstClone).balance, 0);

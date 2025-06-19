@@ -20,8 +20,12 @@ contract DeployEscrowSrc is Script {
         IResolverExample resolver = IResolverExample(vm.envAddress("RESOLVER"));
         address escrowFactory = vm.envAddress("ESCROW_FACTORY");
         IOrderMixin limitOrderProtocol = IOrderMixin(vm.envAddress("LOP"));
-
         address srcToken = vm.envAddress("TOKEN_SRC");
+        address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
+        address integratorFeeRecipient = vm.envAddress("INTEGRATOR_FEE_RECIPIENT");
+        uint256 protocolFee = vm.envUint("PROTOCOL_FEE");
+        uint256 integratorFee = vm.envUint("INTEGRATOR_FEE");
+        uint256 integratorShare = vm.envUint("INTEGRATOR_SHARE");
 
         // Prepare data to deploy EscrowSrc
         address maker = deployer;
@@ -76,7 +80,12 @@ contract DeployEscrowSrc is Script {
                     0, // delay
                     0, // initialRateBump
                     "" // auctionPoints
-                )
+                ),
+                protocolFeeRecipient: protocolFeeRecipient,
+                integratorFeeRecipient: integratorFeeRecipient,
+                protocolFee: protocolFee,
+                integratorFee: integratorFee,
+                integratorShare: integratorShare
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,

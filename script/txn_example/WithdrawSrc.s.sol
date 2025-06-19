@@ -20,6 +20,11 @@ contract WithdrawSrc is Script {
         bytes32 orderHash = vm.envBytes32("ORDER_HASH");
         Timelocks timelocks = Timelocks.wrap(vm.envUint("TIMELOCKS"));
         uint256 deployedAt = vm.envUint("DEPLOYED_AT");
+        address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
+        address integratorFeeRecipient = vm.envAddress("INTEGRATOR_FEE_RECIPIENT");
+        uint256 protocolFee = vm.envUint("PROTOCOL_FEE");
+        uint256 integratorFee = vm.envUint("INTEGRATOR_FEE");
+        uint256 integratorShare = vm.envUint("INTEGRATOR_SHARE");
 
         timelocks = TimelocksLib.setDeployedAt(timelocks, deployedAt);
         bytes32 secret = keccak256(abi.encodePacked("secret"));
@@ -33,9 +38,14 @@ contract WithdrawSrc is Script {
             maker: Address.wrap(uint160(deployer)),
             taker: Address.wrap(uint160(address(resolver))),
             token: Address.wrap(uint160(srcToken)),
+            protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
+            integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
             hashlock: hashlock,
             safetyDeposit: safetyDeposit,
-            timelocks: timelocks
+            timelocks: timelocks,
+            protocolFee: protocolFee,
+            integratorFee: integratorFee,
+            integratorShare: integratorShare
         });
 
         // address escrow = vm.envAddress("ESCROW_SRC");

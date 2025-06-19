@@ -17,6 +17,11 @@ contract DeployEscrowDst is Script {
         IResolverExample resolver = IResolverExample(vm.envAddress("RESOLVER"));
         bytes32 orderHash = vm.envBytes32("ORDER_HASH");
         Timelocks timelocks = Timelocks.wrap(vm.envUint("TIMELOCKS"));
+        address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
+        address integratorFeeRecipient = vm.envAddress("INTEGRATOR_FEE_RECIPIENT");
+        uint256 protocolFee = vm.envUint("PROTOCOL_FEE");
+        uint256 integratorFee = vm.envUint("INTEGRATOR_FEE");
+        uint256 integratorShare = vm.envUint("INTEGRATOR_SHARE");
 
         // Prepare data to deploy escrow
         address maker = deployer;
@@ -34,7 +39,12 @@ contract DeployEscrowDst is Script {
             address(resolver),
             dstToken,
             safetyDeposit,
-            timelocks
+            timelocks,
+            protocolFeeRecipient,
+            integratorFeeRecipient,
+            protocolFee,
+            integratorFee,
+            integratorShare
         );
 
         uint256 srcCancellationTimestamp = type(uint32).max;

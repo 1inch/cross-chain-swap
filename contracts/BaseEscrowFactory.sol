@@ -87,23 +87,35 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             hashlock = extraDataArgs.hashlockInfo;
         }
 
+        if (extraDataArgs.integratorShare > ImmutablesLib._BASE_1E2) revert InvalidIntegratorShare();
+
         IBaseEscrow.Immutables memory immutables = IBaseEscrow.Immutables({
             orderHash: orderHash,
             hashlock: hashlock,
             maker: order.maker,
             taker: Address.wrap(uint160(taker)),
             token: order.makerAsset,
+            protocolFeeRecipient: extraDataArgs.protocolFeeRecipient,
+            integratorFeeRecipient: extraDataArgs.integratorFeeRecipient,
             amount: makingAmount,
             safetyDeposit: extraDataArgs.deposits >> 128,
-            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp)
+            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp),
+            protocolFee: extraDataArgs.protocolFee,
+            integratorFee: extraDataArgs.integratorFee,
+            integratorShare: extraDataArgs.integratorShare
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
             amount: takingAmount,
             token: extraDataArgs.dstToken,
+            protocolFeeRecipient: extraDataArgs.protocolFeeRecipient,
+            integratorFeeRecipient: extraDataArgs.integratorFeeRecipient,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
-            chainId: extraDataArgs.dstChainId
+            chainId: extraDataArgs.dstChainId,
+            protocolFee: extraDataArgs.protocolFee,
+            integratorFee: extraDataArgs.integratorFee,
+            integratorShare: extraDataArgs.integratorShare
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);
