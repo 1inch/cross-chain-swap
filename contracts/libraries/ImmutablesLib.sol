@@ -44,6 +44,14 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Calculates the net fee amounts for the integrator and the protocol.
+     * @dev Extracts `protocolFee`, `integratorFee`, and `integratorShare` from the packed `packedFees` field.
+     * Uses a fixed-point denominator of 1e5 (i.e., basis points) and applies proportional fee logic.
+     * @param immutables Struct containing immutable swap parameters, including `amount` and `packedFees`.
+     * @return integratorFeeAmount The final amount received by the integrator after applying its share.
+     * @return protocolFeeAmount The final amount received by the protocol (includes its own fee and a share from the integrator's fee).
+     */
     function getFeeAmounts(
         IBaseEscrow.Immutables calldata immutables
     ) internal pure returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount) {
