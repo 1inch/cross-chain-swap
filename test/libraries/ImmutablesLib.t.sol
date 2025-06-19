@@ -42,7 +42,10 @@ contract ImmutablesLibTest is BaseSetup {
 
         uint256 denominator = (BASE_1E5 + integratorFee + protocolFee);
         uint256 totalFeesAmountRef = Math.mulDiv(amount, integratorFee + protocolFee, denominator);
-        uint256 protocolFeeAmountRef = Math.mulDiv(amount, Math.mulDiv(integratorFee, integratorShares, BASE_1E2) + protocolFee, denominator);
+        uint256 protocolFeeAmountRef = Math.mulDiv(
+            amount, 
+            Math.mulDiv(integratorFee, integratorShares, BASE_1E2) + protocolFee, denominator
+        );
 
         uint256 tolerance = Math.max(Math.mulDiv(totalFeesAmountRef, integratorShares, BASE_1E2), BASE_1E2);
 

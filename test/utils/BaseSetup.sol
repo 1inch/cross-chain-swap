@@ -61,7 +61,7 @@ contract BaseSetup is Test, Utils {
     address internal integratorFeeReceiver;
     address internal protocolFeeReceiver;
 
-    FeeProxy feeProxy;
+    FeeProxy internal feeProxy;
 
     CrossChainTestLib.SrcTimelocks internal srcTimelocks = CrossChainTestLib.SrcTimelocks({
         withdrawal: 120,
