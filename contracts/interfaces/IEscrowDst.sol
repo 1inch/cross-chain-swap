@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { IEscrow } from "./IEscrow.sol";
 
 /**
@@ -10,6 +11,14 @@ import { IEscrow } from "./IEscrow.sol";
  * @custom:security-contact security@1inch.io
  */
 interface IEscrowDst is IEscrow {
+    struct ImmutablesDst {
+        Immutables core;
+        Address protocolFeeRecipient;
+        Address integratorFeeRecipient;
+        uint256 protocolFeeAmount;
+        uint256 integratorFeeAmount;
+    }
+
     /**
      * @notice Withdraws funds to a predetermined recipient.
      * @dev Withdrawal can only be made during the withdrawal period and with secret with hash matches the hashlock.
@@ -42,5 +51,5 @@ interface IEscrowDst is IEscrow {
      * @param secret The secret that unlocks the escrow.
      * @param immutables The immutables of the escrow contract.
      */
-    function publicWithdraw(bytes32 secret, IEscrow.ImmutablesDst calldata immutables) external;
+    function publicWithdraw(bytes32 secret, ImmutablesDst calldata immutables) external;
 }

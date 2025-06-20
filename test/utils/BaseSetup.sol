@@ -12,11 +12,12 @@ import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
 import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
 import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
 import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
 import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Utils } from "./Utils.sol";
 import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
-import { FeeProxy } from "./FeeProxy.sol";
+import { FeeCalcLib } from "contracts/libraries/FeeCalcLib.sol";
 
 /* solhint-disable max-states-count */
 contract BaseSetup is Test, Utils {
@@ -34,7 +35,7 @@ contract BaseSetup is Test, Utils {
     uint256 internal constant INTEGRATOR_SHARES = 25;
     uint256 internal constant FEES_AMOUNT = 249875062468764;
     uint256 internal constant PROTOCOL_FEE_AMOUNT = 218640679660169;
-    uint256 internal constant WHITELIST_DISCOUNT = 75;
+    uint256 internal constant WHITELIST_PROTOCOL_FEE_DISCOUNT = 75;
 
     uint256 internal constant BASE_1E5 = 1e5;
     uint256 internal constant BASE_1E2 = 100;
@@ -61,8 +62,6 @@ contract BaseSetup is Test, Utils {
 
     address internal integratorFeeReceiver;
     address internal protocolFeeReceiver;
-
-    FeeProxy internal feeProxy;
 
     CrossChainTestLib.SrcTimelocks internal srcTimelocks = CrossChainTestLib.SrcTimelocks({
         withdrawal: 120,
@@ -105,8 +104,6 @@ contract BaseSetup is Test, Utils {
 
         integratorFeeReceiver = users[3].addr;
         protocolFeeReceiver = users[4].addr;
-
-        feeProxy = new FeeProxy();
 
         _deployTokens();
         dai.mint(bob.addr, 1000 ether);
@@ -226,7 +223,7 @@ contract BaseSetup is Test, Utils {
                 protocolFee: PROTOCOL_FEE,
                 integratorFee: INTEGRATOR_FEE,
                 integratorShare: INTEGRATOR_SHARES,
-                whitelistDiscountNumerator: WHITELIST_DISCOUNT
+                whitelistDiscountNumerator: WHITELIST_PROTOCOL_FEE_DISCOUNT
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,
@@ -240,7 +237,7 @@ contract BaseSetup is Test, Utils {
     }
 
     function _prepareDataDst(
-    ) internal view returns (IBaseEscrow.ImmutablesDst memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
+    ) internal view returns (IEscrowDst.ImmutablesDst memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
         return _prepareDataDstCustom(
             HASHED_SECRET, 
             TAKING_AMOUNT, 
@@ -264,10 +261,17 @@ contract BaseSetup is Test, Utils {
         uint256 protocolFee,
         uint256 integratorFee,
         uint256 integratorShares
-    ) internal view returns (IBaseEscrow.ImmutablesDst memory, uint256, EscrowDst) {
+    ) internal view returns (IEscrowDst.ImmutablesDst memory, uint256, EscrowDst) {
+        (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = FeeCalcLib.getFeeAmounts(
+            amount,
+            protocolFee,
+            integratorFee,
+            integratorShares
+        );
+
         bytes32 orderHash = bytes32(block.timestamp); // fake order hash
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
-        IBaseEscrow.ImmutablesDst memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
+        IEscrowDst.ImmutablesDst memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
             orderHash,
             hashlock,
             amount,
@@ -278,9 +282,8 @@ contract BaseSetup is Test, Utils {
             timelocksDst,
             protocolFeeReceiver,
             integratorFeeReceiver,
-            protocolFee,
-            integratorFee,
-            integratorShares
+            protocolFeeAmount,
+            integratorFeeAmount
         );
         return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
     }

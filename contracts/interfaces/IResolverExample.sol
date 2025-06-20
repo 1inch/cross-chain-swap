@@ -6,6 +6,7 @@ import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMix
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../interfaces/IEscrowDst.sol";
 
 /**
  * @title Interface for the sample implementation of a Resolver contract for cross-chain swap.
@@ -41,7 +42,7 @@ interface IResolverExample {
      * @param dstImmutables The immutables of the escrow contract that are used in deployment.
      * @param srcCancellationTimestamp The start of the cancellation period for the source chain.
      */
-    function deployDst(IBaseEscrow.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
+    function deployDst(IEscrowDst.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 
     /**
      * @notice Allows the owner to make arbitrary calls to other contracts on behalf of this contract.

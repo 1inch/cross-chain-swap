@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 import { BaseEscrowFactory } from "../../../contracts/BaseEscrowFactory.sol";
 import { EscrowSrc } from "../../../contracts/EscrowSrc.sol";
 import { IBaseEscrow } from "../../../contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "../../../contracts/interfaces/IEscrowDst.sol";
 import { ERC20True } from "../../../contracts/mocks/ERC20True.sol";
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { MakerTraits } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
@@ -414,11 +415,10 @@ library CrossChainTestLib {
         Timelocks timelocks,
         address protocolFeeRecipient,
         address integratorFeeRecipient,
-        uint256 protocolFee,
-        uint256 integratorFee,
-        uint256 integratorShare
-    ) internal pure returns (IBaseEscrow.ImmutablesDst memory immutables) {
-        immutables = IBaseEscrow.ImmutablesDst({
+        uint256 protocolFeeAmount,
+        uint256 integratorFeeAmount
+    ) internal pure returns (IEscrowDst.ImmutablesDst memory immutables) {
+        immutables = IEscrowDst.ImmutablesDst({
             core: IBaseEscrow.Immutables({
                 orderHash: orderHash,
                 hashlock: hashlock,
@@ -431,9 +431,8 @@ library CrossChainTestLib {
             }),
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
-            protocolFee: protocolFee,
-            integratorFee: integratorFee,
-            integratorShare: integratorShare
+            protocolFeeAmount: protocolFeeAmount,
+            integratorFeeAmount: integratorFeeAmount
         });
     }
 }

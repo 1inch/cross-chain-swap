@@ -8,6 +8,7 @@ import { Merkle } from "murky/src/Merkle.sol";
 import { EscrowDst } from "contracts/EscrowDst.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
@@ -87,7 +88,7 @@ contract EscrowFactoryTest is BaseSetup {
         assertEq(success, true);
         usdc.transfer(address(swapData.srcClone), MAKING_AMOUNT);
 
-        (IBaseEscrow.ImmutablesDst memory immutablesDst,,) = _prepareDataDst();
+        (IEscrowDst.ImmutablesDst memory immutablesDst,,) = _prepareDataDst();
 
         IEscrowFactory.DstImmutablesComplement memory immutablesComplement = IEscrowFactory.DstImmutablesComplement({
             maker: Address.wrap(uint160(receiver)),
@@ -97,9 +98,8 @@ contract EscrowFactoryTest is BaseSetup {
             chainId: block.chainid,
             protocolFeeRecipient: immutablesDst.protocolFeeRecipient,
             integratorFeeRecipient: immutablesDst.integratorFeeRecipient,
-            protocolFee: immutablesDst.protocolFee,
-            integratorFee: immutablesDst.integratorFee,
-            integratorShare: immutablesDst.integratorShare
+            protocolFeeAmount: immutablesDst.protocolFeeAmount,
+            integratorFeeAmount: immutablesDst.integratorFeeAmount
         });
 
         vm.prank(address(limitOrderProtocol));
@@ -122,7 +122,7 @@ contract EscrowFactoryTest is BaseSetup {
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
-        (IBaseEscrow.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDstCustom(
+        (IEscrowDst.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDstCustom(
             secret, 
             amount, 
             alice.addr, 
@@ -218,7 +218,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoUnsafeDeploymentForTaker() public {
-        (IBaseEscrow.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst();
+        (IEscrowDst.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst();
 
         vm.warp(srcCancellationTimestamp + 1);
 
@@ -229,7 +229,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceDeploymentForTaker() public {
-        (IBaseEscrow.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst();
+        (IEscrowDst.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);
@@ -238,7 +238,7 @@ contract EscrowFactoryTest is BaseSetup {
     }
 
     function test_NoInsufficientBalanceNativeDeploymentForTaker() public {
-        (IBaseEscrow.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDstCustom(
+        (IEscrowDst.ImmutablesDst memory immutables, uint256 srcCancellationTimestamp,) = _prepareDataDstCustom(
             HASHED_SECRET, 
             TAKING_AMOUNT, 
             alice.addr, 

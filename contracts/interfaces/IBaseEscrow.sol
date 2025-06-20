@@ -23,15 +23,6 @@ interface IBaseEscrow {
         Timelocks timelocks;
     }
 
-    struct ImmutablesDst {
-        Immutables core;
-        Address protocolFeeRecipient;
-        Address integratorFeeRecipient;
-        uint256 protocolFee;
-        uint256 integratorFee;
-        uint256 integratorShare;
-    }
-
     /**
      * @notice Emitted on escrow cancellation.
      */

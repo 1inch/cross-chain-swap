@@ -97,19 +97,25 @@ contract EscrowDst is Escrow, IEscrowDst {
         onlyValidImmutables(immutables.hash())
         onlyValidSecret(secret, immutables.core)
     {
-        (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = immutables.getFeeAmounts();
-
-        if (integratorFeeAmount > 0) {
-            _uniTransfer(immutables.core.token.get(), immutables.integratorFeeRecipient.get(), integratorFeeAmount);
+        if (immutables.integratorFeeAmount > 0) {
+            _uniTransfer(
+                immutables.core.token.get(), 
+                immutables.integratorFeeRecipient.get(), 
+                immutables.integratorFeeAmount
+            );
         }
-        if (protocolFeeAmount > 0) {
-            _uniTransfer(immutables.core.token.get(), immutables.protocolFeeRecipient.get(), protocolFeeAmount);
+        if (immutables.protocolFeeAmount > 0) {
+            _uniTransfer(
+                immutables.core.token.get(), 
+                immutables.protocolFeeRecipient.get(), 
+                immutables.protocolFeeAmount
+            );
         }
 
         _uniTransfer(
             immutables.core.token.get(), 
             immutables.core.maker.get(), 
-            immutables.core.amount - integratorFeeAmount - protocolFeeAmount
+            immutables.core.amount - immutables.integratorFeeAmount - immutables.protocolFeeAmount
         );
         _ethTransfer(msg.sender, immutables.core.safetyDeposit);
         emit EscrowWithdrawal(secret);

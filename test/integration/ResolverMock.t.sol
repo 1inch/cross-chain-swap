@@ -285,7 +285,7 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockDeployDst() public {
-        (IBaseEscrow.ImmutablesDst memory immutables,
+        (IEscrowDst.ImmutablesDst memory immutables,
         uint256 srcCancellationTimestamp,
         IBaseEscrow dstClone
         ) = _prepareDataDst();
@@ -307,7 +307,7 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockWithdrawDst() public {
-        (IBaseEscrow.ImmutablesDst memory immutables,
+        (IEscrowDst.ImmutablesDst memory immutables,
         uint256 srcCancellationTimestamp,
         IEscrowDst dstClone
         ) = _prepareDataDst();
@@ -348,7 +348,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
     function test_MockPublicWithdrawDst() public {
         resolvers[0] = bob.addr;
-        (IBaseEscrow.ImmutablesDst memory immutables,
+        (IEscrowDst.ImmutablesDst memory immutables,
         uint256 srcCancellationTimestamp,
         IEscrowDst dstClone
         ) = _prepareDataDst();
@@ -386,7 +386,7 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockCancelDst() public {
-        (IBaseEscrow.ImmutablesDst memory immutables,
+        (IEscrowDst.ImmutablesDst memory immutables,
         uint256 srcCancellationTimestamp,
         IEscrowDst dstClone
         ) = _prepareDataDst();
@@ -424,7 +424,7 @@ contract IntegrationResolverMockTest is BaseSetup {
     }
 
     function test_MockRescueFundsDst() public {
-        (IBaseEscrow.ImmutablesDst memory immutables,
+        (IEscrowDst.ImmutablesDst memory immutables,
         uint256 srcCancellationTimestamp,
         IEscrowDst dstClone
         ) = _prepareDataDst();

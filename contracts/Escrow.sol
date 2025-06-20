@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 
 import { Create2 } from "openzeppelin-contracts/contracts/utils/Create2.sol";
 
-import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { ProxyHashLib } from "./libraries/ProxyHashLib.sol";
 
 import { IEscrow } from "./interfaces/IEscrow.sol";
@@ -16,8 +15,6 @@ import { BaseEscrow } from "./BaseEscrow.sol";
  * @custom:security-contact security@1inch.io
  */
 abstract contract Escrow is BaseEscrow, IEscrow {
-    using ImmutablesLib for Immutables;
-
     /// @notice See {IEscrow-PROXY_BYTECODE_HASH}.
     bytes32 public immutable PROXY_BYTECODE_HASH = ProxyHashLib.computeProxyBytecodeHash(address(this));
 

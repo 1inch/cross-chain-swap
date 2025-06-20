@@ -9,6 +9,7 @@ import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
+import { FeeCalcLib } from "contracts/libraries/FeeCalcLib.sol";
 
 contract WithdrawDst is Script {
     function run() external {
@@ -31,7 +32,14 @@ contract WithdrawDst is Script {
         uint256 dstAmount = 1; // 1 USDC
         uint256 safetyDeposit = 1;
 
-        IBaseEscrow.ImmutablesDst memory immutables = IBaseEscrow.ImmutablesDst({
+        (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = FeeCalcLib.getFeeAmounts(
+            dstAmount,
+            protocolFee,
+            integratorFee,
+            integratorShare
+        );
+
+        IEscrowDst.ImmutablesDst memory immutables = IEscrowDst.ImmutablesDst({
             core: IBaseEscrow.Immutables({
                 orderHash: orderHash,
                 amount: dstAmount,
@@ -44,9 +52,8 @@ contract WithdrawDst is Script {
             }),
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
-            protocolFee: protocolFee,
-            integratorFee: integratorFee,
-            integratorShare: integratorShare
+            protocolFeeAmount: protocolFeeAmount,
+            integratorFeeAmount: integratorFeeAmount
         });
 
         address escrow = vm.envAddress("ESCROW_DST");

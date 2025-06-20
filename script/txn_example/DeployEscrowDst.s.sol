@@ -5,7 +5,9 @@ pragma solidity 0.8.23;
 import { Script } from "forge-std/Script.sol";
 
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
+import { FeeCalcLib } from "contracts/libraries/FeeCalcLib.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 
 import { CrossChainTestLib } from "test/utils/libraries/CrossChainTestLib.sol";
@@ -30,8 +32,15 @@ contract DeployEscrowDst is Script {
         uint256 safetyDeposit = 1;
         bytes32 secret = keccak256(abi.encodePacked("secret"));
         bytes32 hashlock = keccak256(abi.encode(secret));
+
+        (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = FeeCalcLib.getFeeAmounts(
+            dstAmount,
+            protocolFee,
+            integratorFee,
+            integratorShare
+        );
         
-        IBaseEscrow.ImmutablesDst memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
+        IEscrowDst.ImmutablesDst memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
             orderHash,
             hashlock,
             dstAmount,
@@ -42,9 +51,8 @@ contract DeployEscrowDst is Script {
             timelocks,
             protocolFeeRecipient,
             integratorFeeRecipient,
-            protocolFee,
-            integratorFee,
-            integratorShare
+            protocolFeeAmount,
+            integratorFeeAmount
         );
 
         uint256 srcCancellationTimestamp = type(uint32).max;

@@ -7,6 +7,7 @@ import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { Timelocks } from "../libraries/TimelocksLib.sol";
 
 import { IBaseEscrow } from "./IBaseEscrow.sol";
+import { IEscrowDst } from "./IEscrowDst.sol";
 
 /**
  * @title Escrow Factory interface for cross-chain atomic swap.
@@ -25,7 +26,7 @@ interface IEscrowFactory {
         uint256 integratorFee; // Integrator fee percentage in 1e5
         uint256 integratorShare; // Integrator share percentage in 1e2
         uint256 protocolFee; // Protocol fee percentage in 1e5
-        uint256 whitelistDiscountNumerator;
+        uint256 whitelistDiscountNumerator; // Protocol fee discount percentage in 1e2
     }
 
     struct DstImmutablesComplement {
@@ -36,9 +37,8 @@ interface IEscrowFactory {
         Address integratorFeeRecipient;
         uint256 safetyDeposit;
         uint256 chainId;
-        uint256 integratorFee; // Integrator fee percentage in 1e5
-        uint256 integratorShare; // Integrator share percentage in 1e2
-        uint256 protocolFee; // Protocol fee percentage in 1e5
+        uint256 integratorFeeAmount;
+        uint256 protocolFeeAmount;
     }
 
     error InsufficientEscrowBalance();
@@ -77,7 +77,7 @@ interface IEscrowFactory {
      * @param dstImmutables The immutables of the escrow contract that are used in deployment.
      * @param srcCancellationTimestamp The start of the cancellation period for the source chain.
      */
-    function createDstEscrow(IBaseEscrow.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
+    function createDstEscrow(IEscrowDst.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 
     /**
      * @notice Returns the deterministic address of the source escrow based on the salt.
@@ -91,5 +91,5 @@ interface IEscrowFactory {
      * @param dstImmutables The immutable arguments used to compute salt for escrow deployment.
      * @return The computed address of the escrow.
      */
-    function addressOfEscrowDst(IBaseEscrow.ImmutablesDst calldata dstImmutables) external view returns (address);
+    function addressOfEscrowDst(IEscrowDst.ImmutablesDst calldata dstImmutables) external view returns (address);
 }
