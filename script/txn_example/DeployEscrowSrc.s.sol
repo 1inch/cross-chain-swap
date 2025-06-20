@@ -26,6 +26,7 @@ contract DeployEscrowSrc is Script {
         uint256 protocolFee = vm.envUint("PROTOCOL_FEE");
         uint256 integratorFee = vm.envUint("INTEGRATOR_FEE");
         uint256 integratorShare = vm.envUint("INTEGRATOR_SHARE");
+        uint256 whitelistDiscountNumerator = vm.envUint("WHITELIST_DISCOUNT");
 
         // Prepare data to deploy EscrowSrc
         address maker = deployer;
@@ -85,7 +86,8 @@ contract DeployEscrowSrc is Script {
                 integratorFeeRecipient: integratorFeeRecipient,
                 protocolFee: protocolFee,
                 integratorFee: integratorFee,
-                integratorShare: integratorShare
+                integratorShare: integratorShare,
+                whitelistDiscountNumerator: whitelistDiscountNumerator
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,

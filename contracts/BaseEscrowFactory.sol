@@ -11,6 +11,7 @@ import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { MakerTraitsLib } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
 import { ResolverValidationExtension } from "limit-order-settlement/contracts/extensions/ResolverValidationExtension.sol";
+import { ExtensionLib } from "limit-order-settlement/contracts/extensions/ExtensionLib.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
@@ -30,8 +31,10 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
     using AddressLib for Address;
     using Clones for address;
     using ImmutablesLib for IBaseEscrow.Immutables;
+    using ImmutablesLib for IBaseEscrow.ImmutablesDst;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
+    using ExtensionLib for bytes;
 
     /// @notice See {IEscrowFactory-ESCROW_SRC_IMPLEMENTATION}.
     address public immutable ESCROW_SRC_IMPLEMENTATION;
@@ -95,15 +98,19 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             maker: order.maker,
             taker: Address.wrap(uint160(taker)),
             token: order.makerAsset,
-            protocolFeeRecipient: extraDataArgs.protocolFeeRecipient,
-            integratorFeeRecipient: extraDataArgs.integratorFeeRecipient,
             amount: makingAmount,
             safetyDeposit: extraDataArgs.deposits >> 128,
-            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp),
-            protocolFee: extraDataArgs.protocolFee,
-            integratorFee: extraDataArgs.integratorFee,
-            integratorShare: extraDataArgs.integratorShare
+            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp)
         });
+
+        uint256 protocolFee = _processDiscountForProtocolFee(
+            extraData[:superArgsLength],
+            taker,
+            extraDataArgs.protocolFee,
+            extraDataArgs.whitelistDiscountNumerator
+        );
+
+        if (extraDataArgs.integratorFee + protocolFee > ImmutablesLib._BASE_1E5) revert InvalidTotalFees();
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
             maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
@@ -113,7 +120,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             integratorFeeRecipient: extraDataArgs.integratorFeeRecipient,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
             chainId: extraDataArgs.dstChainId,
-            protocolFee: extraDataArgs.protocolFee,
+            protocolFee: protocolFee,
             integratorFee: extraDataArgs.integratorFee,
             integratorShare: extraDataArgs.integratorShare
         });
@@ -130,26 +137,26 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
     /**
      * @notice See {IEscrowFactory-createDstEscrow}.
      */
-    function createDstEscrow(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
-        address token = dstImmutables.token.get();
-        uint256 nativeAmount = dstImmutables.safetyDeposit;
+    function createDstEscrow(IBaseEscrow.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
+        address token = dstImmutables.core.token.get();
+        uint256 nativeAmount = dstImmutables.core.safetyDeposit;
         if (token == address(0)) {
-            nativeAmount += dstImmutables.amount;
+            nativeAmount += dstImmutables.core.amount;
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
-        IBaseEscrow.Immutables memory immutables = dstImmutables;
-        immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
+        IBaseEscrow.ImmutablesDst memory immutables = dstImmutables;
+        immutables.core.timelocks = immutables.core.timelocks.setDeployedAt(block.timestamp);
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (immutables.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
+        if (immutables.core.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
 
         bytes32 salt = immutables.hashMem();
         address escrow = _deployEscrow(salt, msg.value, ESCROW_DST_IMPLEMENTATION);
         if (token != address(0)) {
-            IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
+            IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.core.amount);
         }
 
-        emit DstEscrowCreated(escrow, dstImmutables.hashlock, dstImmutables.taker);
+        emit DstEscrowCreated(escrow, dstImmutables.core.hashlock, dstImmutables.core.taker);
     }
 
     /**
@@ -162,7 +169,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
-    function addressOfEscrowDst(IBaseEscrow.Immutables calldata immutables) external view virtual returns (address) {
+    function addressOfEscrowDst(IBaseEscrow.ImmutablesDst calldata immutables) external view virtual returns (address) {
         return Create2.computeAddress(immutables.hash(), _PROXY_DST_BYTECODE_HASH);
     }
 
@@ -197,5 +204,28 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         }
 
         return calculatedIndex + 1 == validatedIndex;
+    }
+    
+    function _processDiscountForProtocolFee(
+        bytes calldata extraData,
+        address taker,
+        uint256 protocolFee,
+        uint256 whitelistDiscountNumerator
+    ) internal view returns (uint256 protocolFeeDiscounted) {
+        if (whitelistDiscountNumerator > ImmutablesLib._BASE_1E2) revert InvalidWhitelistDiscountNumerator();
+
+        bool feeEnabled = extraData.resolverFeeEnabled();
+        uint256 resolversCount = extraData.resolversCount();
+
+        if (feeEnabled) {
+            extraData = extraData[4:];
+        }
+
+        uint256 allowedTime = uint32(bytes4(extraData[0:4]));
+        protocolFeeDiscounted = protocolFee;
+
+        if (_isWhitelisted(allowedTime, extraData[4:4+resolversCount * 12], resolversCount, taker)) {
+            protocolFeeDiscounted = protocolFeeDiscounted * whitelistDiscountNumerator / ImmutablesLib._BASE_1E2;
+        }       
     }
 }

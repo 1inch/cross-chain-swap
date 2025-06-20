@@ -11,7 +11,7 @@ import { EscrowZkSync } from "./EscrowZkSync.sol";
 contract EscrowSrcZkSync is EscrowSrc, EscrowZkSync {
     constructor(uint32 rescueDelay, IERC20 accessToken) EscrowSrc(rescueDelay, accessToken) EscrowZkSync() {}
 
-    function _validateImmutables(Immutables calldata immutables) internal view override(Escrow, EscrowZkSync) {
-        EscrowZkSync._validateImmutables(immutables);
+    function _validateImmutables(bytes32 immutablesHash) internal view override(Escrow, EscrowZkSync) {
+        EscrowZkSync._validateImmutables(immutablesHash);
     }
 }

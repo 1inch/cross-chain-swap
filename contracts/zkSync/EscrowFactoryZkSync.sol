@@ -23,6 +23,7 @@ import { ZkSyncLib } from "./ZkSyncLib.sol";
  */
 contract EscrowFactoryZkSync is BaseEscrowFactory {
     using ImmutablesLib for IBaseEscrow.Immutables;
+    using ImmutablesLib for IBaseEscrow.ImmutablesDst;
 
     bytes32 public immutable ESCROW_SRC_INPUT_HASH;
     bytes32 public immutable ESCROW_DST_INPUT_HASH;
@@ -64,7 +65,7 @@ contract EscrowFactoryZkSync is BaseEscrowFactory {
     /**
      * @notice See {IEscrowFactory-addressOfEscrowDst}.
      */
-    function addressOfEscrowDst(IBaseEscrow.Immutables calldata immutables) external view override returns (address) {
+    function addressOfEscrowDst(IBaseEscrow.ImmutablesDst calldata immutables) external view override returns (address) {
         return ZkSyncLib.computeAddressZkSync(immutables.hash(), _PROXY_DST_BYTECODE_HASH, address(this), ESCROW_DST_INPUT_HASH);
     }
 

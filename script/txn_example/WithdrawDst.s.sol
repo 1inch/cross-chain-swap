@@ -6,6 +6,7 @@ import { Script } from "forge-std/Script.sol";
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
@@ -30,17 +31,19 @@ contract WithdrawDst is Script {
         uint256 dstAmount = 1; // 1 USDC
         uint256 safetyDeposit = 1;
 
-        IBaseEscrow.Immutables memory immutables = IBaseEscrow.Immutables({
-            orderHash: orderHash,
-            amount: dstAmount,
-            maker: Address.wrap(uint160(deployer)),
-            taker: Address.wrap(uint160(address(deployer))),
-            token: Address.wrap(uint160(dstToken)),
+        IBaseEscrow.ImmutablesDst memory immutables = IBaseEscrow.ImmutablesDst({
+            core: IBaseEscrow.Immutables({
+                orderHash: orderHash,
+                amount: dstAmount,
+                maker: Address.wrap(uint160(deployer)),
+                taker: Address.wrap(uint160(address(resolver))),
+                token: Address.wrap(uint160(dstToken)),
+                hashlock: hashlock,
+                safetyDeposit: safetyDeposit,
+                timelocks: timelocks
+            }),
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
-            hashlock: hashlock,
-            safetyDeposit: safetyDeposit,
-            timelocks: timelocks,
             protocolFee: protocolFee,
             integratorFee: integratorFee,
             integratorShare: integratorShare
@@ -52,7 +55,7 @@ contract WithdrawDst is Script {
         address[] memory targets = new address[](1);
         bytes[] memory data = new bytes[](1);
         targets[0] = escrow;
-        data[0] = abi.encodeWithSelector(IBaseEscrow(escrow).withdraw.selector, secret, immutables);
+        data[0] = abi.encodeWithSelector(IEscrowDst(escrow).withdraw.selector, secret, immutables);
 
         vm.startBroadcast(deployerPK);
         // IBaseEscrow(escrow).withdraw(secret, immutables);

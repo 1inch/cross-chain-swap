@@ -61,7 +61,7 @@ contract TimelocksLibTest is BaseSetup {
         dstTimelocks = CrossChainTestLib.DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 2584807820 });
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
-        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst();
+        (IBaseEscrow.ImmutablesDst memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);

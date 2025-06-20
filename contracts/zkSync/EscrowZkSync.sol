@@ -17,13 +17,12 @@ abstract contract EscrowZkSync is BaseEscrow {
         _INPUT_HASH = keccak256(abi.encode(address(this)));
     }
 
-    function _validateImmutables(Immutables calldata immutables) internal view virtual override {
-        bytes32 salt = immutables.hash();
+    function _validateImmutables(bytes32 immutablesHash) internal view virtual override {
         bytes32 bytecodeHash;
         assembly ("memory-safe") {
             bytecodeHash := extcodehash(address())
         }
-        if (ZkSyncLib.computeAddressZkSync(salt, bytecodeHash, FACTORY, _INPUT_HASH) != address(this)) {
+        if (ZkSyncLib.computeAddressZkSync(immutablesHash, bytecodeHash, FACTORY, _INPUT_HASH) != address(this)) {
             revert InvalidImmutables();
         }
     }

@@ -31,7 +31,7 @@ contract DeployEscrowDst is Script {
         bytes32 secret = keccak256(abi.encodePacked("secret"));
         bytes32 hashlock = keccak256(abi.encode(secret));
         
-        IBaseEscrow.Immutables memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
+        IBaseEscrow.ImmutablesDst memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
             orderHash,
             hashlock,
             dstAmount,

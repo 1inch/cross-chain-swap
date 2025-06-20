@@ -79,6 +79,7 @@ library CrossChainTestLib {
         uint256 protocolFee;
         uint256 integratorFee;
         uint256 integratorShare;
+        uint256 whitelistDiscountNumerator;
     }
 
     struct EscrowDetails {
@@ -301,7 +302,8 @@ library CrossChainTestLib {
         address integratorFeeRecipient,
         uint256 protocolFee,
         uint256 integratorFee,
-        uint256 integratorShare
+        uint256 integratorShare,
+        uint256 whitelistDiscountNumerator
     ) internal pure returns (bytes memory) {
         return (
             abi.encode(
@@ -314,7 +316,8 @@ library CrossChainTestLib {
                 timelocks,
                 protocolFee,
                 integratorFee,
-                integratorShare
+                integratorShare,
+                whitelistDiscountNumerator
             )
         );
     }
@@ -336,7 +339,8 @@ library CrossChainTestLib {
             orderDetails.integratorFeeRecipient,
             orderDetails.protocolFee,
             orderDetails.integratorFee,
-            orderDetails.integratorShare
+            orderDetails.integratorShare,
+            orderDetails.whitelistDiscountNumerator
         );
 
         bytes memory whitelist = abi.encodePacked(uint32(block.timestamp)); // auction start time
@@ -391,12 +395,7 @@ library CrossChainTestLib {
             token: Address.wrap(uint160(orderDetails.srcToken)),
             hashlock: escrowDetails.hashlock,
             safetyDeposit: orderDetails.srcSafetyDeposit,
-            timelocks: escrowDetails.timelocks,
-            protocolFeeRecipient: Address.wrap(uint160(orderDetails.protocolFeeRecipient)),
-            integratorFeeRecipient: Address.wrap(uint160(orderDetails.integratorFeeRecipient)),
-            protocolFee: orderDetails.protocolFee,
-            integratorFee: orderDetails.integratorFee,
-            integratorShare: orderDetails.integratorShare
+            timelocks: escrowDetails.timelocks
         });
 
         swapData.srcClone = EscrowSrc(BaseEscrowFactory(factory).addressOfEscrowSrc(swapData.immutables));
@@ -418,16 +417,18 @@ library CrossChainTestLib {
         uint256 protocolFee,
         uint256 integratorFee,
         uint256 integratorShare
-    ) internal pure returns (IBaseEscrow.Immutables memory immutables) {
-        immutables = IBaseEscrow.Immutables({
-            orderHash: orderHash,
-            hashlock: hashlock,
-            maker: Address.wrap(uint160(maker)),
-            taker: Address.wrap(uint160(taker)),
-            token: Address.wrap(uint160(token)),
-            amount: amount,
-            safetyDeposit: safetyDeposit,
-            timelocks: timelocks,
+    ) internal pure returns (IBaseEscrow.ImmutablesDst memory immutables) {
+        immutables = IBaseEscrow.ImmutablesDst({
+            core: IBaseEscrow.Immutables({
+                orderHash: orderHash,
+                hashlock: hashlock,
+                maker: Address.wrap(uint160(maker)),
+                taker: Address.wrap(uint160(taker)),
+                token: Address.wrap(uint160(token)),
+                amount: amount,
+                safetyDeposit: safetyDeposit,
+                timelocks: timelocks
+            }),
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
             protocolFee: protocolFee,

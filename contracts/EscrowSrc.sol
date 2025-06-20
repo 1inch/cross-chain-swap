@@ -75,6 +75,19 @@ contract EscrowSrc is Escrow, IEscrowSrc {
     }
 
     /**
+     * @notice See {IBaseEscrow-rescueFunds}.
+     */
+    function rescueFunds(address token, uint256 amount, Immutables calldata immutables)
+        external
+        onlyTaker(immutables)
+        onlyValidImmutables(immutables.hash())
+        onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
+    {
+        _uniTransfer(token, msg.sender, amount);
+        emit FundsRescued(token, amount);
+    }
+
+    /**
      * @notice See {IBaseEscrow-cancel}.
      * @dev The function works on the time intervals highlighted with capital letters:
      * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/--
@@ -110,7 +123,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      */
     function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
         internal
-        onlyValidImmutables(immutables)
+        onlyValidImmutables(immutables.hash())
         onlyValidSecret(secret, immutables)
     {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
@@ -122,7 +135,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      * @dev Transfers ERC20 tokens to the maker and native tokens to the caller.
      * @param immutables The immutable values used to deploy the clone contract.
      */
-    function _cancel(Immutables calldata immutables) internal onlyValidImmutables(immutables) {
+    function _cancel(Immutables calldata immutables) internal onlyValidImmutables(immutables.hash()) {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowCancelled();

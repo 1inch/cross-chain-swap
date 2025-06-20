@@ -40,8 +40,8 @@ abstract contract BaseEscrow is IBaseEscrow {
         _;
     }
 
-    modifier onlyValidImmutables(Immutables calldata immutables) virtual {
-        _validateImmutables(immutables);
+    modifier onlyValidImmutables(bytes32 immutablesHash) virtual {
+        _validateImmutables(immutablesHash);
         _;
     }
 
@@ -66,19 +66,6 @@ abstract contract BaseEscrow is IBaseEscrow {
     }
 
     /**
-     * @notice See {IBaseEscrow-rescueFunds}.
-     */
-    function rescueFunds(address token, uint256 amount, Immutables calldata immutables)
-        external
-        onlyTaker(immutables)
-        onlyValidImmutables(immutables)
-        onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
-    {
-        _uniTransfer(token, msg.sender, amount);
-        emit FundsRescued(token, amount);
-    }
-
-    /**
      * @dev Transfers ERC20 or native tokens to the recipient.
      */
     function _uniTransfer(address token, address to, uint256 amount) internal {
@@ -100,7 +87,7 @@ abstract contract BaseEscrow is IBaseEscrow {
     /**
      * @dev Should verify that the computed escrow address matches the address of this contract.
      */
-    function _validateImmutables(Immutables calldata immutables) internal view virtual;
+    function _validateImmutables(bytes32 immutablesHash) internal view virtual;
 
     /**
      * @dev Computes the Keccak-256 hash of the secret.

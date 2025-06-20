@@ -13,7 +13,7 @@ contract ImmutablesLibTest is BaseSetup {
 
     /* solhint-disable func-name-mixedcase */
     function test_getFeeAmounts() public {
-        (IBaseEscrow.Immutables memory immutables,,) = _prepareDataDst();
+        (IBaseEscrow.ImmutablesDst memory immutables,,) = _prepareDataDst();
 
         (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = feeProxy.getFeeAmounts(immutables);
 
@@ -26,7 +26,7 @@ contract ImmutablesLibTest is BaseSetup {
         integratorFee = bound(integratorFee, 0, BASE_1E5/2);
         integratorShares = bound(integratorShares, 0, BASE_1E2);
 
-        (IBaseEscrow.Immutables memory immutables,,) = _prepareDataDstCustom(
+        (IBaseEscrow.ImmutablesDst memory immutables,,) = _prepareDataDstCustom(
             HASHED_SECRET, 
             amount, 
             alice.addr, 
@@ -44,7 +44,7 @@ contract ImmutablesLibTest is BaseSetup {
         uint256 totalFeesAmountRef = Math.mulDiv(amount, integratorFee + protocolFee, denominator);
         uint256 protocolFeeAmountRef = Math.mulDiv(
             amount, 
-            Math.mulDiv(integratorFee, integratorShares, BASE_1E2) + protocolFee, denominator
+            Math.mulDiv(integratorFee, BASE_1E2 - integratorShares, BASE_1E2) + protocolFee, denominator
         );
 
         uint256 tolerance = Math.max(Math.mulDiv(totalFeesAmountRef, integratorShares, BASE_1E2), BASE_1E2);

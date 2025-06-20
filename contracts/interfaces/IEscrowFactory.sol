@@ -25,6 +25,7 @@ interface IEscrowFactory {
         uint256 integratorFee; // Integrator fee percentage in 1e5
         uint256 integratorShare; // Integrator share percentage in 1e2
         uint256 protocolFee; // Protocol fee percentage in 1e5
+        uint256 whitelistDiscountNumerator;
     }
 
     struct DstImmutablesComplement {
@@ -45,6 +46,8 @@ interface IEscrowFactory {
     error InvalidPartialFill();
     error InvalidSecretsAmount();
     error InvalidIntegratorShare();
+    error InvalidWhitelistDiscountNumerator();
+    error InvalidTotalFees();
 
     /**
      * @notice Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain.
@@ -74,7 +77,7 @@ interface IEscrowFactory {
      * @param dstImmutables The immutables of the escrow contract that are used in deployment.
      * @param srcCancellationTimestamp The start of the cancellation period for the source chain.
      */
-    function createDstEscrow(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
+    function createDstEscrow(IBaseEscrow.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 
     /**
      * @notice Returns the deterministic address of the source escrow based on the salt.
@@ -85,8 +88,8 @@ interface IEscrowFactory {
 
     /**
      * @notice Returns the deterministic address of the destination escrow based on the salt.
-     * @param immutables The immutable arguments used to compute salt for escrow deployment.
+     * @param dstImmutables The immutable arguments used to compute salt for escrow deployment.
      * @return The computed address of the escrow.
      */
-    function addressOfEscrowDst(IBaseEscrow.Immutables calldata immutables) external view returns (address);
+    function addressOfEscrowDst(IBaseEscrow.ImmutablesDst calldata dstImmutables) external view returns (address);
 }

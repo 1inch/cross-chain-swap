@@ -6,6 +6,7 @@ import { Script } from "forge-std/Script.sol";
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
+import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
@@ -21,11 +22,6 @@ contract CancelSrc is Script {
         bytes32 orderHash = vm.envBytes32("ORDER_HASH");
         Timelocks timelocks = Timelocks.wrap(vm.envUint("TIMELOCKS"));
         uint256 deployedAt = vm.envUint("DEPLOYED_AT");
-        address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
-        address integratorFeeRecipient = vm.envAddress("INTEGRATOR_FEE_RECIPIENT");
-        uint256 protocolFee = vm.envUint("PROTOCOL_FEE");
-        uint256 integratorFee = vm.envUint("INTEGRATOR_FEE");
-        uint256 integratorShare = vm.envUint("INTEGRATOR_SHARE");
 
         timelocks = TimelocksLib.setDeployedAt(timelocks, deployedAt);
         bytes32 secret = keccak256(abi.encodePacked("secret"));
@@ -39,14 +35,9 @@ contract CancelSrc is Script {
             maker: Address.wrap(uint160(deployer)),
             taker: Address.wrap(uint160(address(resolver))),
             token: Address.wrap(uint160(srcToken)),
-            protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
-            integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
             hashlock: hashlock,
             safetyDeposit: safetyDeposit,
-            timelocks: timelocks,
-            protocolFee: protocolFee,
-            integratorFee: integratorFee,
-            integratorShare: integratorShare
+            timelocks: timelocks
         });
 
         // address escrow = vm.envAddress("ESCROW_SRC");
@@ -55,7 +46,7 @@ contract CancelSrc is Script {
         address[] memory targets = new address[](1);
         bytes[] memory data = new bytes[](1);
         targets[0] = escrow;
-        data[0] = abi.encodeWithSelector(IBaseEscrow(escrow).cancel.selector, immutables);
+        data[0] = abi.encodeWithSelector(IEscrowSrc(escrow).cancel.selector, immutables);
 
         vm.startBroadcast(deployerPK);
         resolver.arbitraryCalls(targets, data);

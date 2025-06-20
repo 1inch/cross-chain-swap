@@ -33,7 +33,8 @@ contract BaseSetup is Test, Utils {
     uint256 internal constant INTEGRATOR_FEE = 25; 
     uint256 internal constant INTEGRATOR_SHARES = 25;
     uint256 internal constant FEES_AMOUNT = 249875062468764;
-    uint256 internal constant PROTOCOL_FEE_AMOUNT = 156171914042977;
+    uint256 internal constant PROTOCOL_FEE_AMOUNT = 218640679660169;
+    uint256 internal constant WHITELIST_DISCOUNT = 75;
 
     uint256 internal constant BASE_1E5 = 1e5;
     uint256 internal constant BASE_1E2 = 100;
@@ -224,7 +225,8 @@ contract BaseSetup is Test, Utils {
                 integratorFeeRecipient: integratorFeeReceiver,
                 protocolFee: PROTOCOL_FEE,
                 integratorFee: INTEGRATOR_FEE,
-                integratorShare: INTEGRATOR_SHARES
+                integratorShare: INTEGRATOR_SHARES,
+                whitelistDiscountNumerator: WHITELIST_DISCOUNT
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,
@@ -238,7 +240,7 @@ contract BaseSetup is Test, Utils {
     }
 
     function _prepareDataDst(
-    ) internal view returns (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
+    ) internal view returns (IBaseEscrow.ImmutablesDst memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
         return _prepareDataDstCustom(
             HASHED_SECRET, 
             TAKING_AMOUNT, 
@@ -262,10 +264,10 @@ contract BaseSetup is Test, Utils {
         uint256 protocolFee,
         uint256 integratorFee,
         uint256 integratorShares
-    ) internal view returns (IBaseEscrow.Immutables memory, uint256, EscrowDst) {
+    ) internal view returns (IBaseEscrow.ImmutablesDst memory, uint256, EscrowDst) {
         bytes32 orderHash = bytes32(block.timestamp); // fake order hash
         uint256 srcCancellationTimestamp = block.timestamp + srcTimelocks.cancellation;
-        IBaseEscrow.Immutables memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
+        IBaseEscrow.ImmutablesDst memory escrowImmutables = CrossChainTestLib.buildDstEscrowImmutables(
             orderHash,
             hashlock,
             amount,

@@ -68,7 +68,7 @@ contract ResolverExample is IResolverExample, Ownable {
     /**
      * @notice See {IResolverExample-deployDst}.
      */
-    function deployDst(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external onlyOwner payable {
+    function deployDst(IBaseEscrow.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external onlyOwner payable {
         _FACTORY.createDstEscrow{ value: msg.value }(dstImmutables, srcCancellationTimestamp);
     }
 

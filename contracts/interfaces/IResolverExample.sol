@@ -41,7 +41,7 @@ interface IResolverExample {
      * @param dstImmutables The immutables of the escrow contract that are used in deployment.
      * @param srcCancellationTimestamp The start of the cancellation period for the source chain.
      */
-    function deployDst(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
+    function deployDst(IBaseEscrow.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable;
 
     /**
      * @notice Allows the owner to make arbitrary calls to other contracts on behalf of this contract.
