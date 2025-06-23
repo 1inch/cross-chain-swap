@@ -5,7 +5,6 @@ pragma solidity 0.8.23;
 import { Script } from "forge-std/Script.sol";
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
@@ -40,16 +39,14 @@ contract WithdrawDst is Script {
         );
 
         IEscrowDst.ImmutablesDst memory immutables = IEscrowDst.ImmutablesDst({
-            core: IBaseEscrow.Immutables({
-                orderHash: orderHash,
-                amount: dstAmount,
-                maker: Address.wrap(uint160(deployer)),
-                taker: Address.wrap(uint160(address(resolver))),
-                token: Address.wrap(uint160(dstToken)),
-                hashlock: hashlock,
-                safetyDeposit: safetyDeposit,
-                timelocks: timelocks
-            }),
+            orderHash: orderHash,
+            amount: dstAmount,
+            maker: Address.wrap(uint160(deployer)),
+            taker: Address.wrap(uint160(address(resolver))),
+            token: Address.wrap(uint160(dstToken)),
+            hashlock: hashlock,
+            safetyDeposit: safetyDeposit,
+            timelocks: timelocks,
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
             protocolFeeAmount: protocolFeeAmount,

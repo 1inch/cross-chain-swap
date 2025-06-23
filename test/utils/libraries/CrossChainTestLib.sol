@@ -315,9 +315,9 @@ library CrossChainTestLib {
                 integratorFeeRecipient,
                 (srcSafetyDeposit << 128) | dstSafetyDeposit,
                 timelocks,
-                protocolFee,
                 integratorFee,
                 integratorShare,
+                protocolFee,
                 whitelistDiscountNumerator
             )
         );
@@ -419,16 +419,14 @@ library CrossChainTestLib {
         uint256 integratorFeeAmount
     ) internal pure returns (IEscrowDst.ImmutablesDst memory immutables) {
         immutables = IEscrowDst.ImmutablesDst({
-            core: IBaseEscrow.Immutables({
-                orderHash: orderHash,
-                hashlock: hashlock,
-                maker: Address.wrap(uint160(maker)),
-                taker: Address.wrap(uint160(taker)),
-                token: Address.wrap(uint160(token)),
-                amount: amount,
-                safetyDeposit: safetyDeposit,
-                timelocks: timelocks
-            }),
+            orderHash: orderHash,
+            hashlock: hashlock,
+            maker: Address.wrap(uint160(maker)),
+            taker: Address.wrap(uint160(taker)),
+            token: Address.wrap(uint160(token)),
+            amount: amount,
+            safetyDeposit: safetyDeposit,
+            timelocks: timelocks,
             protocolFeeRecipient: Address.wrap(uint160(protocolFeeRecipient)),
             integratorFeeRecipient: Address.wrap(uint160(integratorFeeRecipient)),
             protocolFeeAmount: protocolFeeAmount,

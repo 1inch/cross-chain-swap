@@ -6,7 +6,6 @@ import { Script } from "forge-std/Script.sol";
 
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { FeeCalcLib } from "contracts/libraries/FeeCalcLib.sol";
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 

@@ -60,4 +60,14 @@ library ImmutablesLib {
             ret := keccak256(immutables, ESCROW_IMMUTABLES_DST_SIZE)
         }
     }
+
+    function asImmutables(IEscrowDst.ImmutablesDst calldata dst)
+        internal
+        pure
+        returns (IBaseEscrow.Immutables calldata src)
+    {
+        assembly ("memory-safe") {
+            src := dst
+        }
+    }
 }

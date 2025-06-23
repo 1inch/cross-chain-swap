@@ -11,7 +11,6 @@ import { EscrowDst } from "../../contracts/EscrowDst.sol";
 import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
 import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
 import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
-import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
 import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
 import { Utils } from "./Utils.sol";
@@ -30,12 +29,12 @@ contract BaseSetup is Test, Utils {
     uint256 internal constant DST_SAFETY_DEPOSIT = 0.05 ether;
     uint32 internal constant RESOLVER_FEE = 100;
     uint32 internal constant RESCUE_DELAY = 604800; // 7 days
-    uint256 internal constant PROTOCOL_FEE = 25;
-    uint256 internal constant INTEGRATOR_FEE = 25; 
-    uint256 internal constant INTEGRATOR_SHARES = 25;
-    uint256 internal constant FEES_AMOUNT = 249875062468764;
-    uint256 internal constant PROTOCOL_FEE_AMOUNT = 218640679660169;
-    uint256 internal constant WHITELIST_PROTOCOL_FEE_DISCOUNT = 75;
+    uint256 internal constant PROTOCOL_FEE = 40000;
+    uint256 internal constant INTEGRATOR_FEE = 5000; 
+    uint256 internal constant INTEGRATOR_SHARES = 20;
+    uint256 internal constant FEES_AMOUNT = 0.1 ether;
+    uint256 internal constant PROTOCOL_FEE_AMOUNT = 0.096 ether;
+    uint256 internal constant WHITELIST_PROTOCOL_FEE_DISCOUNT = 50;
 
     uint256 internal constant BASE_1E5 = 1e5;
     uint256 internal constant BASE_1E2 = 100;
@@ -43,6 +42,7 @@ contract BaseSetup is Test, Utils {
     Wallet internal alice;
     Wallet internal bob;
     Wallet internal charlie;
+    Wallet internal mary;
 
     TokenMock internal dai;
     TokenCustomDecimalsMock internal usdc;
@@ -89,26 +89,30 @@ contract BaseSetup is Test, Utils {
     function setUp() public virtual {
         bytes32 profileHash = keccak256(abi.encodePacked(vm.envString("FOUNDRY_PROFILE")));
         if (profileHash == CrossChainTestLib.ZKSYNC_PROFILE_HASH) isZkSync = true;
-        _createUsers(5);
+        _createUsers(6);
 
         alice = users[0];
         bob = users[1];
         charlie = users[2];
+        mary = users[3];
 
         vm.label(alice.addr, "Alice");
         vm.label(bob.addr, "Bob");
         vm.label(charlie.addr, "Charlie");
+        vm.label(mary.addr, "Mary");
 
         resolvers = new address[](1);
         resolvers[0] = bob.addr;
 
-        integratorFeeReceiver = users[3].addr;
-        protocolFeeReceiver = users[4].addr;
+        integratorFeeReceiver = users[4].addr;
+        protocolFeeReceiver = users[5].addr;
 
         _deployTokens();
         dai.mint(bob.addr, 1000 ether);
+        dai.mint(mary.addr, 1000 ether);
         usdc.mint(alice.addr, 1000 ether);
         inch.mint(bob.addr, 1000 ether);
+        inch.mint(mary.addr, 1000 ether);
         accessToken.mint(bob.addr, 1);
 
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
@@ -120,8 +124,15 @@ contract BaseSetup is Test, Utils {
         inch.approve(address(feeBank), 1000 ether);
         feeBank.deposit(10 ether);
         vm.stopPrank();
+
         vm.prank(alice.addr);
         usdc.approve(address(limitOrderProtocol), 1000 ether);
+
+        vm.startPrank(mary.addr);
+        dai.approve(address(escrowFactory), 1000 ether);
+        inch.approve(address(feeBank), 1000 ether);
+        feeBank.deposit(10 ether);
+        vm.stopPrank();
     }
 
     function _deployTokens() internal {
@@ -247,7 +258,9 @@ contract BaseSetup is Test, Utils {
             DST_SAFETY_DEPOSIT, 
             PROTOCOL_FEE, 
             INTEGRATOR_FEE,
-            INTEGRATOR_SHARES
+            INTEGRATOR_SHARES,
+            WHITELIST_PROTOCOL_FEE_DISCOUNT,
+            true
         );
     }
 
@@ -260,8 +273,12 @@ contract BaseSetup is Test, Utils {
         uint256 safetyDeposit,
         uint256 protocolFee,
         uint256 integratorFee,
-        uint256 integratorShares
+        uint256 integratorShares,
+        uint256 whitelistDiscount,
+        bool isWhitelisted
     ) internal view returns (IEscrowDst.ImmutablesDst memory, uint256, EscrowDst) {
+        protocolFee = isWhitelisted ? protocolFee * whitelistDiscount / BASE_1E2 : protocolFee;
+
         (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = FeeCalcLib.getFeeAmounts(
             amount,
             protocolFee,

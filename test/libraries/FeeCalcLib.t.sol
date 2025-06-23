@@ -33,7 +33,9 @@ contract FeeCalcLibTest is BaseSetup {
             DST_SAFETY_DEPOSIT,
             protocolFee, 
             integratorFee, 
-            integratorShares
+            integratorShares,
+            BASE_1E2,
+            true
         );
 
         uint256 denominator = (BASE_1E5 + integratorFee + protocolFee);

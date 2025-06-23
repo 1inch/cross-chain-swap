@@ -444,7 +444,9 @@ contract EscrowTest is BaseSetup {
             DST_SAFETY_DEPOSIT,
             PROTOCOL_FEE, 
             INTEGRATOR_FEE, 
-            INTEGRATOR_SHARES
+            INTEGRATOR_SHARES,
+            WHITELIST_PROTOCOL_FEE_DISCOUNT,
+            true
         );
 
         // deploy escrow
@@ -764,7 +766,9 @@ contract EscrowTest is BaseSetup {
             DST_SAFETY_DEPOSIT, 
             PROTOCOL_FEE,
             INTEGRATOR_FEE,
-            INTEGRATOR_SHARES
+            INTEGRATOR_SHARES,
+            WHITELIST_PROTOCOL_FEE_DISCOUNT,
+            true
         );
 
         // deploy escrow
@@ -871,6 +875,7 @@ contract EscrowTest is BaseSetup {
         vm.prank(address(limitOrderProtocol));
         vm.expectEmit();
         emit IEscrowFactory.SrcEscrowCreated(swapData.immutables, immutablesComplement);
+
         escrowFactory.postInteraction(
             swapData.order,
             "", // extension
@@ -1050,7 +1055,9 @@ contract EscrowTest is BaseSetup {
             DST_SAFETY_DEPOSIT, 
             PROTOCOL_FEE, 
             INTEGRATOR_FEE, 
-            INTEGRATOR_SHARES
+            INTEGRATOR_SHARES,
+            WHITELIST_PROTOCOL_FEE_DISCOUNT,
+            true
         );
 
         // deploy escrow
@@ -1089,7 +1096,9 @@ contract EscrowTest is BaseSetup {
             DST_SAFETY_DEPOSIT, 
             PROTOCOL_FEE, 
             INTEGRATOR_FEE, 
-            INTEGRATOR_SHARES
+            INTEGRATOR_SHARES,
+            WHITELIST_PROTOCOL_FEE_DISCOUNT,
+            true
         );
 
         // deploy escrow
@@ -1198,7 +1207,7 @@ contract EscrowTest is BaseSetup {
 
         // withdraw dst
         vm.warp(block.timestamp + dstTimelocks.withdrawal + 10);
-        immutablesDst.core.amount = MAKING_AMOUNT;
+        immutablesDst.amount = MAKING_AMOUNT;
         vm.expectRevert(IBaseEscrow.InvalidImmutables.selector);
         dstClone.withdraw(SECRET, immutablesDst);
 

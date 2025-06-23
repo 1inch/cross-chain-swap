@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { EscrowDst } from "contracts/EscrowDst.sol";
 
@@ -13,8 +12,6 @@ import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 import { TimelocksLibMock } from "../utils/mocks/TimelocksLibMock.sol";
 
 import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
-
-import "forge-std/console.sol";
 
 contract TimelocksLibTest is BaseSetup {
     using AddressLib for Address;
@@ -79,23 +76,12 @@ contract TimelocksLibTest is BaseSetup {
         uint256 balanceAlice = dai.balanceOf(alice.addr);
         accessToken.mint(alice.addr, 1);
         vm.startPrank(alice.addr);
-        console.log(address(dstClone));
-        console.log("maker", immutablesDst.core.maker.get());
-        console.log("token", immutablesDst.core.token.get());
-        console.log("feeRecipient", immutablesDst.integratorFeeRecipient.get());
-        console.logBytes(abi.encode(dstClone.publicWithdraw.selector));
-        console.log("dstClone address", address(dstClone));
-        console.logBytes(abi.encode(address(dstClone).code.length));
-        // vm.expectRevert();
-        console.log("before withdraw");
-        console.logBytes(abi.encode(immutablesDst));
         dstClone.publicWithdraw(SECRET, immutablesDst);
-        console.log("after withdraw");
-        // assertEq(dai.balanceOf(address(dstClone)), 0);
+        assertEq(dai.balanceOf(address(dstClone)), 0);
 
-        // assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT - FEES_AMOUNT);
-        // assertEq(dai.balanceOf(protocolFeeReceiver), PROTOCOL_FEE_AMOUNT);
-        // assertEq(dai.balanceOf(integratorFeeReceiver), FEES_AMOUNT - PROTOCOL_FEE_AMOUNT);
+        assertEq(dai.balanceOf(alice.addr), balanceAlice + TAKING_AMOUNT - FEES_AMOUNT);
+        assertEq(dai.balanceOf(protocolFeeReceiver), PROTOCOL_FEE_AMOUNT);
+        assertEq(dai.balanceOf(integratorFeeReceiver), FEES_AMOUNT - PROTOCOL_FEE_AMOUNT);
     }
 
     /* solhint-enable func-name-mixedcase */

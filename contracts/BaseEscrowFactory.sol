@@ -132,7 +132,6 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             protocolFeeAmount: protocolFeeAmount,
             integratorFeeAmount: integratorFeeAmount
         });
-
         emit SrcEscrowCreated(immutables, immutablesComplement);
 
         bytes32 salt = immutables.hashMem();
@@ -146,25 +145,26 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
      * @notice See {IEscrowFactory-createDstEscrow}.
      */
     function createDstEscrow(IEscrowDst.ImmutablesDst calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
-        address token = dstImmutables.core.token.get();
-        uint256 nativeAmount = dstImmutables.core.safetyDeposit;
+        address token = dstImmutables.token.get();
+        uint256 nativeAmount = dstImmutables.safetyDeposit;
         if (token == address(0)) {
-            nativeAmount += dstImmutables.core.amount;
+            nativeAmount += dstImmutables.amount;
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
-
+        
         IEscrowDst.ImmutablesDst memory immutables = dstImmutables;
-        immutables.core.timelocks = immutables.core.timelocks.setDeployedAt(block.timestamp);
+        immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
-        if (immutables.core.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
+        if (immutables.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
 
         bytes32 salt = immutables.hashMem();
+
         address escrow = _deployEscrow(salt, msg.value, ESCROW_DST_IMPLEMENTATION);
         if (token != address(0)) {
-            IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.core.amount);
+            IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
 
-        emit DstEscrowCreated(escrow, dstImmutables.core.hashlock, dstImmutables.core.taker);
+        emit DstEscrowCreated(escrow, dstImmutables.hashlock, dstImmutables.taker);
     }
 
     /**

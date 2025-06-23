@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.23;
 
-import { Create2 } from "openzeppelin-contracts/contracts/utils/Create2.sol";
-
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
@@ -38,9 +36,9 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function withdraw(bytes32 secret, ImmutablesDst calldata immutables)
         external
-        onlyTaker(immutables.core)
-        onlyAfter(immutables.core.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
-        onlyBefore(immutables.core.timelocks.get(TimelocksLib.Stage.DstCancellation))
+        onlyTaker(immutables.asImmutables())
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
+        onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
         _withdraw(secret, immutables);
     }
@@ -53,8 +51,8 @@ contract EscrowDst is Escrow, IEscrowDst {
     function publicWithdraw(bytes32 secret, ImmutablesDst calldata immutables)
         external
         onlyAccessTokenHolder()
-        onlyAfter(immutables.core.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
-        onlyBefore(immutables.core.timelocks.get(TimelocksLib.Stage.DstCancellation))
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstPublicWithdrawal))
+        onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
         _withdraw(secret, immutables);
     }
@@ -64,9 +62,9 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function rescueFunds(address token, uint256 amount, ImmutablesDst calldata immutables)
         external
-        onlyTaker(immutables.core)
+        onlyTaker(immutables.asImmutables())
         onlyValidImmutables(immutables.hash())
-        onlyAfter(immutables.core.timelocks.rescueStart(RESCUE_DELAY))
+        onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
     {
         _uniTransfer(token, msg.sender, amount);
         emit FundsRescued(token, amount);
@@ -79,12 +77,12 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function cancel(ImmutablesDst calldata immutables)
         external
-        onlyTaker(immutables.core)
+        onlyTaker(immutables.asImmutables())
         onlyValidImmutables(immutables.hash())
-        onlyAfter(immutables.core.timelocks.get(TimelocksLib.Stage.DstCancellation))
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
-        _uniTransfer(immutables.core.token.get(), immutables.core.taker.get(), immutables.core.amount);
-        _ethTransfer(msg.sender, immutables.core.safetyDeposit);
+        _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowCancelled();
     }
 
@@ -95,29 +93,29 @@ contract EscrowDst is Escrow, IEscrowDst {
     function _withdraw(bytes32 secret, ImmutablesDst calldata immutables)
         internal
         onlyValidImmutables(immutables.hash())
-        onlyValidSecret(secret, immutables.core)
+        onlyValidSecret(secret, immutables.asImmutables())
     {
         if (immutables.integratorFeeAmount > 0) {
             _uniTransfer(
-                immutables.core.token.get(), 
+                immutables.token.get(), 
                 immutables.integratorFeeRecipient.get(), 
                 immutables.integratorFeeAmount
             );
         }
         if (immutables.protocolFeeAmount > 0) {
             _uniTransfer(
-                immutables.core.token.get(), 
+                immutables.token.get(), 
                 immutables.protocolFeeRecipient.get(), 
                 immutables.protocolFeeAmount
             );
         }
 
         _uniTransfer(
-            immutables.core.token.get(), 
-            immutables.core.maker.get(), 
-            immutables.core.amount - immutables.integratorFeeAmount - immutables.protocolFeeAmount
+            immutables.token.get(), 
+            immutables.maker.get(), 
+            immutables.amount - immutables.integratorFeeAmount - immutables.protocolFeeAmount
         );
-        _ethTransfer(msg.sender, immutables.core.safetyDeposit);
+        _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowWithdrawal(secret);
     }
 }

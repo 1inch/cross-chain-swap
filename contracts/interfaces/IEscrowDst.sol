@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
+import { Timelocks } from "../libraries/TimelocksLib.sol";
 import { IEscrow } from "./IEscrow.sol";
 
 /**
@@ -12,7 +13,15 @@ import { IEscrow } from "./IEscrow.sol";
  */
 interface IEscrowDst is IEscrow {
     struct ImmutablesDst {
-        Immutables core;
+        // first 8 fields are the same as IBaseEscrow.Immutables
+        bytes32 orderHash;
+        bytes32 hashlock;  // Hash of the secret.
+        Address maker;
+        Address taker;
+        Address token;
+        uint256 amount;
+        uint256 safetyDeposit;
+        Timelocks timelocks;
         Address protocolFeeRecipient;
         Address integratorFeeRecipient;
         uint256 protocolFeeAmount;
