@@ -304,7 +304,7 @@ contract EscrowFactoryTest is BaseSetup {
             IEscrowFactory.InvalidIntegratorShare.selector,
             IEscrowFactory.InvalidWhitelistDiscountNumerator.selector];
 
-        for (uint i = 0; i<4; i++) {
+        for (uint256 i = 0; i<4; i++) {
             bytes memory extraData = abi.encodePacked(swapData.extraData, CrossChainTestLib.buidDynamicData(
                 HASHED_SECRET,
                 block.chainid,
