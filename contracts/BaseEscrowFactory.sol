@@ -106,7 +106,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         });
 
         uint256 protocolFee = _processDiscountForProtocolFee(
-            extraData[:superArgsLength],
+            extraData[:superArgsLength], // must be without immutables according to ExtensionLib
             taker,
             extraDataArgs.protocolFee,
             extraDataArgs.whitelistDiscountNumerator
@@ -226,7 +226,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         uint256 resolversCount = extraData.resolversCount();
 
         if (feeEnabled) {
-            extraData = extraData[4:];
+            extraData = extraData[4:]; // skip resolverFee according to ResolverValidationExtension
         }
 
         uint256 allowedTime = uint32(bytes4(extraData[0:4]));
