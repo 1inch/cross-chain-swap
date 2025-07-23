@@ -17,7 +17,7 @@ import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
-import { SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol";
+import { CHAIN_ID_MASK, SRC_IMMUTABLES_LENGTH } from "./EscrowFactoryContext.sol";
 import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
 
 /**
@@ -72,6 +72,12 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             extraDataArgs := add(extraData.offset, superArgsLength)
         }
 
+        bool dstChainIsNotEVM = (extraDataArgs.dstChainId >> 255) == 1;
+        Address receiver = order.receiver;
+        bool receiverIsZero = Address.unwrap(receiver) == 0;
+
+        if (dstChainIsNotEVM && receiverIsZero) revert InvalidReceiverAddress();
+
         bytes32 hashlock;
 
         if (MakerTraitsLib.allowMultipleFills(order.makerTraits)) {
@@ -99,11 +105,11 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
-            maker: order.receiver.get() == address(0) ? order.maker : order.receiver,
+            maker: receiver.get() == address(0) ? order.maker : receiver,
             amount: takingAmount,
             token: extraDataArgs.dstToken,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
-            chainId: extraDataArgs.dstChainId
+            chainId: extraDataArgs.dstChainId & CHAIN_ID_MASK
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);

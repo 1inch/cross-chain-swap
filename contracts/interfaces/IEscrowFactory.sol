@@ -16,9 +16,9 @@ import { IBaseEscrow } from "./IBaseEscrow.sol";
 interface IEscrowFactory {
     struct ExtraDataArgs {
         bytes32 hashlockInfo; // Hash of the secret or the Merkle tree root if multiple fills are allowed
-        uint256 dstChainId;
+        uint256 dstChainId;   // MSB (bit 255) = non-EVM chain flag, lower 255 bits = actual chain ID
         Address dstToken;
-        uint256 deposits;
+        uint256 deposits;     // Upper 128: src safety deposit, lower 128: dst safety deposit
         Timelocks timelocks;
     }
 
@@ -33,6 +33,7 @@ interface IEscrowFactory {
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
     error InvalidPartialFill();
+    error InvalidReceiverAddress();
     error InvalidSecretsAmount();
 
     /**
