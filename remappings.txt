@@ -4,3 +4,5 @@
 solidity-utils/=lib/solidity-utils/
 limit-order-protocol/=lib/limit-order-protocol/
 limit-order-settlement/=lib/limit-order-settlement/
+openzeppelin-contracts/=lib/openzeppelin-contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
