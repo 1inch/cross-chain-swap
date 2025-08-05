@@ -35,7 +35,7 @@ Based on my analysis of the git history and file changes, here's a comprehensive
 ### 1. Build Automation
 
 - __Makefile Addition__: Added comprehensive Makefile to simplify script execution
-- __Common commands__: Includes targets for testing, coverage, deployment, and more
+- __Common Commands__: Includes targets for testing, coverage, deployment, and more
 
 ### 2. Documentation and Templates
 
