@@ -138,7 +138,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, SimpleSettlement, MerkleS
             token: extraDataArgs.dstToken,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
             chainId: extraDataArgs.dstChainId,
-            parameters: abi.encode(
+            parameters: abi.encodePacked(
                 protocolFeeAmount,
                 integratorFeeAmount,
                 Address.wrap(uint160(protocolFeeRecipient)),
