@@ -1,0 +1,20 @@
+{
+  "lib/murky": {
+    "rev": "991e371eb1dfa9f86701869eb08ec4e98c3cc0b0"
+  },
+  "lib/limit-order-settlement": {
+    "rev": "78a5a68f4814361332e347071513b3d191a630e1"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "6ef73e33866527291e81cf98ddd1ec8b60d7aac8"
+  },
+  "lib/solidity-utils": {
+    "rev": "94611cc4ddb6c7c55f9d20f3093074ecca5440ba"
+  },
+  "lib/limit-order-protocol": {
+    "rev": "b655e74665559450ebf3500c2149b805db8ee229"
+  },
+  "lib/forge-std": {
+    "rev": "60acb7aaadcce2d68e52986a0a66fe79f07d138f"
+  }
+}
