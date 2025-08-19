@@ -37,7 +37,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      */
     function withdraw(bytes32 secret, Immutables calldata immutables)
         external
-        onlyTaker(immutables.taker.get())
+        onlyCaller(immutables.taker.get())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
@@ -52,7 +52,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      */
     function withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
         external
-        onlyTaker(immutables.taker.get())
+        onlyCaller(immutables.taker.get())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
@@ -82,7 +82,7 @@ contract EscrowSrc is Escrow, IEscrowSrc {
      */
     function cancel(Immutables calldata immutables)
         external
-        onlyTaker(immutables.taker.get())
+        onlyCaller(immutables.taker.get())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
     {
         _cancel(immutables);

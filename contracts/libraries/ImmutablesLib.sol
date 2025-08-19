@@ -16,6 +16,11 @@ library ImmutablesLib {
     uint256 internal constant IMMUTABLES_SIZE = 0x120;
     uint256 internal constant IMMUTABLES_LAST_WORD = 0x100;
 
+    /**
+     * @notice Returns the protocol fee amount from the immutables.
+     * @param immutables The immutables to extract the fee from.
+     * @return ret The protocol fee amount.
+     */
     function protocolFeeAmount(IBaseEscrow.Immutables memory immutables) internal pure returns (uint256 ret) {
         bytes memory parameters = immutables.parameters;
         if (parameters.length < 0x20) revert IndexOutOfRange();
@@ -24,6 +29,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the integrator fee amount from the immutables.
+     * @param immutables The immutables to extract the fee from.
+     * @return ret The integrator fee amount.
+     */
     function integratorFeeAmount(IBaseEscrow.Immutables memory immutables) internal pure returns (uint256 ret) {
         bytes memory parameters = immutables.parameters;
         if (parameters.length < 0x40) revert IndexOutOfRange();
@@ -32,6 +42,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the protocol fee recipient from the immutables.
+     * @param immutables The immutables to extract the recipient from.
+     * @return ret The protocol fee recipient.
+     */
     function protocolFeeRecipient(IBaseEscrow.Immutables memory immutables) internal pure returns (Address ret) {
         bytes memory parameters = immutables.parameters;
         if (parameters.length < 0x60) revert IndexOutOfRange();
@@ -40,6 +55,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the integrator fee recipient from the immutables.
+     * @param immutables The immutables to extract the recipient from.
+     * @return ret The integrator fee recipient.
+     */
     function integratorFeeRecipient(IBaseEscrow.Immutables memory immutables) internal pure returns (Address ret) {
         bytes memory parameters = immutables.parameters;
         if (parameters.length < 0x80) revert IndexOutOfRange();
@@ -48,6 +68,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the protocol fee amount from the immutables.
+     * @param immutables The immutables to extract the fee from.
+     * @return ret The protocol fee amount.
+     */
     function protocolFeeAmountCd(IBaseEscrow.Immutables calldata immutables) external pure returns (uint256 ret) {
         bytes calldata parameters = immutables.parameters;
         if (parameters.length < 0x20) revert IndexOutOfRange();
@@ -56,6 +81,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the integrator fee amount from the immutables.
+     * @param immutables The immutables to extract the fee from.
+     * @return ret The integrator fee amount.
+     */
     function integratorFeeAmountCd(IBaseEscrow.Immutables calldata immutables) external pure returns (uint256 ret) {
         bytes calldata parameters = immutables.parameters;
         if (parameters.length < 0x40) revert IndexOutOfRange();
@@ -64,6 +94,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the protocol fee recipient from the immutables.
+     * @param immutables The immutables to extract the recipient from.
+     * @return ret The protocol fee recipient.
+     */
     function protocolFeeRecipientCd(IBaseEscrow.Immutables calldata immutables) external pure returns (Address ret) {
         bytes calldata parameters = immutables.parameters;
         if (parameters.length < 0x60) revert IndexOutOfRange();
@@ -72,6 +107,11 @@ library ImmutablesLib {
         }
     }
 
+    /**
+     * @notice Returns the integrator fee recipient from the immutables.
+     * @param immutables The immutables to extract the recipient from.
+     * @return ret The integrator fee recipient.
+     */
     function integratorFeeRecipientCd(IBaseEscrow.Immutables calldata immutables) external pure returns (Address ret) {
         bytes calldata parameters = immutables.parameters;
         if (parameters.length < 0x80) revert IndexOutOfRange();
