@@ -69,7 +69,7 @@ library ImmutablesLib {
     }
 
     /**
-     * @notice Returns the protocol fee amount from the immutables.
+     * @notice Returns the protocol fee amount from the immutables (calldata version).
      * @param immutables The immutables to extract the fee from.
      * @return ret The protocol fee amount.
      */
@@ -82,7 +82,7 @@ library ImmutablesLib {
     }
 
     /**
-     * @notice Returns the integrator fee amount from the immutables.
+     * @notice Returns the integrator fee amount from the immutables (calldata version).
      * @param immutables The immutables to extract the fee from.
      * @return ret The integrator fee amount.
      */
@@ -95,7 +95,7 @@ library ImmutablesLib {
     }
 
     /**
-     * @notice Returns the protocol fee recipient from the immutables.
+     * @notice Returns the protocol fee recipient from the immutables (calldata version).
      * @param immutables The immutables to extract the recipient from.
      * @return ret The protocol fee recipient.
      */
@@ -108,7 +108,7 @@ library ImmutablesLib {
     }
 
     /**
-     * @notice Returns the integrator fee recipient from the immutables.
+     * @notice Returns the integrator fee recipient from the immutables (calldata version).
      * @param immutables The immutables to extract the recipient from.
      * @return ret The integrator fee recipient.
      */
