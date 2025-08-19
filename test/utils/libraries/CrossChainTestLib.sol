@@ -447,7 +447,7 @@ library CrossChainTestLib {
             amount: amount,
             safetyDeposit: safetyDeposit,
             timelocks: timelocks,
-            parameters: abi.encodePacked(
+            parameters: abi.encode(
                 protocolFeeAmount,
                 integratorFeeAmount,
                 Address.wrap(uint160(protocolFeeRecipient)),
