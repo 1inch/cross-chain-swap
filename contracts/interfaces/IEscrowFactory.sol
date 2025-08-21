@@ -28,6 +28,7 @@ interface IEscrowFactory {
         Address token;
         uint256 safetyDeposit;
         uint256 chainId;
+        bytes parameters;
     }
 
     error InsufficientEscrowBalance();

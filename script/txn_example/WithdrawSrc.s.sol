@@ -35,10 +35,10 @@ contract WithdrawSrc is Script {
             token: Address.wrap(uint160(srcToken)),
             hashlock: hashlock,
             safetyDeposit: safetyDeposit,
-            timelocks: timelocks
+            timelocks: timelocks,
+            parameters: "" // Must skip params due only EscrowDst.withdraw() using it.
         });
 
-        // address escrow = vm.envAddress("ESCROW_SRC");
         address escrow = IEscrowFactory(escrowFactory).addressOfEscrowSrc(immutables);
 
         address[] memory targets = new address[](1);

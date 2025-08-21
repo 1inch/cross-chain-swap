@@ -7,6 +7,7 @@ import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
+import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 
 import { IEscrowDst } from "./interfaces/IEscrowDst.sol";
 import { BaseEscrow } from "./BaseEscrow.sol";
@@ -23,6 +24,7 @@ contract EscrowDst is Escrow, IEscrowDst {
     using SafeERC20 for IERC20;
     using AddressLib for Address;
     using TimelocksLib for Timelocks;
+    using ImmutablesLib for Immutables;
 
     constructor(uint32 rescueDelay, IERC20 accessToken) BaseEscrow(rescueDelay, accessToken) {}
 
@@ -33,7 +35,7 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function withdraw(bytes32 secret, Immutables calldata immutables)
         external
-        onlyTaker(immutables)
+        onlyTaker(immutables.taker.get())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
@@ -61,8 +63,8 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function cancel(Immutables calldata immutables)
         external
-        onlyTaker(immutables)
-        onlyValidImmutables(immutables)
+        onlyTaker(immutables.taker.get())
+        onlyValidImmutables(immutables.hash())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
         _uniTransfer(immutables.token.get(), immutables.taker.get(), immutables.amount);
@@ -76,10 +78,19 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function _withdraw(bytes32 secret, Immutables calldata immutables)
         internal
-        onlyValidImmutables(immutables)
-        onlyValidSecret(secret, immutables)
+        onlyValidImmutables(immutables.hash())
+        onlyValidSecret(secret, immutables.hashlock)
     {
-        _uniTransfer(immutables.token.get(), immutables.maker.get(), immutables.amount);
+        uint256 integratorFeeAmount = immutables.integratorFeeAmountCd();
+        uint256 protocolFeeAmount = immutables.protocolFeeAmountCd();
+        if (integratorFeeAmount > 0) {
+            _uniTransfer(immutables.token.get(), immutables.integratorFeeRecipientCd().get(), integratorFeeAmount);
+        }
+        if (protocolFeeAmount > 0) {
+            _uniTransfer(immutables.token.get(), immutables.protocolFeeRecipientCd().get(), protocolFeeAmount);
+        }
+        uint256 amount = immutables.amount - integratorFeeAmount - protocolFeeAmount;
+        _uniTransfer(immutables.token.get(), immutables.maker.get(), amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowWithdrawal(secret);
     }

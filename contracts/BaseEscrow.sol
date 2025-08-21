@@ -35,18 +35,18 @@ abstract contract BaseEscrow is IBaseEscrow {
         _ACCESS_TOKEN = accessToken;
     }
 
-    modifier onlyTaker(Immutables calldata immutables) {
-        if (msg.sender != immutables.taker.get()) revert InvalidCaller();
+    modifier onlyTaker(address taker) {
+        if (msg.sender != taker) revert InvalidCaller();
         _;
     }
 
-    modifier onlyValidImmutables(Immutables calldata immutables) virtual {
-        _validateImmutables(immutables);
+    modifier onlyValidImmutables(bytes32 immutablesHash) virtual {
+        _validateImmutables(immutablesHash);
         _;
     }
 
-    modifier onlyValidSecret(bytes32 secret, Immutables calldata immutables) {
-        if (_keccakBytes32(secret) != immutables.hashlock) revert InvalidSecret();
+    modifier onlyValidSecret(bytes32 secret, bytes32 hashlock) {
+        if (_keccakBytes32(secret) != hashlock) revert InvalidSecret();
         _;
     }
 
@@ -70,8 +70,8 @@ abstract contract BaseEscrow is IBaseEscrow {
      */
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables)
         external
-        onlyTaker(immutables)
-        onlyValidImmutables(immutables)
+        onlyTaker(immutables.taker.get())
+        onlyValidImmutables(immutables.hash())
         onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
     {
         _uniTransfer(token, msg.sender, amount);
@@ -100,7 +100,7 @@ abstract contract BaseEscrow is IBaseEscrow {
     /**
      * @dev Should verify that the computed escrow address matches the address of this contract.
      */
-    function _validateImmutables(Immutables calldata immutables) internal view virtual;
+    function _validateImmutables(bytes32 immutablesHash) internal view virtual;
 
     /**
      * @dev Computes the Keccak-256 hash of the secret.

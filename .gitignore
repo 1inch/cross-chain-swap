@@ -10,7 +10,6 @@ build
 .env
 .env.deployment
 .DS_Store
-anvil.log
 Makefile
 
 # foundry

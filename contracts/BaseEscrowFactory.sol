@@ -9,8 +9,10 @@ import { Address, AddressLib } from "solidity-utils/contracts/libraries/AddressL
 import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { IPostInteraction } from "limit-order-protocol/contracts/interfaces/IPostInteraction.sol";
 import { MakerTraitsLib } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
-import { ResolverValidationExtension } from "limit-order-settlement/contracts/extensions/ResolverValidationExtension.sol";
+import { FeeTaker } from "limit-order-protocol/contracts/extensions/FeeTaker.sol";
+import { SimpleSettlement } from "limit-order-settlement/contracts/SimpleSettlement.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
@@ -26,7 +28,7 @@ import { MerkleStorageInvalidator } from "./MerkleStorageInvalidator.sol";
  * @dev Immutable variables must be set in the constructor of the derived contracts.
  * @custom:security-contact security@1inch.io
  */
-abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtension, MerkleStorageInvalidator {
+abstract contract BaseEscrowFactory is IEscrowFactory, SimpleSettlement, MerkleStorageInvalidator {
     using AddressLib for Address;
     using Clones for address;
     using ImmutablesLib for IBaseEscrow.Immutables;
@@ -46,11 +48,19 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
      * to a pre-computed deterministic address of the created escrow.
      * The external postInteraction function call will be made from the Limit Order Protocol
      * after all funds have been transferred. See {IPostInteraction-postInteraction}.
-     * `extraData` consists of:
-     *   - ExtraDataArgs struct
-     *   - whitelist
-     *   - 0 / 4 bytes for the fee
-     *   - 1 byte for the bitmap
+     * extraData consists of:
+     * 20 bytes — integrator fee recipient
+     * 20 bytes - protocol fee recipient
+     * Fee structure determined by `super._getFeeAmounts`:
+     *      2 bytes — integrator fee percentage (in 1e5)
+     *      1 byte - integrator rev share percentage (in 1e2)
+     *      2 bytes — resolver fee percentage (in 1e5)
+     *      1 byte - whitelist discount numerator (in 1e2)
+     * Whitelist structure:
+     *      4 bytes - allowed time
+     *      1 byte - size of the whitelist
+     *      (bytes12)[N] — taker whitelist
+     * bytes — custom data to call extra postInteraction (optional)
      */
     function _postInteraction(
         IOrderMixin.Order calldata order,
@@ -61,11 +71,34 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
         uint256 takingAmount,
         uint256 remainingMakingAmount,
         bytes calldata extraData
-    ) internal override(ResolverValidationExtension) {
+    ) internal override(FeeTaker) {
+        address integratorFeeRecipient = address(bytes20(extraData[:20]));
+        address protocolFeeRecipient = address(bytes20(extraData[20:40]));
+
+        extraData = extraData[40:];
+
         uint256 superArgsLength = extraData.length - SRC_IMMUTABLES_LENGTH;
-        super._postInteraction(
-            order, extension, orderHash, taker, makingAmount, takingAmount, remainingMakingAmount, extraData[:superArgsLength]
+
+        (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) = FeeTaker._getFeeAmounts(
+            order,
+            taker,
+            takingAmount,
+            makingAmount,
+            extraData[:superArgsLength]
         );
+
+        if (tail.length > 19) {
+            IPostInteraction(address(bytes20(tail))).postInteraction(
+                order,
+                extension,
+                orderHash,
+                taker,
+                makingAmount,
+                takingAmount,
+                remainingMakingAmount,
+                tail[20:]
+            );
+        }
 
         ExtraDataArgs calldata extraDataArgs;
         assembly ("memory-safe") {
@@ -95,7 +128,8 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             token: order.makerAsset,
             amount: makingAmount,
             safetyDeposit: extraDataArgs.deposits >> 128,
-            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp)
+            timelocks: extraDataArgs.timelocks.setDeployedAt(block.timestamp),
+            parameters: "" // Must skip params due only EscrowDst.withdraw() using it.
         });
 
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
@@ -103,7 +137,13 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             amount: takingAmount,
             token: extraDataArgs.dstToken,
             safetyDeposit: extraDataArgs.deposits & type(uint128).max,
-            chainId: extraDataArgs.dstChainId
+            chainId: extraDataArgs.dstChainId,
+            parameters: abi.encode(
+                protocolFeeAmount,
+                integratorFeeAmount,
+                Address.wrap(uint160(protocolFeeRecipient)),
+                Address.wrap(uint160(integratorFeeRecipient))
+            )
         });
 
         emit SrcEscrowCreated(immutables, immutablesComplement);
@@ -137,7 +177,7 @@ abstract contract BaseEscrowFactory is IEscrowFactory, ResolverValidationExtensi
             IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
         }
 
-        emit DstEscrowCreated(escrow, dstImmutables.hashlock, dstImmutables.taker);
+        emit DstEscrowCreated(escrow, immutables.hashlock, immutables.taker);
     }
 
     /**

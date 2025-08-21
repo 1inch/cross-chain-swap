@@ -20,8 +20,13 @@ contract DeployEscrowSrc is Script {
         IResolverExample resolver = IResolverExample(vm.envAddress("RESOLVER"));
         address escrowFactory = vm.envAddress("ESCROW_FACTORY");
         IOrderMixin limitOrderProtocol = IOrderMixin(vm.envAddress("LOP"));
-
         address srcToken = vm.envAddress("TOKEN_SRC");
+        address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
+        address integratorFeeRecipient = vm.envAddress("INTEGRATOR_FEE_RECIPIENT");
+        uint256 protocolFee = vm.envUint("PROTOCOL_FEE");
+        uint256 integratorFee = vm.envUint("INTEGRATOR_FEE");
+        uint256 integratorShare = vm.envUint("INTEGRATOR_SHARE");
+        uint256 whitelistDiscountNumerator = vm.envUint("WHITELIST_DISCOUNT");
 
         // Prepare data to deploy EscrowSrc
         address maker = deployer;
@@ -54,6 +59,15 @@ contract DeployEscrowSrc is Script {
             0
         );
 
+        bytes memory auctionPoints = abi.encodePacked(
+            uint8(5), // amount of points
+            uint24(800000), uint16(100),
+            uint24(700000), uint16(100),
+            uint24(600000), uint16(100),
+            uint24(500000), uint16(100),
+            uint24(400000), uint16(100)
+        );
+
         address[] memory resolvers = new address[](1);
         resolvers[0] = address(resolver);
         CrossChainTestLib.SwapData memory swapData = CrossChainTestLib.prepareDataSrc(
@@ -75,8 +89,15 @@ contract DeployEscrowSrc is Script {
                     0, // duration: 10 minutes
                     0, // delay
                     0, // initialRateBump
-                    "" // auctionPoints
-                )
+                    auctionPoints // auctionPoints
+                ),
+                protocolFeeRecipient: protocolFeeRecipient,
+                integratorFeeRecipient: integratorFeeRecipient,
+                protocolFee: uint16(protocolFee),
+                integratorFee: uint16(integratorFee),
+                integratorShare: uint8(integratorShare),
+                whitelistDiscountNumerator: uint8(whitelistDiscountNumerator),
+                customDataForPostInteraction: ""
             }),
             CrossChainTestLib.EscrowDetails({
                 hashlock: hashlock,
@@ -84,7 +105,7 @@ contract DeployEscrowSrc is Script {
                 fakeOrder: false,
                 allowMultipleFills: false
             }),
-            escrowFactory,
+            payable(escrowFactory),
             limitOrderProtocol
         );
 
@@ -104,6 +125,7 @@ contract DeployEscrowSrc is Script {
         
         vm.startBroadcast(deployerPK);
         IERC20(srcToken).approve(address(limitOrderProtocol), srcAmount);
+
         resolver.deploySrc(
             swapData.immutables,
             swapData.order,
@@ -113,6 +135,7 @@ contract DeployEscrowSrc is Script {
             takerTraits,
             args
         );
+
         vm.stopBroadcast();
     }
 }

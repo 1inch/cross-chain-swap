@@ -36,7 +36,8 @@ contract CancelSrc is Script {
             token: Address.wrap(uint160(srcToken)),
             hashlock: hashlock,
             safetyDeposit: safetyDeposit,
-            timelocks: timelocks
+            timelocks: timelocks,
+            parameters: "" // Must skip params due only EscrowDst.withdraw() using it.
         });
 
         // address escrow = vm.envAddress("ESCROW_SRC");
