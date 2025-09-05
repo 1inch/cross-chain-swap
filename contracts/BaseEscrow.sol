@@ -6,7 +6,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { AddressLib, Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
 
-import { SafeSend } from "./utils/SafeSend.sol";
+import { SafeSendLib } from "./libraries/SafeSendLib.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
@@ -97,7 +97,7 @@ abstract contract BaseEscrow is IBaseEscrow {
     function _ethTransfer(address to, uint256 amount) internal {
         (bool success,) = to.call{ value: amount }("");
         if (!success) {
-            new SafeSend{ value: amount }(payable(to));
+            SafeSendLib.safeSend(to, amount);
         }
     }
 
