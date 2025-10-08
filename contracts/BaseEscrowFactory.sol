@@ -145,8 +145,8 @@ abstract contract BaseEscrowFactory is IEscrowFactory, SimpleSettlement, MerkleS
             parameters: abi.encode(
                 protocolFeeAmount,
                 integratorFeeAmount,
-                Address.wrap(uint160(protocolFeeRecipient)),
-                Address.wrap(uint160(integratorFeeRecipient))
+                protocolFeeRecipient,
+                integratorFeeRecipient
             )
         });
 
