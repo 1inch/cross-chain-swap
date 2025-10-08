@@ -76,4 +76,4 @@ help:
 	@echo "Available targets:"
 	@grep -E '^[a-zA-Z0-9_.-]+ *:.*?;' $(CURRENT_DIR)/Makefile | awk -F: '{print "  " $$1}'
 
-..PHONY: update build build-zk tests tests-zk coverage snapshot snapshot-check format clean anvil withdraw-src withdraw-dst deploy-escrow-dst deploy-escrow-src deploy-escrow-factory cancel-src cancel-dst balance balance-erc20 resolver-balance resolver-balance-erc20 deployer-balance deployer-balance-erc20 protocol-balance protocol-balance-erc20 integrator-balance integrator-balance-erc20 escrow-src-balance escrow-src-balance-erc20 escrow-dst-balance escrow-dst-balance-erc20
+.PHONY: update build build-zk tests tests-zk coverage snapshot snapshot-check format clean anvil withdraw-src withdraw-dst deploy-escrow-dst deploy-escrow-src deploy-escrow-factory cancel-src cancel-dst balance balance-erc20 resolver-balance resolver-balance-erc20 deployer-balance deployer-balance-erc20 protocol-balance protocol-balance-erc20 integrator-balance integrator-balance-erc20 escrow-src-balance escrow-src-balance-erc20 escrow-dst-balance escrow-dst-balance-erc20
