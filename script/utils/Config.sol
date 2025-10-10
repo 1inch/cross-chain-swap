@@ -40,7 +40,7 @@ library Config {
             if (create3Deployer == address(0)) revert Create3DeployerAddressDoesNotExist();
             console2.log("Create3Deployer address:", create3Deployer);
 
-            salt = _parseSalt(vm, vm.parseJsonString(json, string.concat(".factorySalt", key)));
+            salt = parseSalt(vm, vm.parseJsonString(json, string.concat(".factorySalt", key)));
             console2.log("Salt:", vm.toString(salt));
         }
 
@@ -64,21 +64,21 @@ library Config {
         if (create3Deployer == address(0)) revert Create3DeployerAddressDoesNotExist();
         console2.log("Create3Deployer address:", create3Deployer);
 
-        salt = _parseSalt(vm, vm.parseJsonString(json, string.concat(".trueTokenSalt", key)));
+        salt = parseSalt(vm, vm.parseJsonString(json, string.concat(".trueTokenSalt", key)));
         console2.log("Salt:", vm.toString(salt));
     }
-}
 
-function _parseSalt(Vm vm, string memory saltString) pure returns (bytes32 salt) {
-    if (bytes(saltString).length == 0) revert SaltDoesNotExist();
-    if (!_startsWithOx(saltString)) {
-        salt = keccak256(abi.encodePacked(saltString));
-    } else {
-        salt = vm.parseBytes32(saltString);
+    function parseSalt(Vm vm, string memory saltString) internal pure returns (bytes32 salt) {
+        if (bytes(saltString).length == 0) revert SaltDoesNotExist();
+        if (!startsWithOx(saltString)) {
+            salt = keccak256(abi.encodePacked(saltString));
+        } else {
+            salt = vm.parseBytes32(saltString);
+        }
     }
-}
 
-function _startsWithOx(string memory str) pure returns (bool) {
-    bytes memory b = bytes(str);
-    return b.length >= 2 && b[0] == "0" && (b[1] == "x" || b[1] == "X");
+    function startsWithOx(string memory str) internal pure returns (bool) {
+        bytes memory b = bytes(str);
+        return b.length >= 2 && b[0] == "0" && (b[1] == "x" || b[1] == "X");
+    }
 }
