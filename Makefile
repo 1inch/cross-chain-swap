@@ -63,10 +63,19 @@ deploy-escrow-factory-impl:
 	}
 
 deploy-true-token-impl:
-	@forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
-		--rpc-url $(RPC_URL) \
-		--private-key $(PRIVATE_KEY) \
-		--broadcast -vvvv
+	@{ \
+		if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
+			forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
+					--rpc-url $(RPC_URL) \
+					--private-key $(PRIVATE_KEY) \
+					--broadcast -vvvv; \
+		else \
+			forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
+					--rpc-url $(RPC_URL) \
+					--private-key $(PRIVATE_KEY) \
+					--broadcast -vvvv --zksync; \
+		fi; \
+	}
 
 verify-impl:
 	@{ \

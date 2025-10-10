@@ -24,7 +24,7 @@ contract DeployEscrowFactory is Script {
             address create3Deployer, 
             bytes32 salt, 
             address factoryOwner
-        ) = vm.readEscrowFactoryParamenters(true);
+        ) = vm.readEscrowFactoryParameters(true);
 
         vm.startBroadcast();
         address escrowFactory = ICreate3Deployer(create3Deployer).deploy(

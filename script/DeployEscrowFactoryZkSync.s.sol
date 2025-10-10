@@ -21,7 +21,7 @@ contract DeployEscrowFactoryZkSync is Script {
             address lopAddress, 
             address accessToken, , , 
             address factoryOwner
-        ) = vm.readEscrowFactoryParamenters(false);
+        ) = vm.readEscrowFactoryParameters(false);
 
         vm.startBroadcast();
         EscrowFactoryZkSync escrowFactory = new EscrowFactoryZkSync(
