@@ -144,7 +144,7 @@ validate-escrow-factory:
 			$(MAKE) ID=OPS_FACTORY_SALT validate || exit 1; \
 			$(MAKE) ID=OPS_CREATE3_DEPLOYER_ADDRESS validate || exit 1; \
 		fi; \
-		$(MAKE) process-factory-owner process-lop process-access-token process-factory-salt process-create3-deployer; \
+		$(MAKE) process-factory-owner process-lop process-access-token process-factory-salt process-create3-deployer || exit 1; \
 		}
 
 validate-true-token:
@@ -155,7 +155,7 @@ validate-true-token:
 			$(MAKE) ID=OPS_CREATE3_DEPLOYER_ADDRESS validate || exit 1; \
 			$(MAKE) ID=OPS_TRUE_TOKEN_SALT validate || exit 1; \
 		fi; \
-		$(MAKE) process-true-token-salt process-create3-deployer; \
+		$(MAKE) process-true-token-salt process-create3-deployer || exit 1; \
 		}
 
 validate:
