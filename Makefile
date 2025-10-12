@@ -167,17 +167,9 @@ validate:
 			fi; \
 		}
 
-if_not_empty:
-		@{ \
-			VALUE=$$(echo "$${!ID}" | tr -d '"'); \
-			if [ -n "$${VALUE}" ]; then \
-				echo "$${ID} is set to: $${VALUE}"; \
-			fi; \
-		}
-
 # Process constant functions for new addresses
 process-create3-deployer:
-		@$(MAKE) ID=OPS_CREATE3_DEPLOYER_ADDRESS if_not_empty && $(MAKE) OPS_GEN_VAL='$(OPS_CREATE3_DEPLOYER_ADDRESS)' OPS_GEN_KEY='create3Deployer' upsert-constant
+		@if [ -n "$$OPS_CREATE3_DEPLOYER_ADDRESS" ]; then $(MAKE) OPS_GEN_VAL='$(OPS_CREATE3_DEPLOYER_ADDRESS)' OPS_GEN_KEY='create3Deployer' upsert-constant; fi
 
 process-factory-owner:
 		@$(MAKE) OPS_GEN_VAL='$(OPS_FACTORY_OWNER_ADDRESS)' OPS_GEN_KEY='factoryOwner' upsert-constant
@@ -189,10 +181,10 @@ process-access-token:
 		@$(MAKE) OPS_GEN_VAL='$(OPS_ACCESS_TOKEN_ADDRESS)' OPS_GEN_KEY='accessToken' upsert-constant
 
 process-factory-salt:
-		@$(MAKE) ID=OPS_FACTORY_SALT if_not_empty && $(MAKE) OPS_GEN_VAL='$(OPS_FACTORY_SALT)' OPS_GEN_KEY='factorySalt' upsert-constant
+		@if [ -n "$$OPS_FACTORY_SALT" ]; then $(MAKE) OPS_GEN_VAL='$(OPS_FACTORY_SALT)' OPS_GEN_KEY='factorySalt' upsert-constant; fi
 
 process-true-token-salt:
-		@$(MAKE) ID=OPS_TRUE_TOKEN_SALT if_not_empty && $(MAKE) OPS_GEN_VAL='$(OPS_TRUE_TOKEN_SALT)' OPS_GEN_KEY='trueTokenSalt' upsert-constant
+		@if [ -n "$$OPS_TRUE_TOKEN_SALT" ]; then $(MAKE) OPS_GEN_VAL='$(OPS_TRUE_TOKEN_SALT)' OPS_GEN_KEY='trueTokenSalt' upsert-constant; fi
 
 upsert-constant:
 		@{ \
@@ -318,6 +310,6 @@ help:
 	balance balance-erc20 resolver-balance resolver-balance-erc20 deployer-balance deployer-balance-erc20 \
 	protocol-balance protocol-balance-erc20 integrator-balance integrator-balance-erc20 \
 	escrow-src-balance escrow-src-balance-erc20 escrow-dst-balance escrow-dst-balance-erc20 \
-	validate-escrow-factory validate-true-token validate if_not_empty \
+	validate-escrow-factory validate-true-token validate \
 	process-create3-deployer process-factory-owner process-lop process-access-token \
 	process-factory-salt process-true-token-salt upsert-constant launch-anvil help
