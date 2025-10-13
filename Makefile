@@ -239,7 +239,7 @@ get-outputs:
 		first=1; \
 		for file in $(CURRENT_DIR)/deployments/$(OPS_NETWORK)/*.json; do \
 			filename=$$(basename $$file .json); \
-			key="OPS_$$(echo $$filename | sed 's/\([A-Z]\)/_\1/g' | sed 's/^_//' | tr 'a-z' 'A-Z')_ADDRESS"; \
+			key="OPS_$$(echo $$filename | sed 's/\([A-Z][a-z]\)/_\1/g' | sed 's/^_//' | tr 'a-z' 'A-Z')_ADDRESS"; \
 			if [ $$first -eq 1 ]; then \
 				result="$$result\"$$key\": \"$$key\""; \
 				first=0; \
