@@ -35,8 +35,8 @@ abstract contract BaseEscrow is IBaseEscrow {
         _ACCESS_TOKEN = accessToken;
     }
 
-    modifier onlyTaker(address taker) {
-        if (msg.sender != taker) revert InvalidCaller();
+    modifier onlyCaller(address expected) {
+        if (msg.sender != expected) revert InvalidCaller();
         _;
     }
 
@@ -70,7 +70,7 @@ abstract contract BaseEscrow is IBaseEscrow {
      */
     function rescueFunds(address token, uint256 amount, Immutables calldata immutables)
         external
-        onlyTaker(immutables.taker.get())
+        onlyCaller(immutables.taker.get())
         onlyValidImmutables(immutables.hash())
         onlyAfter(immutables.timelocks.rescueStart(RESCUE_DELAY))
     {

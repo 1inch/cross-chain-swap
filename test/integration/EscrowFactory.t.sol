@@ -30,7 +30,6 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
     /* solhint-disable func-name-mixedcase */
 
     function testFuzz_DeployCloneForMakerInt(bytes32 secret, uint56 srcAmount, uint56 dstAmount) public {
-        vm.skip(true);
         vm.assume(srcAmount > 0 && dstAmount > 0);
         uint256 srcSafetyDeposit = uint256(srcAmount) * 10 / 100;
         uint256 dstSafetyDeposit = uint256(dstAmount) * 10 / 100;

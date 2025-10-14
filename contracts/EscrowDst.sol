@@ -35,7 +35,7 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function withdraw(bytes32 secret, Immutables calldata immutables)
         external
-        onlyTaker(immutables.taker.get())
+        onlyCaller(immutables.taker.get())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
         onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {
@@ -63,7 +63,7 @@ contract EscrowDst is Escrow, IEscrowDst {
      */
     function cancel(Immutables calldata immutables)
         external
-        onlyTaker(immutables.taker.get())
+        onlyCaller(immutables.taker.get())
         onlyValidImmutables(immutables.hash())
         onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
     {

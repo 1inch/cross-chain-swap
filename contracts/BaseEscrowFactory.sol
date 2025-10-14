@@ -35,6 +35,8 @@ abstract contract BaseEscrowFactory is IEscrowFactory, SimpleSettlement, MerkleS
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
+    error InvalidFeeAmounts();
+
     /// @notice See {IEscrowFactory-ESCROW_SRC_IMPLEMENTATION}.
     address public immutable ESCROW_SRC_IMPLEMENTATION;
     /// @notice See {IEscrowFactory-ESCROW_DST_IMPLEMENTATION}.
@@ -86,6 +88,8 @@ abstract contract BaseEscrowFactory is IEscrowFactory, SimpleSettlement, MerkleS
             makingAmount,
             extraData[:superArgsLength]
         );
+
+        if (integratorFeeAmount + protocolFeeAmount >= takingAmount) revert InvalidFeeAmounts();
 
         if (tail.length > 19) {
             IPostInteraction(address(bytes20(tail))).postInteraction(
