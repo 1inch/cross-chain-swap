@@ -124,7 +124,7 @@ contract-address:
 	@{ \
 		$(MAKE) ID=DEPLOYMENT_FILE validate || exit 1; \
 		if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
-			SALT=$$(jq -r --arg addr "$${OPS_CREATE3_DEPLOYER_ADDRESS}" '.transactions[] | select(.contractAddress=$$addr) | .arguments[0]' $(DEPLOYMENT_FILE)); \
+			SALT=$$(jq -r --arg addr "${OPS_CREATE3_DEPLOYER_ADDRESS}" '.transactions[] | select((.contractAddress | ascii_downcase) == ($$addr | ascii_downcase)) | .arguments[0]' $(DEPLOYMENT_FILE)); \
 			DEPLOYER_ADDRESS=$$(echo "$${OPS_CREATE3_DEPLOYER_ADDRESS}" | tr -d '"'); \
 			echo $$(cast call $${DEPLOYER_ADDRESS} "addressOf(bytes32)(address)" $${SALT} --rpc-url $${!REGOP_ENV_RPC_URL}); \
 		else \
