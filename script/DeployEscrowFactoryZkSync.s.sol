@@ -7,29 +7,33 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 
 import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
 
+import { Config } from "./utils/Config.sol";
+
 // solhint-disable no-console
-import { console } from "forge-std/console.sol";
+import { console2 } from "forge-std/console2.sol";
 
 contract DeployEscrowFactoryZkSync is Script {
+    using Config for *;
     uint32 public constant RESCUE_DELAY = 691200; // 8 days
-    address public constant LOP = 0x6fd4383cB451173D5f9304F041C7BCBf27d561fF;
-    IERC20 public constant ACCESS_TOKEN = IERC20(0xC2c4fE863EC835D7DdbFE91Fe33cf1C7Df45Fa7C);
 
     function run() external {
-        address deployer = vm.envAddress("DEPLOYER_ADDRESS");
-        address owner = deployer;
+        (
+            address lopAddress, 
+            address accessToken, , , 
+            address factoryOwner
+        ) = vm.readEscrowFactoryParameters(false);
 
         vm.startBroadcast();
         EscrowFactoryZkSync escrowFactory = new EscrowFactoryZkSync(
-            LOP,
-            ACCESS_TOKEN,
-            owner,
+            lopAddress,
+            IERC20(accessToken),
+            factoryOwner,
             RESCUE_DELAY,
             RESCUE_DELAY
         );
         vm.stopBroadcast();
 
-        console.log("Escrow Factory deployed at: ", address(escrowFactory));
+        console2.log("Escrow Factory deployed at: ", address(escrowFactory));
     }
 }
 // solhint-enable no-console
