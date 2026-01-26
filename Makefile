@@ -41,13 +41,16 @@ ANVIL_HOST:=http://127.0.0.1
 ANVIL_PORT:=8545
 
 deploy-escrow-factory:
-	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments verify-impl
+	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments
 
 verify-escrow-factory:
 	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory verify-impl
 
 deploy-true-token:
-	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True validate-true-token deploy-true-token-impl save-deployments verify-impl
+	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True validate-true-token deploy-true-token-impl save-deployments
+
+verify-true-token:
+	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True validate-true-token verify-impl
 
 deploy-escrow-factory-impl:
 	@{ \
@@ -337,7 +340,7 @@ help:
 		@grep -E '^[a-zA-Z0-9_.-]+:' $(CURRENT_DIR)/Makefile | grep -v '^\.' | awk -F: '{print "  " $$1}' | sort -u
 
 .PHONY: update build build-zk tests tests-zk coverage coverage-zk snapshot snapshot-check format clean lint anvil \
-	deploy-escrow-factory deploy-true-token deploy-escrow-factory-impl deploy-true-token-impl \
+	deploy-escrow-factory deploy-true-token verify-escrow-factory verify-true-token deploy-escrow-factory-impl deploy-true-token-impl \
 	verify-impl constructor-args contract-address \
 	withdraw-src withdraw-dst deploy-escrow-dst deploy-escrow-src cancel-src cancel-dst \
 	balance balance-erc20 resolver-balance resolver-balance-erc20 deployer-balance deployer-balance-erc20 \
