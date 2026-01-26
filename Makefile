@@ -35,7 +35,7 @@ REGOP_ENV_PK:=$(PREFIX)_PRIVATE_KEY
 RPC_URL=$(shell echo "$${!REGOP_ENV_RPC_URL}" | tr -d '"')
 PRIVATE_KEY=$(shell echo "$${!REGOP_ENV_PK}" | tr -d '"')
 
-COMPILER_VERSION:=$(shell cat foundry.toml | grep 'solc-version =' | head -1 | awk -F'"' '{print $$2}')
+COMPILER_VERSION:=$(shell grep 'solc_version' foundry.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
 ANVIL_HOST:=http://127.0.0.1
 ANVIL_PORT:=8545
