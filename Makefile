@@ -35,13 +35,16 @@ REGOP_ENV_PK:=$(PREFIX)_PRIVATE_KEY
 RPC_URL=$(shell echo "$${!REGOP_ENV_RPC_URL}" | tr -d '"')
 PRIVATE_KEY=$(shell echo "$${!REGOP_ENV_PK}" | tr -d '"')
 
-COMPILER_VERSION:=$(shell cat foundry.toml | grep 'solc_version =' | head -1 | awk -F'"' '{print $$2}')
+COMPILER_VERSION:=$(shell cat foundry.toml | grep 'solc-version =' | head -1 | awk -F'"' '{print $$2}')
 
 ANVIL_HOST:=http://127.0.0.1
 ANVIL_PORT:=8545
 
 deploy-escrow-factory:
 	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments verify-impl
+
+verify-escrow-factory:
+	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory verify-impl
 
 deploy-true-token:
 	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True validate-true-token deploy-true-token-impl save-deployments verify-impl
@@ -82,17 +85,24 @@ verify-impl:
 		if [ "$(OPS_CHAIN_ID)" = "31337" ]; then \
 			exit 0; \
 		else \
-			DEPLOYMENT_FILE="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)/$${FILE_DEPLOY_NAME}.json"; \
-			CONTRACT_ADDRESS=$$($(MAKE) contract-address DEPLOYMENT_FILE=$$DEPLOYMENT_FILE); \
-			echo "Verifying contract $${FILE_DEPLOY_NAME} at address: $${CONTRACT_ADDRESS} on $(OPS_ETHERSCAN_URL) using verifier $(OPS_VERIFIER) with compiler version $${COMPILER_VERSION} and constructor args $${CONSTRUCTOR_ARGS}"; \
-			forge verify-contract --chain-id $(OPS_CHAIN_ID) \
-				--compiler-version $${COMPILER_VERSION} \
-				--constructor-args $${CONSTRUCTOR_ARGS} \
-				--verifier $(OPS_VERIFIER) \
-				--verifier-url $(OPS_ETHERSCAN_URL) \
-				--verifier-api-key $(ETHERSCAN_API_KEY) \
-				$${CONTRACT_ADDRESS} \
-				$(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME}; \
+	    $(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
+            DEPLOYMENT_FILE="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)/$${FILE_DEPLOY_NAME}.json"; \
+            if [ ! -f $$DEPLOYMENT_FILE ]; then \
+                echo "Deployment file $$DEPLOYMENT_FILE does not exist! Deploy first."; \
+                exit 1; \
+            fi; \
+            CONTRACT_ADDRESS=$$($(MAKE) contract-address DEPLOYMENT_FILE=$$DEPLOYMENT_FILE); \
+            echo "Verifying $${FILE_DEPLOY_NAME} at $$CONTRACT_ADDRESS on $(OPS_NETWORK)..."; \
+            echo "Using compiler version: $(COMPILER_VERSION)"; \
+            echo "Using constructor args: $(CONSTRUCTOR_ARGS)"; \
+            forge verify-contract $$CONTRACT_ADDRESS \
+                $(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
+                --skip-is-verified-check \
+                --rpc-url $(RPC_URL) \
+                --chain-id $(OPS_CHAIN_ID) \
+                --watch \
+                --compiler-version $(COMPILER_VERSION) \
+                --constructor-args $(CONSTRUCTOR_ARGS); \
 		fi; \
 	}
 
