@@ -88,24 +88,36 @@ verify-impl:
 		if [ "$(OPS_CHAIN_ID)" = "31337" ]; then \
 			exit 0; \
 		else \
-	    $(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
-            DEPLOYMENT_FILE="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)/$${FILE_DEPLOY_NAME}.json"; \
-            if [ ! -f $$DEPLOYMENT_FILE ]; then \
-                echo "Deployment file $$DEPLOYMENT_FILE does not exist! Deploy first."; \
-                exit 1; \
-            fi; \
-            CONTRACT_ADDRESS=$$($(MAKE) contract-address DEPLOYMENT_FILE=$$DEPLOYMENT_FILE); \
-            echo "Verifying $${FILE_DEPLOY_NAME} at $$CONTRACT_ADDRESS on $(OPS_NETWORK)..."; \
-            echo "Using compiler version: $(COMPILER_VERSION)"; \
-            echo "Using constructor args: $(CONSTRUCTOR_ARGS)"; \
-            forge verify-contract $$CONTRACT_ADDRESS \
-                $(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
-                --skip-is-verified-check \
-                --rpc-url $(RPC_URL) \
-                --chain-id $(OPS_CHAIN_ID) \
-                --watch \
-                --compiler-version $(COMPILER_VERSION) \
-                --constructor-args $(CONSTRUCTOR_ARGS); \
+			$(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
+			DEPLOYMENT_FILE="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)/$${FILE_DEPLOY_NAME}.json"; \
+			if [ ! -f $$DEPLOYMENT_FILE ]; then \
+				echo "Deployment file $$DEPLOYMENT_FILE does not exist! Deploy first."; \
+				exit 1; \
+			fi; \
+			CONTRACT_ADDRESS=$$($(MAKE) contract-address DEPLOYMENT_FILE=$$DEPLOYMENT_FILE); \
+			echo "Verifying $${FILE_DEPLOY_NAME} at $$CONTRACT_ADDRESS on $(OPS_NETWORK)..."; \
+			echo "Using compiler version: $(COMPILER_VERSION)"; \
+			echo "Using constructor args: $(CONSTRUCTOR_ARGS)"; \
+			if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
+				forge verify-contract $$CONTRACT_ADDRESS \
+					$(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
+					--skip-is-verified-check \
+					--rpc-url $(RPC_URL) \
+					--chain-id $(OPS_CHAIN_ID) \
+					--watch \
+					--compiler-version $(COMPILER_VERSION) \
+					--constructor-args $(CONSTRUCTOR_ARGS); \
+			else \
+				forge verify-contract $$CONTRACT_ADDRESS \
+					$(CURRENT_DIR)/contracts/zkSync/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
+					--zksync \
+					--verifier zksync \
+					--rpc-url $(RPC_URL) \
+					--chain-id $(OPS_CHAIN_ID) \
+					--watch \
+					--compiler-version $(COMPILER_VERSION) \
+					--constructor-args $(CONSTRUCTOR_ARGS); \
+			fi; \
 		fi; \
 	}
 
@@ -141,7 +153,7 @@ contract-address:
 			DEPLOYER_ADDRESS=$$(echo "$${OPS_CREATE3_DEPLOYER_ADDRESS}" | tr -d '"'); \
 			echo $$(cast call $${DEPLOYER_ADDRESS} "addressOf(bytes32)(address)" $${SALT} --rpc-url $${!REGOP_ENV_RPC_URL}); \
 		else \
-			echo $$(jq -r '.transactions[0].contractAddress' $(DEPLOYMENT_FILE)); \
+			echo $$(jq -r '.transactions[0].additionalContracts[0].address' $(DEPLOYMENT_FILE)); \
 		fi; \
 	}
 
