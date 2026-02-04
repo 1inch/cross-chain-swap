@@ -112,6 +112,7 @@ verify-impl:
 					$(CURRENT_DIR)/contracts/zkSync/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
 					--zksync \
 					--verifier zksync \
+					--verifier-url $(OPS_VERIFICATION_API) \
 					--rpc-url $(RPC_URL) \
 					--chain-id $(OPS_CHAIN_ID) \
 					--watch \
