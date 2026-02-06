@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import { Script } from "forge-std/Script.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import { EscrowFactoryZkSync } from "contracts/zkSync/EscrowFactoryZkSync.sol";
+import { EscrowFactory } from "contracts/EscrowFactory.sol";
 
 import { Config } from "./utils/Config.sol";
 
@@ -24,13 +24,22 @@ contract DeployEscrowFactoryZkSync is Script {
         ) = vm.readEscrowFactoryParameters(false);
 
         vm.startBroadcast();
-        EscrowFactoryZkSync escrowFactory = new EscrowFactoryZkSync(
+        EscrowFactory escrowFactory = new EscrowFactory(
             lopAddress,
             IERC20(accessToken),
             factoryOwner,
             RESCUE_DELAY,
             RESCUE_DELAY
         );
+
+        // No need to deploy a separate factory for zkSync, as zkSync can use now regular solc compiled contracts.
+        // EscrowFactoryZkSync escrowFactory = new EscrowFactoryZkSync(
+        //     lopAddress,
+        //     IERC20(accessToken),
+        //     factoryOwner,
+        //     RESCUE_DELAY,
+        //     RESCUE_DELAY
+        // );
         vm.stopBroadcast();
 
         console2.log("Escrow Factory deployed at: ", address(escrowFactory));

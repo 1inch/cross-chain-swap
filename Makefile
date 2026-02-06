@@ -23,6 +23,8 @@ ifeq ("$(OPS_VERIFIER)",)
 endif
 
 FILE_FACTORY_NAME := EscrowFactory
+# FILE_OUTPUT_NAME stays constant so output key matches across all networks (OPS_ESCROW_FACTORY_ADDRESS)
+FILE_OUTPUT_NAME := EscrowFactory
 
 ifneq ("$(findstring zksync,$(OPS_NETWORK))", "")
 	FILE_FACTORY_NAME := EscrowFactoryZkSync
@@ -41,7 +43,7 @@ ANVIL_HOST:=http://127.0.0.1
 ANVIL_PORT:=8545
 
 deploy-escrow-factory:
-	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments
+	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME FILE_OUTPUT_NAME=$$FILE_OUTPUT_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments
 
 verify-escrow-factory:
 	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory verify-impl
@@ -61,7 +63,7 @@ deploy-escrow-factory-impl:
 				--private-key $(PRIVATE_KEY) \
 				--broadcast -vvvv; \
 		else \
-			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} --zksync \
+			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
 				--rpc-url $(RPC_URL) \
 				--private-key $(PRIVATE_KEY) \
 				--broadcast -vvvv; \
@@ -88,24 +90,37 @@ verify-impl:
 		if [ "$(OPS_CHAIN_ID)" = "31337" ]; then \
 			exit 0; \
 		else \
-	    $(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
-            DEPLOYMENT_FILE="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)/$${FILE_DEPLOY_NAME}.json"; \
-            if [ ! -f $$DEPLOYMENT_FILE ]; then \
-                echo "Deployment file $$DEPLOYMENT_FILE does not exist! Deploy first."; \
-                exit 1; \
-            fi; \
-            CONTRACT_ADDRESS=$$($(MAKE) contract-address DEPLOYMENT_FILE=$$DEPLOYMENT_FILE); \
-            echo "Verifying $${FILE_DEPLOY_NAME} at $$CONTRACT_ADDRESS on $(OPS_NETWORK)..."; \
-            echo "Using compiler version: $(COMPILER_VERSION)"; \
-            echo "Using constructor args: $(CONSTRUCTOR_ARGS)"; \
-            forge verify-contract $$CONTRACT_ADDRESS \
-                $(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
-                --skip-is-verified-check \
-                --rpc-url $(RPC_URL) \
-                --chain-id $(OPS_CHAIN_ID) \
-                --watch \
-                --compiler-version $(COMPILER_VERSION) \
-                --constructor-args $(CONSTRUCTOR_ARGS); \
+			$(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
+			DEPLOYMENT_FILE="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)/$${FILE_DEPLOY_NAME}.json"; \
+			if [ ! -f $$DEPLOYMENT_FILE ]; then \
+				echo "Deployment file $$DEPLOYMENT_FILE does not exist! Deploy first."; \
+				exit 1; \
+			fi; \
+			CONTRACT_ADDRESS=$$($(MAKE) contract-address DEPLOYMENT_FILE=$$DEPLOYMENT_FILE); \
+			echo "Verifying $${FILE_DEPLOY_NAME} at $$CONTRACT_ADDRESS on $(OPS_NETWORK)..."; \
+			echo "Using compiler version: $(COMPILER_VERSION)"; \
+			echo "Using constructor args: $(CONSTRUCTOR_ARGS)"; \
+			if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
+				forge verify-contract $$CONTRACT_ADDRESS \
+					$(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
+					--skip-is-verified-check \
+					--rpc-url $(RPC_URL) \
+					--chain-id $(OPS_CHAIN_ID) \
+					--watch \
+					--compiler-version $(COMPILER_VERSION) \
+					--constructor-args $(CONSTRUCTOR_ARGS); \
+			else \
+				forge verify-contract $$CONTRACT_ADDRESS \
+					$(CURRENT_DIR)/contracts/zkSync/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
+					--zksync \
+					--verifier zksync \
+					--verifier-url $(OPS_VERIFICATION_API) \
+					--rpc-url $(RPC_URL) \
+					--chain-id $(OPS_CHAIN_ID) \
+					--watch \
+					--compiler-version $(COMPILER_VERSION) \
+					--constructor-args $(CONSTRUCTOR_ARGS); \
+			fi; \
 		fi; \
 	}
 
@@ -116,8 +131,9 @@ save-deployments:
 		DEPLOYMENT_FILE="$(CURRENT_DIR)/broadcast/Deploy$${FILE_DEPLOY_NAME}.s.sol/$(OPS_CHAIN_ID)/run-latest.json"; \
 		DIRECTORY="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)"; \
 		mkdir -p $$DIRECTORY; \
+		OUTPUT_NAME="$${FILE_OUTPUT_NAME:-$$FILE_DEPLOY_NAME}"; \
 		if [ -f $$DEPLOYMENT_FILE ]; then \
-			cp -f $$DEPLOYMENT_FILE "$${DIRECTORY}/$${FILE_DEPLOY_NAME}.json"; \
+			cp -f $$DEPLOYMENT_FILE "$${DIRECTORY}/$${OUTPUT_NAME}.json"; \
 		else \
 			echo "Deployment file $$DEPLOYMENT_FILE does not exist!"; \
 			exit 1; \
@@ -141,7 +157,7 @@ contract-address:
 			DEPLOYER_ADDRESS=$$(echo "$${OPS_CREATE3_DEPLOYER_ADDRESS}" | tr -d '"'); \
 			echo $$(cast call $${DEPLOYER_ADDRESS} "addressOf(bytes32)(address)" $${SALT} --rpc-url $${!REGOP_ENV_RPC_URL}); \
 		else \
-			echo $$(jq -r '.transactions[0].contractAddress' $(DEPLOYMENT_FILE)); \
+			echo $$(jq -r '.transactions[0].additionalContracts[0].address' $(DEPLOYMENT_FILE)); \
 		fi; \
 	}
 
@@ -205,7 +221,11 @@ upsert-constant:
 		$(MAKE) ID=OPS_GEN_KEY validate || exit 1; \
 		$(MAKE) ID=OPS_CHAIN_ID validate || exit 1; \
 		tmpfile=$$(mktemp); \
-		jq '.$(OPS_GEN_KEY)."$(OPS_CHAIN_ID)" = $(OPS_GEN_VAL)' $(FILE_CONSTANTS_JSON) > $$tmpfile && mv $$tmpfile $(FILE_CONSTANTS_JSON); \
+		if echo '$(OPS_GEN_VAL)' | jq type >/dev/null 2>&1; then \
+			jq --argjson val '$(OPS_GEN_VAL)' '.$(OPS_GEN_KEY)."$(OPS_CHAIN_ID)" = $$val' $(FILE_CONSTANTS_JSON) > $$tmpfile; \
+		else \
+			jq --arg val '$(OPS_GEN_VAL)' '.$(OPS_GEN_KEY)."$(OPS_CHAIN_ID)" = $$val' $(FILE_CONSTANTS_JSON) > $$tmpfile; \
+		fi && mv $$tmpfile $(FILE_CONSTANTS_JSON); \
 		echo "Updated $(OPS_GEN_KEY)[$(OPS_CHAIN_ID)] = $(OPS_GEN_VAL)"; \
 		}
 
