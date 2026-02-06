@@ -23,6 +23,8 @@ ifeq ("$(OPS_VERIFIER)",)
 endif
 
 FILE_FACTORY_NAME := EscrowFactory
+# FILE_OUTPUT_NAME stays constant so output key matches across all networks (OPS_ESCROW_FACTORY_ADDRESS)
+FILE_OUTPUT_NAME := EscrowFactory
 
 ifneq ("$(findstring zksync,$(OPS_NETWORK))", "")
 	FILE_FACTORY_NAME := EscrowFactoryZkSync
@@ -41,7 +43,7 @@ ANVIL_HOST:=http://127.0.0.1
 ANVIL_PORT:=8545
 
 deploy-escrow-factory:
-	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments
+	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME FILE_OUTPUT_NAME=$$FILE_OUTPUT_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments
 
 verify-escrow-factory:
 	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory verify-impl
@@ -61,7 +63,7 @@ deploy-escrow-factory-impl:
 				--private-key $(PRIVATE_KEY) \
 				--broadcast -vvvv; \
 		else \
-			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} --zksync \
+			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
 				--rpc-url $(RPC_URL) \
 				--private-key $(PRIVATE_KEY) \
 				--broadcast -vvvv; \
@@ -129,8 +131,9 @@ save-deployments:
 		DEPLOYMENT_FILE="$(CURRENT_DIR)/broadcast/Deploy$${FILE_DEPLOY_NAME}.s.sol/$(OPS_CHAIN_ID)/run-latest.json"; \
 		DIRECTORY="$(CURRENT_DIR)/deployments/$(OPS_NETWORK)"; \
 		mkdir -p $$DIRECTORY; \
+		OUTPUT_NAME="$${FILE_OUTPUT_NAME:-$$FILE_DEPLOY_NAME}"; \
 		if [ -f $$DEPLOYMENT_FILE ]; then \
-			cp -f $$DEPLOYMENT_FILE "$${DIRECTORY}/$${FILE_DEPLOY_NAME}.json"; \
+			cp -f $$DEPLOYMENT_FILE "$${DIRECTORY}/$${OUTPUT_NAME}.json"; \
 		else \
 			echo "Deployment file $$DEPLOYMENT_FILE does not exist!"; \
 			exit 1; \
