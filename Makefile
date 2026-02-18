@@ -43,46 +43,24 @@ ANVIL_HOST:=http://127.0.0.1
 ANVIL_PORT:=8545
 
 deploy-escrow-factory:
-	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME FILE_OUTPUT_NAME=$$FILE_OUTPUT_NAME validate-escrow-factory deploy-escrow-factory-impl save-deployments
+	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME FILE_OUTPUT_NAME=$$FILE_OUTPUT_NAME validate-escrow-factory deploy-impl save-deployments
 
 verify-escrow-factory:
 	@$(MAKE) CONSTRUCTOR_ARGS=$(shell $(MAKE) constructor-args) FILE_DEPLOY_NAME=$$FILE_FACTORY_NAME validate-escrow-factory verify-impl
 
 deploy-true-token:
-	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True validate-true-token deploy-true-token-impl save-deployments
+	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True FILE_OUTPUT_NAME=ERC20True validate-true-token deploy-impl save-deployments
 
 verify-true-token:
 	@$(MAKE) CONSTRUCTOR_ARGS=0x FILE_DEPLOY_NAME=ERC20True validate-true-token verify-impl
 
-deploy-escrow-factory-impl:
+deploy-impl:
 	@{ \
-	    $(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
-		if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
-			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
-				--rpc-url $(RPC_URL) \
-				--private-key $(PRIVATE_KEY) \
-				--broadcast -vvvv; \
-		else \
-			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
-				--rpc-url $(RPC_URL) \
-				--private-key $(PRIVATE_KEY) \
-				--broadcast -vvvv; \
-		fi; \
-	}
-
-deploy-true-token-impl:
-	@{ \
-		if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
-			forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
-					--rpc-url $(RPC_URL) \
-					--private-key $(PRIVATE_KEY) \
-					--broadcast -vvvv; \
-		else \
-			forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
-					--rpc-url $(RPC_URL) \
-					--private-key $(PRIVATE_KEY) \
-					--broadcast -vvvv --zksync; \
-		fi; \
+        $(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
+        forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
+                --rpc-url $(RPC_URL) \
+                --private-key $(PRIVATE_KEY) \
+                --broadcast -vvvv; \
 	}
 
 verify-impl:
@@ -100,27 +78,14 @@ verify-impl:
 			echo "Verifying $${FILE_DEPLOY_NAME} at $$CONTRACT_ADDRESS on $(OPS_NETWORK)..."; \
 			echo "Using compiler version: $(COMPILER_VERSION)"; \
 			echo "Using constructor args: $(CONSTRUCTOR_ARGS)"; \
-			if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
-				forge verify-contract $$CONTRACT_ADDRESS \
-					$(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
-					--skip-is-verified-check \
-					--rpc-url $(RPC_URL) \
-					--chain-id $(OPS_CHAIN_ID) \
-					--watch \
-					--compiler-version $(COMPILER_VERSION) \
-					--constructor-args $(CONSTRUCTOR_ARGS); \
-			else \
-				forge verify-contract $$CONTRACT_ADDRESS \
-					$(CURRENT_DIR)/contracts/zkSync/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
-					--zksync \
-					--verifier zksync \
-					--verifier-url $(OPS_VERIFICATION_API) \
-					--rpc-url $(RPC_URL) \
-					--chain-id $(OPS_CHAIN_ID) \
-					--watch \
-					--compiler-version $(COMPILER_VERSION) \
-					--constructor-args $(CONSTRUCTOR_ARGS); \
-			fi; \
+            forge verify-contract $$CONTRACT_ADDRESS \
+                $(CURRENT_DIR)/contracts/$${FILE_DEPLOY_NAME}.sol:$${FILE_DEPLOY_NAME} \
+                --skip-is-verified-check \
+                --rpc-url $(RPC_URL) \
+                --chain-id $(OPS_CHAIN_ID) \
+                --watch \
+                --compiler-version $(COMPILER_VERSION) \
+                --constructor-args $(CONSTRUCTOR_ARGS); \
 		fi; \
 	}
 
