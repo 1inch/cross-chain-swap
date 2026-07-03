@@ -9,10 +9,10 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@1inch/limit-order-protocol-contract": "^4.3.3",
+    "@1inch/limit-order-protocol-contract": "4.3.0",
     "@1inch/limit-order-settlement": "^3.1.0",
-    "@1inch/solidity-utils": "^6.9.10",
-    "@openzeppelin/contracts": "^5.6.1"
+    "@1inch/solidity-utils": "6.3.0",
+    "@openzeppelin/contracts": "5.4.0"
   },
   "devDependencies": {
     "@ignored/imports-plugin": "^0.0.1",
@@ -21,16 +21,19 @@
     "forge-std": "foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.9.0",
     "murky": "dmfxyz/murky#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0",
+    "patch-package": "^8.0.0",
     "rimraf": "5.0.5",
     "solc": "0.8.23",
     "solhint": "5.0.1",
     "typescript": "^6.0.3"
   },
   "resolutions": {
-    "@1inch/solidity-utils": "6.9.10",
-    "@openzeppelin/contracts": "5.6.1"
+    "@1inch/limit-order-protocol-contract": "4.3.0",
+    "@1inch/solidity-utils": "6.3.0",
+    "@openzeppelin/contracts": "5.4.0"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "clean": "hardhat clean && rimraf coverage",
     "build": "hardhat compile",
     "typecheck": "tsc --noEmit",
