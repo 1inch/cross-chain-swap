@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
-import { EscrowDst } from "contracts/EscrowDst.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { TimelocksSettersLib } from "../utils/libraries/TimelocksSettersLib.sol";
@@ -64,7 +64,7 @@ contract TimelocksLibTest is BaseSetup {
         dstTimelocks = CrossChainTestLib.DstTimelocks({ withdrawal: 2584807817, publicWithdrawal: 2584807817, cancellation: 2584807820 });
         (timelocks, timelocksDst) = CrossChainTestLib.setTimelocks(srcTimelocks, dstTimelocks);
 
-        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDst();
+        (IBaseEscrow.Immutables memory immutablesDst, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDst();
 
         // deploy escrow
         vm.prank(bob.addr);

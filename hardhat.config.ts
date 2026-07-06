@@ -17,6 +17,10 @@ export default defineConfig({
     // it as a contracts-scope root so it emits an artifact and gets a shim.
     npmFilesToBuild: [
       "@1inch/limit-order-protocol-contract/contracts/LimitOrderProtocol.sol",
+      "@1inch/limit-order-protocol-contract/contracts/extensions/FeeTaker.sol",
+      "@1inch/solidity-utils/contracts/mocks/TokenMock.sol",
+      "@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol",
+      "murky/src/Merkle.sol",
     ],
     profiles: {
       default: {

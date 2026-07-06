@@ -5,15 +5,14 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
-import { Merkle } from "murky/src/Merkle.sol";
+import { Merkle, createMerkle } from "dynamic-imports/murky/src/Merkle.sol";
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
 
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
 
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
+import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
 import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
@@ -158,7 +157,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
         );
 
         swapData.immutables.amount = srcAmountCorrected;
-        swapData.srcClone = EscrowSrc(BaseEscrowFactory(payable(escrowFactory)).addressOfEscrowSrc(swapData.immutables));
+        swapData.srcClone = IEscrowSrc(escrowFactory.addressOfEscrowSrc(swapData.immutables));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alice.privateKey, swapData.orderHash);
         bytes32 vs = bytes32((uint256(v - 27) << 255)) | s;
@@ -489,7 +488,7 @@ contract IntegrationEscrowFactoryTest is BaseSetup {
             hashedSecrets[i] = keccak256(abi.encodePacked(i));
             hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
         }
-        Merkle merkle = new Merkle();
+        Merkle merkle = createMerkle();
         bytes32 root = merkle.getRoot(hashedPairs);
         bytes32 rootPlusAmount = bytes32(partsAmount << 240 | uint240(uint256(root)));
         uint256 idx = 0;
