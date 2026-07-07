@@ -39,7 +39,6 @@
     "typecheck": "tsc --noEmit",
     "coverage": "hardhat test solidity --coverage",
     "coverage:zksync": "mkdir -p coverage && FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --report-file coverage/lcov.info",
-    "coverage:html": "bash scripts/coverage.sh",
     "deploy": "./scripts/deploy.sh",
     "doc": "forge doc --build --out documentation",
     "gasreport": "FOUNDRY_PROFILE=default forge test -vvv --gas-report",
