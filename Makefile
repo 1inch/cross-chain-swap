@@ -271,15 +271,15 @@ update:; forge update
 
 build:; yarn build
 
-build-zk :; FOUNDRY_PROFILE=zksync forge build --zksync -vvvvv --zk-compile=true --build-info --via-ir
+build-zk :; yarn deployers:foundry && FOUNDRY_PROFILE=zksync forge build --zksync -vvvvv --zk-compile=true --build-info --via-ir
 
 tests :; yarn test
 
-tests-zk :; FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force
+tests-zk :; yarn deployers:foundry && FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force
 
 coverage :; yarn coverage
 
-coverage-zk :; mkdir -p coverage && RUST_BACKTRACE=full FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --via-ir --report-file coverage/lcov.info
+coverage-zk :; yarn deployers:foundry && mkdir -p coverage && RUST_BACKTRACE=full FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --via-ir --report-file coverage/lcov.info
 
 snapshot :; yarn snapshot
 

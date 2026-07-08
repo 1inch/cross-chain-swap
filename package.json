@@ -38,8 +38,9 @@
     "build": "hardhat compile",
     "typecheck": "tsc --noEmit",
     "coverage": "hardhat test solidity --coverage",
-    "coverage:zksync": "mkdir -p coverage && FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --report-file coverage/lcov.info",
+    "coverage:zksync": "yarn deployers:foundry && mkdir -p coverage && FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --report-file coverage/lcov.info",
     "deploy": "./scripts/deploy.sh",
+    "deployers:foundry": "mkdir -p dynamic-imports && cp -R foundry-deployers/. dynamic-imports/",
     "doc": "forge doc --build --out documentation",
     "gasreport": "FOUNDRY_PROFILE=default forge test -vvv --gas-report",
     "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\" \"examples/**/*.sol\"",
@@ -48,6 +49,6 @@
     "snapshot": "hardhat test solidity --snapshot",
     "snapshot:check": "hardhat test solidity --snapshot-check",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
-    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force"
+    "test:zksync": "yarn deployers:foundry && FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force"
   }
 }

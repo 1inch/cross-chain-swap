@@ -57,7 +57,7 @@ jobs:
       - name: Install Foundry for zksync
         run: cd foundry-zksync/foundryup-zksync && ../install-foundry-zksync
       - name: Run tests
-        run: FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force
+        run: yarn test:zksync
 
   coverage:
     runs-on: ubuntu-latest
