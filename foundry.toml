@@ -1,7 +1,7 @@
 [profile.default]
 src = 'contracts'
 out = 'out'
-libs = ['lib']
+libs = []
 test = 'test'
 optimizer_runs = 1000000
 via-ir = true
@@ -14,6 +14,23 @@ fs_permissions = [
     { access = "read", path = "./broadcast" },
     { access = "read", path = "./reports" },
     { access = "read", path = "./config" },
+]
+
+# Foundry-only remappings. Hardhat resolves these npm packages (and forge-std /
+# murky) natively through Node, so they live here rather than in remappings.txt.
+remappings = [
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@1inch/solidity-utils/=node_modules/@1inch/solidity-utils/",
+    "@1inch/limit-order-protocol-contract/=node_modules/@1inch/limit-order-protocol-contract/",
+    "@1inch/limit-order-settlement/=node_modules/@1inch/limit-order-settlement/",
+    "@1inch/token-plugins/=node_modules/@1inch/token-plugins/",
+    "@1inch/delegating/=node_modules/@1inch/delegating/",
+    "@1inch/st1inch/=node_modules/@1inch/st1inch/",
+    "@1inch/farming/=node_modules/@1inch/farming/",
+    "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+    "@gnosis.pm/safe-contracts/=node_modules/@gnosis.pm/safe-contracts/",
+    "forge-std/=node_modules/forge-std/src/",
+    "murky/=node_modules/murky/",
 ]
 
 [profile.lite.optimizer_details.yulDetails]
@@ -30,7 +47,7 @@ runs = 1024
 
 [profile.zksync]
 src = 'contracts'
-libs = ['lib']
+libs = []
 fallback_oz = true
 is_system = false
 mode = "3"

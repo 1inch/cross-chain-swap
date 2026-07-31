@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { Merkle } from "murky/src/Merkle.sol";
+import { Merkle, createMerkle } from "dynamic-imports/murky/src/Merkle.sol";
 
 import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
 
@@ -16,7 +16,7 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
     bytes32 public root;
 
     function setUp() public virtual override {
-        merkle = new Merkle();
+        merkle = createMerkle();
         root = bytes32(0);
         BaseSetup.setUp();
     }

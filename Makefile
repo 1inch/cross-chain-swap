@@ -269,25 +269,25 @@ launch-anvil:
 
 update:; forge update
 
-build:; forge build
+build:; yarn build
 
-build-zk :; FOUNDRY_PROFILE=zksync forge build --zksync -vvvvv --zk-compile=true --build-info --via-ir
+build-zk :; yarn deployers:foundry && FOUNDRY_PROFILE=zksync forge build --zksync -vvvvv --zk-compile=true --build-info --via-ir
 
-tests :; forge test -vvv --gas-report
+tests :; yarn test
 
-tests-zk :; FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force
+tests-zk :; yarn deployers:foundry && FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force
 
-coverage :; mkdir -p coverage && FOUNDRY_PROFILE=default forge coverage --report lcov --ir-minimum --report-file coverage/lcov.info
+coverage :; yarn coverage
 
-coverage-zk :; mkdir -p coverage && RUST_BACKTRACE=full FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --via-ir --report-file coverage/lcov.info
+coverage-zk :; yarn deployers:foundry && mkdir -p coverage && RUST_BACKTRACE=full FOUNDRY_PROFILE=zksync forge coverage --zksync --report lcov --ir-minimum --via-ir --report-file coverage/lcov.info
 
-snapshot :; forge snapshot --no-match-test "testFuzz_*"
+snapshot :; yarn snapshot
 
-snapshot-check :; forge snapshot --check --no-match-test "testFuzz_*"
+snapshot-check :; yarn snapshot:check
 
 format :; forge fmt
 
-clean :; forge clean
+clean :; yarn clean
 
 lint :; yarn lint
 

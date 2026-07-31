@@ -78,12 +78,17 @@ Resolvers are recommended to watch for the event emitted in `EscrowDst.publicWit
 
 ## Local development
 
-This project uses [Foundry](https://github.com/foundry-rs/foundry) for smart contract development in Solidity. Foundry is a fast, portable, and modular toolkit designed to compile, test, and deploy Solidity contracts.
+This project uses [Hardhat](https://hardhat.org) as the primary toolchain for compiling contracts, running the Solidity tests, and generating gas snapshots. [Foundry](https://github.com/foundry-rs/foundry) is retained for the zkSync build/test flow.
 
 ### Prerequisites
 
-- Ensure you have [Rust](https://www.rust-lang.org/tools/install) installed.
-- To [install Foundry](https://book.getfoundry.sh/getting-started/installation), including the `forge` tool, follow these steps:
+- Ensure you have [Node.js](https://nodejs.org) (v22+) and [Yarn](https://yarnpkg.com) installed, then install dependencies:
+
+  ``` shell
+  yarn install
+  ```
+
+- For the zkSync flow only, [install Foundry](https://book.getfoundry.sh/getting-started/installation) (requires [Rust](https://www.rust-lang.org/tools/install)):
 
   ``` shell
   # Install Foundryup:
@@ -98,10 +103,10 @@ This project uses [Foundry](https://github.com/foundry-rs/foundry) for smart con
 
 ### Build
 
-To install submodules and compile contracts run:
+To compile contracts run:
 
 ``` shell
-forge build
+yarn build
 ```
 
 ### Test

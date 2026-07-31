@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
-import { NoReceiveCaller } from "contracts/mocks/NoReceiveCaller.sol";
+import { NoReceiveCaller, createNoReceiveCaller } from "dynamic-imports/contracts/mocks/NoReceiveCaller.sol";
 import { ImmutablesLib } from "contracts/libraries/ImmutablesLib.sol";
 
 import { BaseSetup } from "../utils/BaseSetup.sol";
@@ -737,7 +737,7 @@ contract EscrowTest is BaseSetup {
 
         // withdraw
         vm.warp(block.timestamp + srcTimelocks.publicWithdrawal + 100);
-        NoReceiveCaller caller = new NoReceiveCaller();
+        NoReceiveCaller caller = createNoReceiveCaller();
         accessToken.mint(address(caller), 1);
         bytes memory data = abi.encodeWithSelector(IEscrowSrc.publicWithdraw.selector, SECRET, swapData.immutables);
         vm.expectRevert(IBaseEscrow.NativeTokenSendingFailure.selector);
