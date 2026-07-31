@@ -19,7 +19,7 @@
     "@types/node": "^26.1.0",
     "eslint": "8.56.0",
     "forge-std": "foundry-rs/forge-std#v1.9.4",
-    "hardhat": "^3.9.0",
+    "hardhat": "^3.12.0",
     "murky": "dmfxyz/murky#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0",
     "patch-package": "^8.0.0",
     "rimraf": "5.0.5",
