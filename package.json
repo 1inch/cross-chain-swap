@@ -46,8 +46,8 @@
     "lint": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\" \"examples/**/*.sol\"",
     "lint:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" \"test/**/*.sol\" --fix",
     "test": "hardhat test solidity",
-    "snapshot": "hardhat test solidity --snapshot",
-    "snapshot:check": "hardhat test solidity --snapshot-check",
+    "snapshot": "hardhat test solidity --snapshot --grep-exclude testFuzz",
+    "snapshot:check": "hardhat test solidity --snapshot-check --grep-exclude testFuzz",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
     "test:zksync": "yarn deployers:foundry && FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force"
   }
