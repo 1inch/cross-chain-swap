@@ -67,7 +67,6 @@ To deploy a proxy contract on the source chain the order signed by the user must
 2. `Escrow.withdrawTo` to withdraw tokens to the specified address on the source chain.
 3. `EscrowDst.publicWithdraw` to withdraw tokens during the public withdrawal period.
 
-
 #### Cancel escrows
 1. `Escrow.cancel` to cancel escrow.
 2. `EscrowSrc.publicCancel` to cancel escrow during the public cancellation period.
@@ -77,21 +76,18 @@ The security of protocol transactions is affected by the off-chain distribution 
 Resolvers are recommended to watch for the event emitted in `EscrowDst.publicWithdraw` function. If the secret hasn't been received, it can be retrieved from the mentioned event. This will allow the Resolver to withdraw tokens on the source chain before escrow is cancelled.
 
 ## Deployments
-
 Production addresses per network are listed in [deployments.md](deployments.md). Raw artifacts live under `[deployments/](deployments/)`.
 
 ## Documentation, audits and bug bounty
-
 - Generated contract docs: `[documentation/](documentation/)`
 - Audits and the bug bounty programmes (HackenProof, Immunefi), plus how to report a vulnerability: [SECURITY.md](SECURITY.md)
 
 ## Repository structure
 
-
 | Path             | Contents                                        |
 | ---------------- | ----------------------------------------------- |
 | `contracts/`     | Smart contracts                                 |
-| `test/`          | Foundry tests                                   |
+| `tests/`         | Foundry tests                                   |
 | `deploy/`        | Deployment forge scripts and `deploy.sh`        |
 | `scripts/`       | Shell helpers (coverage)                        |
 | `config/`        | Deployment parameters                           |
@@ -100,31 +96,25 @@ Production addresses per network are listed in [deployments.md](deployments.md).
 | `examples/`      | Example configs, demos, and txn forge scripts   |
 | `hooks/`         | Git pre-commit hooks                            |
 
-
-
-
 ## Local development
-
 This project uses [Foundry](https://github.com/foundry-rs/foundry) for smart contract development in Solidity. Foundry is a fast, portable, and modular toolkit designed to compile, test, and deploy Solidity contracts.
 
 ### Prerequisites
-
 - Ensure you have [Rust](https://www.rust-lang.org/tools/install) installed.
 - To [install Foundry](https://book.getfoundry.sh/getting-started/installation), including the `forge` tool, follow these steps:
 
-  ``` shell
-  # Install Foundryup:
-  curl -L https://foundry.paradigm.xyz | bash
-  
-  # Apply updated config to current terminal session
-  source ~/.zshenv
-  
-  # Install forge, cast, anvil, and chisel
-  foundryup
-  ```
+``` shell
+# Install Foundryup:
+curl -L https://foundry.paradigm.xyz | bash
+
+# Apply updated config to current terminal session
+source ~/.zshenv
+
+# Install forge, cast, anvil, and chisel
+foundryup
+```
 
 ### Build
-
 To install submodules and compile contracts run:
 
 ``` shell
@@ -132,7 +122,6 @@ forge build
 ```
 
 ### Test
-
 To execute tests run:
 
 ``` shell
@@ -140,7 +129,6 @@ yarn test
 ```
 
 ## How to setup pre-commit hooks
-
 Run the following commands in your terminal:
 ```bash
 chmod +x hooks/pre-commit && cp hooks/pre-commit .git/hooks/pre-commit

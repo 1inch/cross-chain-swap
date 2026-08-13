@@ -2,7 +2,7 @@
 src = 'contracts'
 out = 'out'
 libs = ['lib']
-test = 'test'
+test = 'tests'
 optimizer_runs = 1000000
 via-ir = true
 evm_version = 'shanghai'

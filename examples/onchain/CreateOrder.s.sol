@@ -20,8 +20,8 @@ import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 
-import { CrossChainTestLib } from "test/utils/libraries/CrossChainTestLib.sol";
-import { TimelocksSettersLib } from "test/utils/libraries/TimelocksSettersLib.sol";
+import { CrossChainTestLib } from "tests/utils/libraries/CrossChainTestLib.sol";
+import { TimelocksSettersLib } from "tests/utils/libraries/TimelocksSettersLib.sol";
 
 import { Config, ConfigLib } from "./utils/ConfigLib.sol";
 import { EscrowDevOpsTools } from "./utils/EscrowDevOpsTools.sol";

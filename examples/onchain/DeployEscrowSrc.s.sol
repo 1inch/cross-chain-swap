@@ -10,8 +10,8 @@ import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTrait
 import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 
-import { CrossChainTestLib } from "test/utils/libraries/CrossChainTestLib.sol";
-import { TimelocksSettersLib } from "test/utils/libraries/TimelocksSettersLib.sol";
+import { CrossChainTestLib } from "tests/utils/libraries/CrossChainTestLib.sol";
+import { TimelocksSettersLib } from "tests/utils/libraries/TimelocksSettersLib.sol";
 
 contract DeployEscrowSrc is Script {
     function run() external {
