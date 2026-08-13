@@ -59,7 +59,7 @@ To deploy a proxy contract on the source chain the order signed by the user must
 #### Deploy Escrow clones
 1. `EscrowFactory.addressOfEscrowSrc` to get the future `EscrowSrc` clone contract address on the source chain. This is to send the safety deposit in native tokens before the order is filled.
 2. Limit Order Protocol [OrderMixin.sol](https://github.com/1inch/limit-order-protocol/blob/master/contracts/OrderMixin.sol):
-    - `fillOrderArgs` or `fillContractOrderArgs` to fill the Fusion order and deploy the `EscrowSrc` clone on the source chain.
+  - `fillOrderArgs` or `fillContractOrderArgs` to fill the Fusion order and deploy the `EscrowSrc` clone on the source chain.
 3. `EscrowFactory.createDstEscrow` on the destination chain to deploy the `EscrowDst` clone.
 
 #### Withdraw tokens
@@ -75,6 +75,33 @@ To deploy a proxy contract on the source chain the order signed by the user must
 ## Security considerations
 The security of protocol transactions is affected by the off-chain distribution of the user's secret. It is recommended to pay proper attention to the implementation of this process.
 Resolvers are recommended to watch for the event emitted in `EscrowDst.publicWithdraw` function. If the secret hasn't been received, it can be retrieved from the mentioned event. This will allow the Resolver to withdraw tokens on the source chain before escrow is cancelled.
+
+## Deployments
+
+Production addresses per network are listed in [deployments.md](deployments.md). Raw artifacts live under `[deployments/](deployments/)`.
+
+## Documentation, audits and bug bounty
+
+- Generated contract docs: `[documentation/](documentation/)`
+- Audits and the bug bounty programmes (HackenProof, Immunefi), plus how to report a vulnerability: [SECURITY.md](SECURITY.md)
+
+## Repository structure
+
+
+| Path             | Contents                                        |
+| ---------------- | ----------------------------------------------- |
+| `contracts/`     | Smart contracts                                 |
+| `test/`          | Foundry tests                                   |
+| `script/`        | Forge scripts (factory deploy and txn examples) |
+| `scripts/`       | Shell helpers (coverage, deploy wrapper)        |
+| `config/`        | Deployment parameters                           |
+| `deployments/`   | Per-network deployment artifacts                |
+| `documentation/` | Generated forge-doc Markdown                    |
+| `examples/`      | Example configs and demos                       |
+| `hooks/`         | Git pre-commit hooks                            |
+
+
+
 
 ## Local development
 
