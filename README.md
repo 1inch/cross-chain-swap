@@ -92,12 +92,12 @@ Production addresses per network are listed in [deployments.md](deployments.md).
 | ---------------- | ----------------------------------------------- |
 | `contracts/`     | Smart contracts                                 |
 | `test/`          | Foundry tests                                   |
-| `script/`        | Forge scripts (factory deploy and txn examples) |
-| `scripts/`       | Shell helpers (coverage, deploy wrapper)        |
+| `deploy/`        | Deployment forge scripts and `deploy.sh`        |
+| `scripts/`       | Shell helpers (coverage)                        |
 | `config/`        | Deployment parameters                           |
 | `deployments/`   | Per-network deployment artifacts                |
 | `documentation/` | Generated forge-doc Markdown                    |
-| `examples/`      | Example configs and demos                       |
+| `examples/`      | Example configs, demos, and txn forge scripts   |
 | `hooks/`         | Git pre-commit hooks                            |
 
 

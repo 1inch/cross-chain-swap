@@ -4,7 +4,7 @@ source .env
 
 CURRENT_DIR=$(dirname "$0")
 CONFIG_PATH="${CURRENT_DIR}/../config/config.json"
-SCRIPT_PATH="${CURRENT_DIR}/../script/CreateOrder.s.sol:CreateOrder"
+SCRIPT_PATH="${CURRENT_DIR}/../onchain/CreateOrder.s.sol:CreateOrder"
 
 # Read config values
 if [[ -z "$CHAIN_ID" ]]; then

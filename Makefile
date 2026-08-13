@@ -56,12 +56,12 @@ deploy-escrow-factory-impl:
 	@{ \
 	    $(MAKE) ID=FILE_DEPLOY_NAME validate || exit 1; \
 		if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
-			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
+			forge script $(CURRENT_DIR)/deploy/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} \
 				--rpc-url $(RPC_URL) \
 				--private-key $(PRIVATE_KEY) \
 				--broadcast -vvvv; \
 		else \
-			forge script $(CURRENT_DIR)/script/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} --zksync \
+			forge script $(CURRENT_DIR)/deploy/Deploy$${FILE_DEPLOY_NAME}.s.sol:Deploy$${FILE_DEPLOY_NAME} --zksync \
 				--rpc-url $(RPC_URL) \
 				--private-key $(PRIVATE_KEY) \
 				--broadcast -vvvv; \
@@ -71,12 +71,12 @@ deploy-escrow-factory-impl:
 deploy-true-token-impl:
 	@{ \
 		if [ "$(findstring zksync,$(OPS_NETWORK))" = "" ]; then \
-			forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
+			forge script $(CURRENT_DIR)/deploy/DeployERC20True.s.sol:DeployERC20True \
 					--rpc-url $(RPC_URL) \
 					--private-key $(PRIVATE_KEY) \
 					--broadcast -vvvv; \
 		else \
-			forge script $(CURRENT_DIR)/script/DeployERC20True.s.sol:DeployERC20True \
+			forge script $(CURRENT_DIR)/deploy/DeployERC20True.s.sol:DeployERC20True \
 					--rpc-url $(RPC_URL) \
 					--private-key $(PRIVATE_KEY) \
 					--broadcast -vvvv --zksync; \
@@ -293,19 +293,19 @@ lint :; yarn lint
 
 anvil :;  anvil --fork-url $(FORK_URL) --steps-tracing --chain-id $(CHAIN_ID) --host 127.0.0.1 --port 8545 -vvvvv
 
-withdraw-src :; forge script $(CURRENT_DIR)/script/txn_example/WithdrawSrc.s.sol:WithdrawSrc --rpc-url $(RPC_URL) --broadcast --slow
+withdraw-src :; forge script $(CURRENT_DIR)/examples/onchain/WithdrawSrc.s.sol:WithdrawSrc --rpc-url $(RPC_URL) --broadcast --slow
 
-withdraw-dst :; forge script $(CURRENT_DIR)/script/txn_example/WithdrawDst.s.sol:WithdrawDst --rpc-url $(RPC_URL) --broadcast --slow
+withdraw-dst :; forge script $(CURRENT_DIR)/examples/onchain/WithdrawDst.s.sol:WithdrawDst --rpc-url $(RPC_URL) --broadcast --slow
 
-deploy-escrow-dst :; forge script $(CURRENT_DIR)/script/txn_example/DeployEscrowDst.s.sol:DeployEscrowDst --rpc-url $(RPC_URL) --broadcast --slow
+deploy-escrow-dst :; forge script $(CURRENT_DIR)/examples/onchain/DeployEscrowDst.s.sol:DeployEscrowDst --rpc-url $(RPC_URL) --broadcast --slow
 
-deploy-escrow-src :; forge script $(CURRENT_DIR)/script/txn_example/DeployEscrowSrc.s.sol:DeployEscrowSrc --rpc-url $(RPC_URL) --broadcast --slow
+deploy-escrow-src :; forge script $(CURRENT_DIR)/examples/onchain/DeployEscrowSrc.s.sol:DeployEscrowSrc --rpc-url $(RPC_URL) --broadcast --slow
 
-# deploy-resolver-example :; forge script $(CURRENT_DIR)/script/DeployResolverExample.s.sol:DeployResolverExample --rpc-url $(RPC_URL) --broadcast --interactives 1 --slow
+# deploy-resolver-example :; forge script $(CURRENT_DIR)/deploy/DeployResolverExample.s.sol:DeployResolverExample --rpc-url $(RPC_URL) --broadcast --interactives 1 --slow
 
-cancel-src :; forge script $(CURRENT_DIR)/script/txn_example/CancelSrc.s.sol:CancelSrc --rpc-url $(RPC_URL) --broadcast --slow
+cancel-src :; forge script $(CURRENT_DIR)/examples/onchain/CancelSrc.s.sol:CancelSrc --rpc-url $(RPC_URL) --broadcast --slow
 
-cancel-dst :; forge script $(CURRENT_DIR)/script/txn_example/CancelDst.s.sol:CancelDst --rpc-url $(RPC_URL) --broadcast --slow
+cancel-dst :; forge script $(CURRENT_DIR)/examples/onchain/CancelDst.s.sol:CancelDst --rpc-url $(RPC_URL) --broadcast --slow
 
 balance :; cast balance $(ADDRESS) --rpc-url $(RPC_URL) | cast from-wei
 
