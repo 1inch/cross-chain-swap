@@ -15,6 +15,8 @@ jobs:
           cache: 'yarn'
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.5.1
       - run: yarn
       - run: yarn lint
 
@@ -26,6 +28,8 @@ jobs:
           submodules: recursive
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.5.1
       - name: Check snapshot
         run: FOUNDRY_PROFILE=default forge snapshot --check --no-match-test "testFuzz_*"
 
@@ -37,6 +41,8 @@ jobs:
           submodules: recursive
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.5.1
       - name: Run tests
         run: FOUNDRY_PROFILE=default forge test -vvv --gas-report
 
@@ -64,6 +70,8 @@ jobs:
           submodules: recursive
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.5.1
       - name: Run coverage
         run: yarn coverage
       - uses: codecov/codecov-action@v4
