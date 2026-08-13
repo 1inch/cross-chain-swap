@@ -16,6 +16,10 @@ Addresses taken from records under [`deployments/`](deployments/), plus EscrowFa
 - [unichain (130)](#unichain-130)
 - [sonic (146)](#sonic-146)
 - [zksync (324)](#zksync-324)
+- [robinhood (4663)](#robinhood-4663)
+- [monad (143)](#monad-143)
+- [cronos (25)](#cronos-25)
+- [hyperevm (999)](#hyperevm-999)
 
 ## arbitrum (42161)
 
@@ -112,3 +116,35 @@ Addresses taken from records under [`deployments/`](deployments/), plus EscrowFa
 | ERC20True | `0xD66097C27eB8dEe404bAC235737932260EdC6f3b` |
 | EscrowFactory v1.0 | `0x584aEaB186D81dbB52a8a14820c573480c3d4773` |
 | EscrowFactory v1.1 | `0xd9085ac07da21bd6eb003a530a524ab054ca8652` |
+
+## robinhood (4663)
+
+| Contract | Address |
+|---|---|
+| ERC20True | `0x40c0b7e8018cca1eb8d913b75b1b20cfd89b8d5b` |
+| EscrowFactory v1.0 | `0xa02b9cc95094bb27d1d041b9fbf09f65a366f7b3` |
+| EscrowFactory v1.1 | `0x50d26ea1e2460b3a42ff47466b955fc6bd906013` |
+
+## monad (143)
+
+| Contract | Address |
+|---|---|
+| ERC20True | `0x175a30f81eade2d75b4d1d5fc750131877355d21` |
+| EscrowFactory v1.0 | `0x9e010857ed5aaa4fca6d5404f7c7c54b1bbb8ad2` |
+| EscrowFactory v1.1 | `0x8e6c3c2e2631de0a1d4fd46a15f79a1373486fa4` |
+
+## cronos (25)
+
+| Contract | Address |
+|---|---|
+| ERC20True | `0x175a30f81eade2d75b4d1d5fc750131877355d21` |
+| EscrowFactory v1.0 | `0x9e010857ed5aaa4fca6d5404f7c7c54b1bbb8ad2` |
+| EscrowFactory v1.1 | `0x8e6c3c2e2631de0a1d4fd46a15f79a1373486fa4` |
+
+## hyperevm (999)
+
+| Contract | Address |
+|---|---|
+| ERC20True | `0x175a30f81eade2d75b4d1d5fc750131877355d21` |
+| EscrowFactory v1.0 | `0x9e010857ed5aaa4fca6d5404f7c7c54b1bbb8ad2` |
+| EscrowFactory v1.1 | `0x8e6c3c2e2631de0a1d4fd46a15f79a1373486fa4` |
