@@ -76,10 +76,10 @@ The security of protocol transactions is affected by the off-chain distribution 
 Resolvers are recommended to watch for the event emitted in `EscrowDst.publicWithdraw` function. If the secret hasn't been received, it can be retrieved from the mentioned event. This will allow the Resolver to withdraw tokens on the source chain before escrow is cancelled.
 
 ## Deployments
-Production addresses per network are listed in [deployments.md](deployments.md). Raw artifacts live under `[deployments/](deployments/)`.
+Production addresses per network are listed in [deployments.md](deployments.md). Raw artifacts live under [deployments/](deployments/).
 
 ## Documentation, audits and bug bounty
-- Generated contract docs: `[documentation/](documentation/)`
+- Contract reference is generated from NatSpec with `yarn doc` and is not checked in.
 - Audits and the bug bounty programmes (HackenProof, Immunefi), plus how to report a vulnerability: [SECURITY.md](SECURITY.md)
 
 ## Repository structure
@@ -92,7 +92,6 @@ Production addresses per network are listed in [deployments.md](deployments.md).
 | `scripts/`       | Shell helpers (coverage)                        |
 | `config/`        | Deployment parameters                           |
 | `deployments/`   | Per-network deployment artifacts                |
-| `documentation/` | Generated forge-doc Markdown                    |
 | `examples/`      | Example configs, demos, and txn forge scripts   |
 | `hooks/`         | Git pre-commit hooks                            |
 

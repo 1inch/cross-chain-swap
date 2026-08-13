@@ -15,6 +15,7 @@ Makefile
 cache_forge
 out
 broadcast
+documentation
 
 # zkSync
 zkout

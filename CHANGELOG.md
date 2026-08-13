@@ -4,7 +4,7 @@ Notable changes to this repository, newest first. The format follows [Keep a Cha
 
 ## [1.1.0] - 2026-01-26
 
-From the [v1.1.0 GitHub Release](https://github.com/1inch/cross-chain-swap/releases/tag/1.1.0). Full diff: `[1.0.0...1.1.0](https://github.com/1inch/cross-chain-swap/compare/1.0.0...1.1.0)`.
+From the [v1.1.0 GitHub Release](https://github.com/1inch/cross-chain-swap/releases/tag/1.1.0). Full diff: [1.0.0...1.1.0](https://github.com/1inch/cross-chain-swap/compare/1.0.0...1.1.0).
 
 ### Added
 

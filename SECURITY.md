@@ -19,7 +19,7 @@ Smart-contract findings go through the 1inch bug bounty programmes. Scope, sever
 
 ## Supported versions and deployments
 
-The supported release is **1.1.0**. Deployment addresses are listed in `[deployments.md](deployments.md)`.
+The supported release is **1.1.0**. Deployment addresses are listed in [deployments.md](deployments.md).
 
 ## Audits
 
