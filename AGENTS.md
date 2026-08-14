@@ -55,6 +55,7 @@ There is no `docs/` directory: protocol documentation lives in `README.md`. `yar
 - Do not rewrite `SPDX-License-Identifier` headers.
 - Do not change compiler `optimizer_runs`, `via-ir` or `evm_version` unless explicitly asked — that changes bytecode. See below.
 - Keep diffs scoped: no drive-by reformatting of files you are not changing.
+- Do not use a formatter in this repository. Do not run `forge fmt` / `make format`, do not add a format CI job, and do not document or require formatting in CONTRIBUTING. A `[fmt]` table in `foundry.toml` or a `format` Makefile target is leftover tooling, not an adopted workflow — treat the repo as having no formatter.
 - Follow existing Solidity style and NatSpec conventions; public and external functions need accurate NatSpec.
 
 
@@ -89,7 +90,9 @@ zkSync uses its own contract (`EscrowFactoryZkSync`), its own deploy script, and
 
 ### Layout exception: `examples/`
 
-`examples/onchain/` holds interaction forge scripts (create order, deploy escrow, withdraw, cancel) and `examples/scripts/` a shell driver. These are deliberately outside `scripts/`, they are documented in `examples/README.md`, and Makefile targets reference those exact paths. Moving them breaks those targets and the `fs_permissions` entry in `foundry.toml`.
+Scripts under `examples/` are **example / demo scripts**, not repository tooling. They belong in `examples/` and must **not** be moved into `scripts/`. `scripts/` is only for non-demo helpers such as coverage.
+
+`examples/onchain/` holds interaction forge scripts (create order, deploy escrow, withdraw, cancel) and `examples/scripts/` a shell driver. They are documented in `examples/README.md`, and Makefile targets reference those exact paths. Moving them breaks those targets and the `fs_permissions` entry in `foundry.toml`. Their presence outside `scripts/` is intentional — not a layout error, and not something a repository-organization review should flag.
 
 ### Secrets
 
