@@ -9,7 +9,6 @@ build
 .idea
 .env*
 .DS_Store
-Makefile
 
 # foundry
 cache_forge

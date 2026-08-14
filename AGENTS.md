@@ -21,7 +21,7 @@ yarn lint     # solhint with --max-warnings 0
 
 `yarn test` is not `forge test`. It runs `forge snapshot --no-match-test "testFuzz_*"`, which rewrites `.gas-snapshot` and skips the fuzz tests. Run `forge test` before pushing: CI runs the full suite including `testFuzz_*`, plus `forge snapshot --check`, so a stale snapshot or a failing fuzz test surfaces there rather than locally.
 
-Prefer the repository's own scripts and Makefile targets over inventing parallel commands. `make help` lists the targets.
+Prefer the repository's own `package.json` scripts over inventing parallel commands. `yarn run` lists them.
 
 ## Layout
 
@@ -57,7 +57,7 @@ Protocol documentation lives in `docs/protocol.md`; `README.md` covers what the 
 - Do not rewrite `SPDX-License-Identifier` headers.
 - Do not change compiler `optimizer_runs`, `via-ir` or `evm_version` unless explicitly asked — that changes bytecode. See below.
 - Keep diffs scoped: no drive-by reformatting of files you are not changing.
-- Do not use a formatter in this repository. Do not run `forge fmt` / `make format`, do not add a format CI job, and do not document or require formatting in CONTRIBUTING. A `[fmt]` table in `foundry.toml` or a `format` Makefile target is leftover tooling, not an adopted workflow — treat the repo as having no formatter.
+- Do not use a formatter in this repository. Do not run `forge fmt`, do not add a format CI job, and do not document or require formatting in CONTRIBUTING. The `[fmt]` table in `foundry.toml` is leftover tooling, not an adopted workflow — treat the repo as having no formatter.
 - Follow existing Solidity style and NatSpec conventions; public and external functions need accurate NatSpec.
 
 
@@ -84,17 +84,23 @@ Nothing here is an upgradeable proxy. `EscrowSrc` and `EscrowDst` clones are min
 
 ### Deployment parameters
 
-`EscrowFactory` takes `(limitOrderProtocol, accessToken, owner, rescueDelaySrc, rescueDelayDst)`. Both rescue delays are deployed as 691200 seconds (8 days), encoded in the `constructor-args` target in the `Makefile` rather than in a config file. `config/constants.json` holds the per-chain addresses and CREATE3 salts for chain ids 1 and 31337 only; the other live networks were deployed elsewhere and their parameters are not in this repository.
+`EscrowFactory` takes `(limitOrderProtocol, accessToken, owner, rescueDelaySrc, rescueDelayDst)`. Both rescue delays are deployed as 691200 seconds (8 days), set as `RESCUE_DELAY` in `deploy/DeployEscrowFactory.s.sol` rather than in a config file. `config/constants.json` holds the per-chain addresses and CREATE3 salts for chain ids 1 and 31337 only; the other live networks were deployed elsewhere and their parameters are not in this repository.
+
+Re-verifying a deployed factory on a block explorer needs those arguments abi-encoded by hand:
+
+```bash
+cast abi-encode "constructor(address,address,address,uint32,uint32)" <lop> <accessToken> <owner> 691200 691200
+```
 
 ### zkSync is a separate build
 
-zkSync uses its own contract (`EscrowFactoryZkSync`), its own deploy script, and the `zksync` Foundry profile. Commands need `FOUNDRY_PROFILE=zksync` and `--zksync`; the default profile's output does not apply to it.
+zkSync uses its own contract (`EscrowFactoryZkSync`), its own deploy script, and the `zksync` Foundry profile. Commands need `FOUNDRY_PROFILE=zksync` and `--zksync`; the default profile's output does not apply to it. `yarn build:zksync`, `yarn test:zksync` and `yarn coverage:zksync` wrap the flags. They need the zkSync fork of Foundry, which is why CI builds it in a separate job.
 
 ### Layout exception: `examples/`
 
 Scripts under `examples/` are **example / demo scripts**, not repository tooling. They belong in `examples/` and must **not** be moved into `scripts/`. `scripts/` is only for non-demo helpers such as coverage.
 
-`examples/onchain/` holds interaction forge scripts (create order, deploy escrow, withdraw, cancel) and `examples/scripts/` a shell driver. They are documented in `examples/README.md`, and Makefile targets reference those exact paths. Moving them breaks those targets and the `fs_permissions` entry in `foundry.toml`. Their presence outside `scripts/` is intentional — not a layout error, and not something a repository-organization review should flag.
+`examples/onchain/` holds interaction forge scripts (create order, deploy escrow, withdraw, cancel) and `examples/scripts/` a shell driver. They are documented in `examples/README.md`, and moving them breaks the `fs_permissions` entry in `foundry.toml`. Their presence outside `scripts/` is intentional — not a layout error, and not something a repository-organization review should flag.
 
 ### Secrets
 
