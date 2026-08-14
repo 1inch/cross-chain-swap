@@ -105,6 +105,7 @@ Documentation changes take the same route as code, and are just as welcome.
 ### Solidity
 
 - Follow the [Solidity style guide](https://docs.soliditylang.org/en/latest/style-guide.html) for layout, ordering and naming.
+- Formatting is `forge fmt`, with the line length and comment settings in `foundry.toml`; `forge fmt --check` reports without rewriting. Linting is `yarn lint`, which runs `solhint --max-warnings 0` over the contracts, tests, deploy scripts and examples, and CI fails on a single warning.
 - Every `public` and `external` function carries NatSpec: `@notice` for what it does to the caller, `@param` for each argument, `@return` for each return value. Add `@dev` wherever the body holds a surprise.
 - Name things for what they mean to a caller rather than how they are implemented, and name a custom error after the condition it rejects.
 - Do not reformat code you are not changing — it buries the real change in noise.
@@ -112,6 +113,7 @@ Documentation changes take the same route as code, and are just as welcome.
 ### Tests
 
 - Every change in behaviour needs a unit test, reverts included. A test covering only the happy path documents half the change.
+- A change to arithmetic, struct packing or timelock encoding needs a fuzz test as well, named `testFuzz_*` so it runs with the rest of the suite. Fuzz runs are set in `foundry.toml`.
 - Name a test for the property it defends, so a failure says what broke rather than which function was called.
 
 ### Commit Messages
