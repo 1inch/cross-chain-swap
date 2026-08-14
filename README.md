@@ -27,11 +27,10 @@ Production addresses per network are listed in [deployments.md](deployments.md).
 | ---------------- | ----------------------------------------------- |
 | `contracts/`     | Smart contracts                                 |
 | `tests/`         | Foundry tests                                   |
-| `deploy/`        | Deployment forge scripts and `deploy.sh`        |
+| `deploy/`        | Deployment forge scripts, `deploy.sh`, `config.json` |
 | `scripts/`       | Shell helpers (coverage)                        |
 | `docs/`          | Protocol documentation and the whitepaper       |
 | `audits/`        | Audit reports                                   |
-| `config/`        | Deployment parameters                           |
 | `deployments/`   | Per-network deployment artifacts                |
 | `examples/`      | Example configs, demos, and txn forge scripts   |
 | `hooks/`         | Git pre-commit hooks                            |

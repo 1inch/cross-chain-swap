@@ -21,30 +21,27 @@ library Config {
         bytes32 salt, 
         address owner
     ) {
-        uint256 chain = block.chainid;
-
-        string memory path = string.concat(vm.projectRoot(), "/config/constants.json");
+        string memory path = string.concat(vm.projectRoot(), "/deploy/config.json");
         string memory json = vm.readFile(path);
-        string memory key = string.concat(".", vm.toString(chain));
 
-        lopAddress = vm.parseJsonAddress(json, string.concat(".lop", key));
+        lopAddress = vm.parseJsonAddress(json, ".lop");
         if (lopAddress == address(0)) revert LopAddressDoesNotExist();
         console2.log("LOP address:", lopAddress);
 
-        accessToken = vm.parseJsonAddress(json, string.concat(".accessToken", key));
+        accessToken = vm.parseJsonAddress(json, ".accessToken");
         if (accessToken == address(0)) revert AccessTokenAddressDoesNotExist();
         console2.log("Access token address:", accessToken);
 
         if (useCreate3Deployer) {
-            create3Deployer = vm.parseJsonAddress(json, string.concat(".create3Deployer", key));
+            create3Deployer = vm.parseJsonAddress(json, ".create3Deployer");
             if (create3Deployer == address(0)) revert Create3DeployerAddressDoesNotExist();
             console2.log("Create3Deployer address:", create3Deployer);
 
-            salt = parseSalt(vm, vm.parseJsonString(json, string.concat(".factorySalt", key)));
+            salt = parseSalt(vm, vm.parseJsonString(json, ".factorySalt"));
             console2.log("Salt:", vm.toString(salt));
         }
 
-        address factoryOwner = vm.parseJsonAddress(json, string.concat(".factoryOwner", key));
+        address factoryOwner = vm.parseJsonAddress(json, ".factoryOwner");
         owner = factoryOwner != address(0) ? factoryOwner : vm.envAddress("DEPLOYER_ADDRESS");
         if (owner == address(0)) revert OwnerAddressDoesNotExist();
         console2.log("Owner address:", owner);
@@ -54,17 +51,14 @@ library Config {
         address create3Deployer,
         bytes32 salt
     ) {
-        uint256 chain = block.chainid;
-
-        string memory path = string.concat(vm.projectRoot(), "/config/constants.json");
+        string memory path = string.concat(vm.projectRoot(), "/deploy/config.json");
         string memory json = vm.readFile(path);
-        string memory key = string.concat(".", vm.toString(chain));
 
-        create3Deployer = vm.parseJsonAddress(json, string.concat(".create3Deployer", key));
+        create3Deployer = vm.parseJsonAddress(json, ".create3Deployer");
         if (create3Deployer == address(0)) revert Create3DeployerAddressDoesNotExist();
         console2.log("Create3Deployer address:", create3Deployer);
 
-        salt = parseSalt(vm, vm.parseJsonString(json, string.concat(".trueTokenSalt", key)));
+        salt = parseSalt(vm, vm.parseJsonString(json, ".trueTokenSalt"));
         console2.log("Salt:", vm.toString(salt));
     }
 

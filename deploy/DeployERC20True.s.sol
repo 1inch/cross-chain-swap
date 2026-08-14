@@ -14,9 +14,11 @@ import { console2 } from "forge-std/console2.sol";
 
 contract DeployERC20True is Script {
     using Config for *;
+    uint256 public constant ZKSYNC_CHAIN_ID = 324;
 
     function run() external {
-        bool useCreate3Deployer = vm.envUint("OPS_CHAIN_ID") != 324;
+        // zkSync has no CREATE3 deployer, so the token is deployed directly there.
+        bool useCreate3Deployer = block.chainid != ZKSYNC_CHAIN_ID;
 
         if (!useCreate3Deployer) {
             vm.startBroadcast();

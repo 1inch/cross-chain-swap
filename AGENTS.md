@@ -30,11 +30,10 @@ Prefer the repository's own `package.json` scripts over inventing parallel comma
 | -------------- | ----------------------------------------------------- |
 | `contracts/`   | Smart contracts                                       |
 | `tests/`       | Foundry tests                                         |
-| `deploy/`      | Deployment forge scripts and `deploy.sh`              |
+| `deploy/`      | Deployment forge scripts, `deploy.sh`, and `config.json` |
 | `scripts/`     | Shell helpers (coverage)                              |
 | `docs/`        | Protocol documentation, whitepaper, diagrams          |
 | `audits/`      | Audit reports                                         |
-| `config/`      | Deployment parameters (`constants.json`)              |
 | `deployments/` | Per-network deployment artifacts                      |
 | `examples/`    | Example configs, demos, and interaction forge scripts |
 | `hooks/`       | Git pre-commit hooks                                  |
@@ -84,7 +83,7 @@ Nothing here is an upgradeable proxy. `EscrowSrc` and `EscrowDst` clones are min
 
 ### Deployment parameters
 
-`EscrowFactory` takes `(limitOrderProtocol, accessToken, owner, rescueDelaySrc, rescueDelayDst)`. Both rescue delays are deployed as 691200 seconds (8 days), set as `RESCUE_DELAY` in `deploy/DeployEscrowFactory.s.sol` rather than in a config file. `config/constants.json` holds the per-chain addresses and CREATE3 salts for chain ids 1 and 31337 only; the other live networks were deployed elsewhere and their parameters are not in this repository.
+`EscrowFactory` takes `(limitOrderProtocol, accessToken, owner, rescueDelaySrc, rescueDelayDst)`. Both rescue delays are deployed as 691200 seconds (8 days), set as `RESCUE_DELAY` in `deploy/DeployEscrowFactory.s.sol` rather than in a config file. `deploy/config.json` holds the remaining addresses and CREATE3 salts, and it is single-chain: the values are Ethereum mainnet's, with no chain id keying. Deploying to another network means editing that file. The other live networks in `deployments.md` were deployed elsewhere and their parameters are not in this repository.
 
 Re-verifying a deployed factory on a block explorer needs those arguments abi-encoded by hand:
 
