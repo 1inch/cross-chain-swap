@@ -32,6 +32,8 @@ Prefer the repository's own scripts and Makefile targets over inventing parallel
 | `tests/`       | Foundry tests                                         |
 | `deploy/`      | Deployment forge scripts and `deploy.sh`              |
 | `scripts/`     | Shell helpers (coverage)                              |
+| `docs/`        | Protocol documentation, whitepaper, diagrams          |
+| `audits/`      | Audit reports                                         |
 | `config/`      | Deployment parameters (`constants.json`)              |
 | `deployments/` | Per-network deployment artifacts                      |
 | `examples/`    | Example configs, demos, and interaction forge scripts |
@@ -39,7 +41,7 @@ Prefer the repository's own scripts and Makefile targets over inventing parallel
 | `lib/`         | Git submodule dependencies                            |
 
 
-There is no `docs/` directory: protocol documentation lives in `README.md`. `yarn doc` runs `forge doc` into `documentation/`, which is gitignored — never commit generated HTML.
+Protocol documentation lives in `docs/protocol.md`; `README.md` covers what the repository is and how to build and test it. `yarn doc` runs `forge doc` into `documentation/`, which is gitignored — never commit generated HTML, and do not confuse that directory with `docs/`.
 
 ## Deployments and security
 

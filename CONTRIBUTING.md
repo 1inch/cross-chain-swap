@@ -81,11 +81,13 @@ In the suggestion, describe the current behaviour, the behaviour you want instea
    forge build
   ```
 3. Make the change, with tests that fail before it and pass after.
-4. Run what CI runs, before pushing:
+4. Run all three of these before committing:
   ```bash
-   yarn test
-   yarn lint
+   forge test   # the full suite, fuzz tests included; must pass
+   yarn test    # refreshes .gas-snapshot; commit the diff if there is one
+   yarn lint    # solhint, --max-warnings 0
   ```
+   `forge test` and `yarn test` are not the same command and neither substitutes for the other. `yarn test` is `forge snapshot --no-match-test "testFuzz_*"`: it skips every fuzz test, and it writes gas costs to the tracked `.gas-snapshot` file. CI runs both — the `test` job fails on a broken fuzz test, and the `snapshot` job fails on a stale `.gas-snapshot`, so running only one of them locally leaves the other to be caught in CI. [The README](README.md#test) explains the difference in full.
 5. Push and open a pull request against `master`, filling in the template.
 
 The pull request must either link the issue that describes the bug or feature, or carry a detailed description of what changes and why — enough that a reviewer who has not followed the work can still judge it. Keep it to one concern: two unrelated fixes are two pull requests, and reviewing them together takes longer than reviewing them apart.
@@ -97,7 +99,7 @@ A pull request merges once CI is green and a maintainer has approved it.
 Documentation changes take the same route as code, and are just as welcome.
 
 - Behaviour of a function is documented in its NatSpec, next to the code. Fix it there, so it cannot drift from what the function does.
-- [The README](README.md) covers the protocol level — how the pieces fit, and why.
+- [The protocol documentation](docs/protocol.md) covers the protocol level — how the pieces fit, and why. [The README](README.md) covers what the repository is and how to build and test it.
 - A command in the README that no longer works is a bug. Report it even if you do not fix it.
 
 ## Styleguides
@@ -112,7 +114,7 @@ Documentation changes take the same route as code, and are just as welcome.
 ### Tests
 
 - Every change in behaviour needs a unit test, reverts included. A test covering only the happy path documents half the change.
-- A change to arithmetic, struct packing or timelock encoding needs a fuzz test as well, named `testFuzz_*` so it runs with the rest of the suite. Fuzz runs are set in `foundry.toml`.
+- A change to arithmetic, struct packing or timelock encoding needs a fuzz test as well, named `testFuzz_*`. That prefix is what `forge test` picks up and what the gas snapshot deliberately excludes, so the name is load-bearing rather than a convention. Fuzz runs are set in `foundry.toml`.
 - Name a test for the property it defends, so a failure says what broke rather than which function was called.
 
 ### Commit Messages
