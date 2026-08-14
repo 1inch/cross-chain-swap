@@ -82,10 +82,12 @@ In the suggestion, describe the current behaviour, the behaviour you want instea
   ```
 3. Make the change, with tests that fail before it and pass after.
 4. Run what CI runs, before pushing:
-  ```bash
+
+   ```bash
    {{TEST_COMMAND}}
    {{LINT_COMMAND}}
-  ```
+   {{FORMAT_COMMAND}}
+   ```
 5. Push and open a pull request against `{{DEFAULT_BRANCH}}`, filling in the template.
 
 The pull request must either link the issue that describes the bug or feature, or carry a detailed description of what changes and why — enough that a reviewer who has not followed the work can still judge it. Keep it to one concern: two unrelated fixes are two pull requests, and reviewing them together takes longer than reviewing them apart.

@@ -51,11 +51,8 @@ This project uses {{TOOLCHAIN_NAME}}, with solc pinned to {{SOLC_VERSION}} in {{
 {{TEST_COMMAND}}
 ```
 
-### Lint
-
-```bash
-{{LINT_COMMAND}}
-```
+{{LINT_SECTION}}
+{{FORMAT_SECTION}}
 
 ---
 
@@ -75,7 +72,9 @@ TODO(repository-review): describe the protocol in two or three sentences — wha
 
 ## Deployments
 
-TODO(repository-review): list the deployed addresses per network, or link the file that records them.
+Deployed addresses live in [deployments.md](deployments.md).
+
+TODO(repository-review): if `deployments.md` is missing, generate it or list addresses per network here.
 
 ## Documentation, audits and bug bounty
 

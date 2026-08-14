@@ -28,13 +28,5 @@ jobs:
       - run: {{INSTALL_COMMAND}}
       - run: {{TEST_COMMAND}}
 
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: {{NODE_VERSION}}
-          cache: {{PACKAGE_MANAGER}}
-      - run: {{INSTALL_COMMAND}}
-      - run: {{LINT_COMMAND}}
+{{CI_LINT_JOB}}
+{{CI_FORMAT_JOB}}

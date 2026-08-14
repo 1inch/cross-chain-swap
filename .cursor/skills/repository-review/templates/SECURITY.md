@@ -19,11 +19,11 @@ Smart-contract findings go through the 1inch bug bounty programmes. Scope, sever
 
 ## Supported versions and deployments
 
-TODO(repository-review): list the versions and deployments that receive security fixes. The deployments recorded in this repository are a starting point, but which of them the team commits to supporting is a decision, not a fact.
+See [deployments.md](deployments.md) for the contracts and networks covered by this policy.
 
 ## Audits
 
-TODO(repository-review): link the audit reports, or state that the code has not been audited.
+{{AUDIT_LINKS}}
 
 ## Known limitations
 

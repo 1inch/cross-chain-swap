@@ -1,6 +1,6 @@
 ---
 name: repository-review
-description: Reviews the repository this skill is installed in against the bundled Solidity repository-organization checklist (README, directory layout, LICENSE, CONTRIBUTING, SECURITY, CI, issue and PR templates, release process, additional conventions), reporting a weighted 0-100 score, per-check results backed by evidence, and a prioritized list of what to add first; a second mode then applies the mechanically safe fixes on a branch. Use when the user asks to review, check, audit, or score the organization or structure of this Solidity or smart-contract repository, and when they ask to fix the repository structure, apply the review findings, add the missing files, or mentions repository review, repo review, repo checklist, or the repository-review rules.
+description: Reviews the repository this skill is installed in against the bundled Solidity repository-organization checklist (README, directory layout, LICENSE, CONTRIBUTING, SECURITY, CI, issue and PR templates, release process, AGENTS.md, additional conventions), reporting a weighted 0-100 score, per-check results backed by evidence, and a prioritized list of what to add first; a second mode then applies the mechanically safe fixes on a branch. Use when the user asks to review, check, audit, or score the organization or structure of this Solidity or smart-contract repository, and when they ask to fix the repository structure, apply the review findings, add the missing files, or mentions repository review, repo review, repo checklist, or the repository-review rules.
 ---
 
 # Repository Review
@@ -51,9 +51,11 @@ The script reports shape, not quality. Never score a content check from it alone
 
 Determine the toolchain first — Hardhat 2, Hardhat 3, or Foundry — from `hardhat.config.*`, the `hardhat` version in `package.json`, and `foundry.toml`. Every command-level check has per-toolchain variants in the checklist; apply the ones that match. A repository may legitimately use both.
 
-Then read, in full: `README.md`, the `LICENSE` header, `CONTRIBUTING.md`, `SECURITY.md`, every file in `.github/workflows/`, the issue and PR templates, the toolchain config, and `CHANGELOG.md`.
+Then read, in full: `README.md`, `deployments.md` when present, `AGENTS.md` when present, the `LICENSE` header, `CONTRIBUTING.md`, `SECURITY.md`, every file in `.github/workflows/`, the issue and PR templates, the toolchain config, and `CHANGELOG.md`. Prefer `deployments.md` over README address tables when judging deployment checks. For the SECURITY audits check, also look for a matching folder under [1inch/1inch-audits](https://github.com/1inch/1inch-audits) when local `audits/` and README links are empty.
 
 **Resolve CI indirection before judging any CI check.** Workflow steps rarely name the underlying tool: `run: yarn test:ci`, `run: make test`, or a local composite action under `.github/actions/` all satisfy the test check. Follow each `run:` line through `package.json` scripts, the `Makefile`, and any local action's `action.yml` before recording a step as absent. A repository whose CI runs `yarn lint` where `lint` is `solhint --max-warnings 0` passes the linter check.
+
+**Formatters and linters are opt-in from the repo.** Detect whether the tree already uses a formatter (`fmt`/`format`/`prettier` scripts, Prettier config applied to Solidity, or an existing `forge fmt` in CI/docs) or a linter (`solhint`, a `lint` script). Score and scaffold those checks only when present. Never treat missing `forge fmt` or Prettier as a finding, and never add them when generating CI or docs for a repo that does not already format.
 
 For "the README is up to date", check that documented commands exist as `package.json` scripts, Foundry defaults, or config targets. Do not run builds or tests unless the user asks for a deep check.
 
@@ -69,7 +71,7 @@ An item phrased "X, or Y" — addresses listed per network *or* a link to a depl
 
 **Absent required files.** When a required document does not exist, every item in its section fails and the section scores zero — but report it as one finding naming the checks that fall with it, and count it once in the header tally. Six errors for one missing `CONTRIBUTING.md` makes the tally useless.
 
-**Conditional items.** Several checks apply only when something exists — deployment scripts must live in `deploy/` *if there are any*, upgrade documentation is required *for upgradeable contracts*, npm versioning matters *if a package is published*. When the condition does not hold, drop the item from the section's possible points. Do not score it as a pass and do not penalize the repository for it.
+**Conditional items.** Several checks apply only when something exists — deployment scripts must live in `deploy/` *if there are any*, upgrade documentation is required *for upgradeable contracts*, npm versioning matters *if a package is published*, linter/formatter checks and docs apply *only if the repository already configures those tools*. When the condition does not hold, drop the item from the section's possible points. Do not score it as a pass and do not penalize the repository for it.
 
 **Per-item points.** Error items are worth 2 points, warning items 1. Award full points for a pass, half for a partial pass, zero for a fail.
 
@@ -85,7 +87,8 @@ An item phrased "X, or Y" — addresses listed per network *or* a link to a depl
 | 6 | CI configuration | 15 |
 | 7 | Issue and pull request templates | 7 |
 | 8 | Release process | 10 |
-| — | Additional files and conventions | 8 |
+| 9 | AI agent guidance | 3 |
+| — | Additional files and conventions | 5 |
 | — | **Total** | **100** |
 
 Worked example — section 3 has five items, all errors. Two do not apply because the license is MIT: the BUSL transition terms and the mixed-license documentation drop out, leaving three items and 6 possible points. Two pass, and SPDX consistency is half-met because one contract declares `LGPL-3.0-only` where `LICENSE` says MIT. Earned is 5, so the section scores `9 × 5 ÷ 6 = 7.5` out of 9.
@@ -220,7 +223,7 @@ List every bucket 1 fix that applies, each as one line naming the file it writes
 
 Then apply them in the order given in `FIXES.md`, and for each one:
 
-1. Re-check the precondition immediately before writing. Reuse or not, the file may have appeared since the review, and fixes inside one run affect each other — `CONTRIBUTING.md` and the PR template link to `SECURITY.md`, which is why it is written first.
+1. Re-check the precondition immediately before writing. Reuse or not, the file may have appeared since the review, and fixes inside one run affect each other — `deployments.md` before `SECURITY.md` (SECURITY links to it), then `SECURITY.md` before `CONTRIBUTING.md` and the PR template.
 2. Fill every `{{NAME}}` from repository facts. A template written with an unresolved `{{NAME}}` is a bug; skip the fix and report why instead.
 3. Leave `TODO(repository-review)` markers exactly where the template puts them.
 4. Stop. Show the changed paths, a short diff summary, and the proposed commit subject (e.g. `chore(repo-review): add SECURITY.md skeleton`). Wait for an explicit yes before committing. On edits requested, apply them and ask again. On no, revert this fix's uncommitted changes and continue to the next item.

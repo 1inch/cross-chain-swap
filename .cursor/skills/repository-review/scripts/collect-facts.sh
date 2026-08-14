@@ -86,6 +86,7 @@ locate_doc "LICENSE" 'licen[cs]e(\.md|\.txt)?|copying(\.md|\.txt)?|licen[cs]e-[a
 locate_doc "CONTRIBUTING" 'contributing(\.md)?'
 locate_doc "SECURITY" 'security(\.md)?'
 locate_doc "CHANGELOG" 'changelog(\.md)?|changes(\.md)?'
+locate_doc "AGENTS" 'agents(\.md)?'
 
 hdr "CONVENTIONAL FILES"
 for f in .gitignore .gitattributes .editorconfig .env .env.example \
@@ -276,6 +277,26 @@ if [ -n "$PRT" ]; then
 else
   echo "no PR template"
 fi
+
+hdr "LINTER AND FORMATTER (repo-configured only)"
+echo "Signals that a linter or formatter is already adopted — absence is not a finding."
+if [ -f package.json ]; then
+  echo "-- package.json scripts matching lint|fmt|format|prettier|solhint --"
+  grep -nE '"(lint|fmt|format|prettier|solhint)[^"]*"[[:space:]]*:' package.json 2>/dev/null || echo "none"
+  echo "-- package.json deps --"
+  grep -nE '"(solhint|prettier|prettier-plugin-solidity)"' package.json 2>/dev/null || echo "none"
+fi
+for f in .prettierrc .prettierrc.json .prettierrc.yml .prettierrc.js .prettierignore \
+  .solhint.json .solhintrc .solhintrc.json .solhintignore; do
+  kv "$f" "$(yn "$f")"
+done
+if [ -f foundry.toml ]; then
+  echo "-- foundry.toml [fmt] table --"
+  grep -nE '^\[fmt\]|^[[:space:]]*line_length|^[[:space:]]*tab_width' foundry.toml 2>/dev/null || echo "no [fmt] signals"
+fi
+echo "-- CI / Makefile mentions --"
+{ grep -rilE 'forge fmt|prettier|solhint' .github/workflows Makefile justfile 2>/dev/null || true; } | sed 's|^\./||' | sort -u | sed -n '1,20p'
+echo "(empty above means no formatter/linter configured in those paths)"
 
 hdr "CI WORKFLOWS"
 if [ -d .github/workflows ]; then
