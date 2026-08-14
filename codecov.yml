@@ -1,4 +1,4 @@
 ignore:
-  - "test"
+  - "tests"
   - "contracts/mocks"
-  - "script"
+  - "examples/onchain"
