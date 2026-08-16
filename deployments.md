@@ -20,9 +20,6 @@ Addresses taken from records under `[deployments/](deployments/)`, which also na
 - [monad (143)](#monad-143)
 - [cronos (25)](#cronos-25)
 - [hyperevm (999)](#hyperevm-999)
-- [ImmutablesLib](#immutableslib)
-- [Verification status](#verification-status)
-- [Build provenance](#build-provenance)
 
 
 
