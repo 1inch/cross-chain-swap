@@ -1,0 +1,33 @@
+{
+  "address": "0xa02b9cc95094bb27d1d041b9fbf09f65a366f7b3",
+  "contractName": "EscrowFactory",
+  "version": "1.0.0",
+  "chainId": 4663,
+  "args": [
+    "0x5A705DE8982235a7fa45bB83dCaCf03a211389C7",
+    "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+    "0x48e5EEcFfbEC0c53c9153F7CCD487165c2E272d8",
+    "0x4134e66d52EfC4C77DD8Ccc952D87b9E92E0C352",
+    691200,
+    691200
+  ],
+  "transactionHash": "0x53e03dcd8f70bfedcc925d1df12a8c0066f7e5ff10b5be0ef86c0155b758f945",
+  "blockNumber": null,
+  "deployedAt": null,
+  "deployerEoa": "0xcA90D97Af8261d2829E47C4117316870Ac64621b",
+  "createdBy": null,
+  "compiler": {
+    "solc": "0.8.23",
+    "optimizerRuns": 1000000,
+    "evmVersion": "shanghai",
+    "viaIR": true
+  },
+  "provenance": {
+    "reconstructedFrom": "blockscout",
+    "reconstructedOn": "2026-08-14",
+    "sourceTag": "1.0.0",
+    "initCodeSha256": null,
+    "evidence": "Verified on robinhoodchain.blockscout.com, where all 17 contracts/*.sol files are byte-identical to tag 1.0.0 and 9 of them differ from tag 1.1.0, with solc 0.8.23, optimizer at 1000000 runs, evmVersion shanghai and viaIR. The constructor takes the six arguments of the 1.0.0 signature. Robinhood Chain is not served by the Etherscan V2 API.",
+    "note": "Assembled from block-explorer data, not written by a deploy run. No ABI is included; generate it from the tag named in sourceTag."
+  }
+}

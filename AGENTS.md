@@ -95,6 +95,13 @@ cast abi-encode "constructor(address,address,address,uint32,uint32)" <lop> <acce
 
 zkSync uses its own contract (`EscrowFactoryZkSync`), its own deploy script, and the `zksync` Foundry profile. Commands need `FOUNDRY_PROFILE=zksync` and `--zksync`; the default profile's output does not apply to it. `yarn build:zksync`, `yarn test:zksync` and `yarn coverage:zksync` wrap the flags. They need the zkSync fork of Foundry, which is why CI builds it in a separate job.
 
+That path is now the legacy one. On zkSync Era the current deployments are ordinary EVM builds from the **default** profile: `EscrowFactory` 1.1.0 and the `ImmutablesLib` it links are byte-identical to mainnet's excluding constructor arguments, so treat the default compiler as the main route there and reach for the `zksync` profile only when a task is explicitly about `EscrowFactoryZkSync`.
+
+Two consequences worth knowing before spending time on them:
+
+- **The old zksolc deployment is not reproducible and can be ignored.** `EscrowFactory` 1.0.0 on zkSync went out as an EraVM build, and no record anywhere names the zksolc version it used — only the commit and the bytecode hash it passed to the `ContractDeployer`. Do not try to rebuild or verify it. `ERC20True` is the exception that proves the rule: its zkSync record does name zksolc 1.4.1, so that one does reproduce and is verified.
+- **Unverified on `zksync.blockscout.com` is expected, not a bug.** That instance compiles submissions through zksolc, so it cannot match an EVM build however correct the input is. Submissions for 1.1.0 and `ImmutablesLib` are accepted and then fail to match. [`deployments/provenance.md`](deployments/provenance.md#what-is-still-missing) records this as the one open verification gap.
+
 ### Layout exception: `examples/`
 
 Scripts under `examples/` are **example / demo scripts**, not repository tooling. They belong in `examples/` and must **not** be moved into `scripts/`. `scripts/` is only for non-demo helpers such as coverage.

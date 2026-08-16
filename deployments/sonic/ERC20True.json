@@ -1,0 +1,26 @@
+{
+  "address": "0xDA0000d4000015A526378bB6faFc650Cea5966F8",
+  "contractName": "ERC20True",
+  "version": "1.0.0",
+  "chainId": 146,
+  "args": null,
+  "transactionHash": "0x7a99160a1a1b7f54fc5a5a6721115305943fc32e317084158619e626fdd0d004",
+  "blockNumber": 26739188,
+  "deployedAt": "2025-05-14T12:51:58Z",
+  "deployerEoa": "0x56e44874f624ebde6efcc783efd685f0fbdc6dcf",
+  "createdBy": "0x0bf023e451b0f135c4da7bba7aab42af3b25159b",
+  "compiler": {
+    "solc": "0.8.23",
+    "optimizerRuns": 1000000,
+    "evmVersion": "shanghai",
+    "viaIR": true
+  },
+  "provenance": {
+    "reconstructedFrom": "etherscan",
+    "reconstructedOn": "2026-08-14",
+    "sourceTag": "1.0.0",
+    "initCodeSha256": "c6b9cbb12d4f609b8be4258da9b5f87f6ae4b3f8c7fffbc9f77eddb1934c837f",
+    "evidence": "Creation init code is byte-identical to Ethereum mainnet's ERC20True; sha256 c6b9cbb12d4f609b8be4258da9b5f87f6ae4b3f8c7fffbc9f77eddb1934c837f. The mainnet verification of it matches contracts/mocks/ERC20True.sol, which is identical at tags 1.0.0 and 1.1.0, so the source alone cannot tell them apart; the deployment date places this in the 1.0.0 era.",
+    "note": "Assembled from block-explorer data, not written by a deploy run. No ABI is included; generate it from the tag named in sourceTag."
+  }
+}
