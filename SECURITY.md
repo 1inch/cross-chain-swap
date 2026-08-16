@@ -27,8 +27,8 @@ The supported release is **1.1.0**. Deployment addresses are listed in [deployme
 
 Copies of every report are kept in [audits/](audits/), which lists them by auditor and release. They are published in [1inch/1inch-audits](https://github.com/1inch/1inch-audits), which remains the source of truth:
 
-- **v1.0** — [Cross-chain Protocol](https://github.com/1inch/1inch-audits/tree/master/Cross-chain%20Protocol), locally in [audits/cross-chain-protocol/](audits/cross-chain-protocol)
-- **v1.1** — [Crosschain fees v1.1](https://github.com/1inch/1inch-audits/tree/master/Crosschain%20fees%20v1.1), locally in [audits/crosschain-fees-v1.1/](audits/crosschain-fees-v1.1)
+- **v1.0** — [Cross-chain Protocol](https://github.com/1inch/1inch-audits/tree/master/Cross-chain%20Protocol), locally in [audits/crosschain-v1.0/](audits/crosschain-v1.0/)
+- **v1.1** — [Crosschain fees v1.1](https://github.com/1inch/1inch-audits/tree/master/Crosschain%20fees%20v1.1), locally in [audits/crosschain-v1.1/](audits/crosschain-v1.1/)
 
 
 

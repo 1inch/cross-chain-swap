@@ -10,7 +10,6 @@ From the [v1.1.0 GitHub Release](https://github.com/1inch/cross-chain-swap/relea
 
 - Settlement extension with fee support: integrator, protocol and resolver fees; fee recipients in `extraData`; whitelist discount numerator ([#131](https://github.com/1inch/cross-chain-swap/pull/131))
 - Demo script for the full cross-chain lifecycle, plus `create_order.sh` with stage-based deploy / withdraw / cancel ([#134](https://github.com/1inch/cross-chain-swap/pull/134))
-- Makefile targets for testing, coverage and deployment ([#132](https://github.com/1inch/cross-chain-swap/pull/132), [#141](https://github.com/1inch/cross-chain-swap/pull/141))
 - Tests for orders with taking amount set ([#133](https://github.com/1inch/cross-chain-swap/pull/133)); fee-calculation suite; dedicated escrow cancel tests; expanded integration coverage for getters and rescue funds
 - Pull request template; `ResolverExample` disclaimer; README partial-fills documentation
 
