@@ -8,7 +8,7 @@ Guidance for coding agents working in this repository.
 
 ## Toolchain
 
-This project uses Foundry (`foundry.toml`), with solc pinned to 0.8.23 and the toolchain release pinned in `foundry.lock`.
+This project uses Foundry (`foundry.toml`), with solc pinned to 0.8.23 and the Foundry release pinned to `v1.5.1` in `.github/workflows/test.yml`. `foundry.lock` records submodule revisions only.
 
 ### Build and test
 

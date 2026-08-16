@@ -1,6 +1,6 @@
 # Deployments
 
-Addresses taken from records under `[deployments/](deployments/)`, which also name the repository revision each address was built from. [Build provenance](#build-provenance) lists the deployments those records leave open. Compiler settings, constructor arguments and deployment mechanics, grouped by what the chains share, are in `[deployments/provenance.md](deployments/provenance.md)`.
+Addresses taken from records under [deployments/](deployments/), which also name the repository revision each address was built from. Compiler settings, constructor arguments, deployment mechanics, and verification status are in [deployments/provenance.md](deployments/provenance.md).
 
 ## Table of Contents
 
@@ -215,4 +215,4 @@ Addresses taken from records under `[deployments/](deployments/)`, which also na
 
 
 
-Deployers and salts for every deployment above, including the ones no record carried, are in `[deployments/provenance.md](deployments/provenance.md#deployers-and-salts)`.
+Deployers and salts for every deployment above, including the ones no record carried, are in [deployments/provenance.md](deployments/provenance.md).
