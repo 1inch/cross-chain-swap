@@ -6,7 +6,7 @@ test = 'tests'
 optimizer_runs = 1000000
 via-ir = true
 evm_version = 'shanghai'
-solc_version   = "0.8.23"
+solc_version = "0.8.23"
 gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory", "MerkleStorageInvalidator"]
 
 fs_permissions = [
