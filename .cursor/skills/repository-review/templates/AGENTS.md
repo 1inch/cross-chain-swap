@@ -28,7 +28,7 @@ Prefer the repository's own scripts and config over inventing parallel commands.
 |---|---|
 {{STRUCTURE_ROWS}}
 
-Contracts live under `contracts/`, tests under `tests/`. Deployment scripts belong in `deploy/`; other automation in `scripts/`. Protocol docs are Markdown under `docs/` (PDF only for whitepapers and math-heavy papers) — never commit HTML/CSS/JS documentation sites.
+Contracts live under `contracts/`, tests under `test/`. Deployment scripts belong in `deploy/`; other automation in `scripts/`. Protocol docs are Markdown under `docs/` (PDF only for whitepapers and math-heavy papers) — never commit HTML/CSS/JS documentation sites.
 
 ## Deployments and security
 

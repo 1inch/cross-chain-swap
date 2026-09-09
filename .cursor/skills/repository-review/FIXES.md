@@ -154,10 +154,10 @@ With no CI at all, copy `templates/ci-foundry.yml` or `templates/ci-hardhat.yml`
 
 ### 11. Toolchain version pins in CI — closes §6.7
 
-Add `version:` to `foundry-rs/foundry-toolchain`, a `node-version` to `actions/setup-node`, and an `.nvmrc` when Node is used without one.
+Add `version:` to `foundry-rs/foundry-toolchain` and a `node-version` to `actions/setup-node`. Leave `.nvmrc` where it is: the checklist does not score it, so do not create one and do not edit one that exists.
 
 - **Precondition:** the pin is absent. Never change a pin that is already set.
-- **Files:** `.github/workflows/*.yml`, `.nvmrc`
+- **Files:** `.github/workflows/*.yml`
 
 ### 12. `.gitignore` — closes §A.1
 
@@ -194,9 +194,9 @@ Each item is presented with what it changes and what it breaks, applied only on 
 - **Breaks:** every downstream repository that imports this one by path, and the layout of the published npm package. For a released protocol this is a breaking change for consumers, not a tidy-up.
 - **Verify:** run the build; then grep the repository for the old path.
 
-### 16. Tests directory renamed to `tests/` — closes §2.2
+### 16. Tests directory renamed to `test/` — closes §2.2
 
-`git mv test tests`, then update `foundry.toml` (`test =`), `package.json` scripts, `.solcover.js`, solhint globs and CI paths.
+`git mv tests test`, then drop the override that named the old directory — `test = "tests"` in `foundry.toml`, `paths.tests` in `hardhat.config.*` — since `test/` is where both toolchains look without being told. Update `package.json` scripts, `.solcover.js`, solhint globs and CI paths in the same commit.
 
 - **Breaks:** less than the above — consumers do not import tests — but every local script naming the old path stops working.
 - **Verify:** run the test suite.

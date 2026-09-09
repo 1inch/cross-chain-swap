@@ -34,9 +34,9 @@ The repository must follow the standard top-level layout:
 
 - [ ] `contracts/` — smart contracts.
   - ❌ Error if the contracts directory has any other name (`src/`, `solidity/`, `core/`, etc.) — any name that is not exactly `contracts` is a violation.
-- [ ] `tests/` — smart contract tests.
-  - ⚠️ Warning if the `tests/` folder is absent and the project has no tests at all.
-  - ❌ Error if tests exist but live in a different folder (`test/`, `spec/`, etc.).
+- [ ] `test/` — smart contract tests. Hardhat and Foundry both scaffold this name and look there by default, so a repository that keeps it needs no path configuration for its tests to run.
+  - ⚠️ Warning if the `test/` folder is absent and the project has no tests at all.
+  - ❌ Error if tests exist but live in a different folder (`tests/`, `spec/`, etc.) — any name that is not exactly `test` is a violation, the plural included.
 - [ ] `deploy/` — deployment scripts for the contracts.
   - May be absent — that is not a violation. But if deployment scripts exist, they must live in `deploy/`.
 - [ ] `docs/` — documentation in Markdown format.
@@ -102,8 +102,9 @@ Extended set (recommended):
 - [ ] Fuzz/invariant tests are included in the CI run, if present.
 - [ ] Static analysis is enabled in CI (Slither and/or equivalents); critical findings fail the pipeline.
 - [ ] Toolchain versions are pinned, the build is reproducible:
-  - Hardhat: Node.js and Hardhat versions pinned (lock file, `engines`, `.nvmrc`), solc version pinned in `hardhat.config.*`.
+  - Hardhat: Node.js and Hardhat versions pinned (lock file, `engines`, or the `node-version` CI already sets), solc version pinned in `hardhat.config.*`.
   - Foundry: Foundry release pinned (not `nightly`/`latest`), solc version pinned in `foundry.toml`.
+  - `.nvmrc` sits outside this checklist. A repository may keep one or not; either way it satisfies nothing, fails nothing, carries no points, and never appears as a finding.
 - [ ] Dependencies are pinned: a lock file (`package-lock.json`/`yarn.lock` — Hardhat) or pinned git submodules / remappings (Foundry).
 - [ ] A test coverage report (`solidity-coverage` for Hardhat / `forge coverage`) and gas tracking (`hardhat-gas-reporter` / `forge snapshot`).
 - [ ] Secrets (RPC keys, private keys) are not hardcoded in workflows — GitHub Secrets are used.
