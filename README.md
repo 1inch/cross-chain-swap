@@ -53,12 +53,17 @@ source ~/.zshenv
 foundryup
 ```
 
+CI pins Foundry to `v1.5.1`. `foundryup` with no arguments installs the current stable release instead, which is usually fine — but if a CI result will not reproduce locally, match the pin with `foundryup --install v1.5.1`.
+
 ### Build
-To install submodules and compile contracts run:
+To install dependencies and compile contracts run:
 
 ``` shell
+yarn         # node dependencies; postinstall runs `forge install` for the submodules
 forge build
 ```
+
+`yarn` is needed before any of the `yarn ...` commands below, since solhint is a node dependency.
 
 ### Test
 
