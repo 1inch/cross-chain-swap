@@ -26,7 +26,7 @@ Production addresses per network are listed in [deployments.md](deployments.md).
 | Path             | Contents                                        |
 | ---------------- | ----------------------------------------------- |
 | `contracts/`     | Smart contracts                                 |
-| `tests/`         | Foundry tests                                   |
+| `test/`          | Foundry tests                                   |
 | `deploy/`        | Deployment forge scripts, `deploy.sh`, `config.json` |
 | `scripts/`       | Shell helpers (coverage)                        |
 | `docs/`          | Protocol documentation and the whitepaper       |
@@ -71,7 +71,7 @@ yarn test    # refreshes .gas-snapshot, skips the fuzz tests
 
 #### `forge test` — verifies the change
 
-Runs every test in `tests/`, including the `testFuzz_*` tests, and writes nothing to the working tree. This is the command that tells you whether your change is correct.
+Runs every test in `test/`, including the `testFuzz_*` tests, and writes nothing to the working tree. This is the command that tells you whether your change is correct.
 
 #### `yarn test` — refreshes the gas snapshot
 

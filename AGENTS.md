@@ -29,7 +29,7 @@ Prefer the repository's own `package.json` scripts over inventing parallel comma
 | Path           | Contents                                              |
 | -------------- | ----------------------------------------------------- |
 | `contracts/`   | Smart contracts                                       |
-| `tests/`       | Foundry tests                                         |
+| `test/`        | Foundry tests                                         |
 | `deploy/`      | Deployment forge scripts, `deploy.sh`, and `config.json` |
 | `scripts/`     | Shell helpers (coverage)                              |
 | `docs/`        | Protocol documentation, whitepaper, diagrams          |

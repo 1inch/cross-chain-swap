@@ -8,9 +8,9 @@ import { Timelocks } from "contracts/libraries/TimelocksLib.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 
-import { FeeCalcLib } from "tests/utils/libraries/FeeCalcLib.sol";
+import { FeeCalcLib } from "test/utils/libraries/FeeCalcLib.sol";
 
-import { CrossChainTestLib } from "tests/utils/libraries/CrossChainTestLib.sol";
+import { CrossChainTestLib } from "test/utils/libraries/CrossChainTestLib.sol";
 
 contract DeployEscrowDst is Script {
     function run() external {

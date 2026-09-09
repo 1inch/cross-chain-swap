@@ -9,7 +9,7 @@ import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
 
-import { FeeCalcLib } from "tests/utils/libraries/FeeCalcLib.sol";
+import { FeeCalcLib } from "test/utils/libraries/FeeCalcLib.sol";
 
 contract CancelDst is Script {
     function run() external {
