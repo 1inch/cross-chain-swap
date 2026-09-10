@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ {{DEFAULT_BRANCH}} ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # TODO(repository-review): pin an exact Foundry release rather than a
+          # moving channel, so a build today reproduces a build from last month.
+          version: {{FOUNDRY_VERSION}}
+      - run: forge build --sizes
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: {{FOUNDRY_VERSION}}
+      - run: forge test -vvv
+
+{{CI_LINT_JOB}}
+{{CI_FORMAT_JOB}}

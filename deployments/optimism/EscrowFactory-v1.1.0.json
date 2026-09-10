@@ -1,0 +1,26 @@
+{
+  "address": "0x03a25b3215a0e5c15cf23ac4d2e5cf86c0ff7efa",
+  "contractName": "EscrowFactory",
+  "version": "1.1.0",
+  "chainId": 10,
+  "args": null,
+  "transactionHash": null,
+  "blockNumber": null,
+  "deployedAt": null,
+  "deployerEoa": null,
+  "createdBy": null,
+  "compiler": {
+    "solc": "0.8.23",
+    "optimizerRuns": 1000000,
+    "evmVersion": "shanghai",
+    "viaIR": true
+  },
+  "provenance": {
+    "reconstructedFrom": "blockscout",
+    "reconstructedOn": "2026-08-14",
+    "sourceTag": "1.1.0",
+    "initCodeSha256": null,
+    "evidence": "Verified on this chain's Blockscout instance (explorer.optimism.io), where all 17 contracts/*.sol files are byte-identical to tag 1.1.0, with solc 0.8.23, optimizer at 1000000 runs, evmVersion shanghai and viaIR, exactly the settings pinned in foundry.toml. The contract is not verified on Etherscan.",
+    "note": "Assembled from block-explorer data, not written by a deploy run. No ABI is included; generate it from the tag named in sourceTag."
+  }
+}

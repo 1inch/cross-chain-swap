@@ -2,18 +2,17 @@
 src = 'contracts'
 out = 'out'
 libs = ['lib']
-test = 'test'
 optimizer_runs = 1000000
 via-ir = true
 evm_version = 'shanghai'
-solc_version   = "0.8.23"
+solc_version = "0.8.23"
 gas_reports = ["EscrowSrc", "EscrowDst", "EscrowFactory", "MerkleStorageInvalidator"]
 
 fs_permissions = [
     { access = "read", path = "./examples/config/config.json" },
     { access = "read", path = "./broadcast" },
     { access = "read", path = "./reports" },
-    { access = "read", path = "./config" },
+    { access = "read", path = "./deploy/config.json" },
 ]
 
 [profile.lite.optimizer_details.yulDetails]

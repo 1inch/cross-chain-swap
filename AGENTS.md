@@ -1,0 +1,113 @@
+# [AGENTS.md](http://AGENTS.md)
+
+Guidance for coding agents working in this repository.
+
+## What this repository is
+
+1inch cross-chain atomic swap contracts. `EscrowFactory` deploys an `EscrowSrc` clone on the source chain and an `EscrowDst` clone on the destination chain for each swap; the source escrow holds the user's tokens and the destination escrow the resolver's, and both release against a hashlock plus a set of timelocks. Source-chain escrows are created by filling a user-signed order through the 1inch Limit Order Protocol. The secret that unlocks a swap is distributed off-chain, which the contracts assume rather than enforce.
+
+## Toolchain
+
+This project uses Foundry (`foundry.toml`), with solc pinned to 0.8.23 and the Foundry release pinned to `v1.5.1` in `.github/workflows/test.yml`. `foundry.lock` records submodule revisions only.
+
+### Build and test
+
+```bash
+yarn          # installs dependencies; postinstall runs forge install for the submodules
+forge build
+forge test    # the full suite, and what CI runs
+yarn lint     # solhint with --max-warnings 0
+```
+
+`yarn test` is not `forge test`. It runs `forge snapshot --no-match-test "testFuzz_*"`, which rewrites `.gas-snapshot` and skips the fuzz tests. Run `forge test` before pushing: CI runs the full suite including `testFuzz_*`, plus `forge snapshot --check`, so a stale snapshot or a failing fuzz test surfaces there rather than locally.
+
+Prefer the repository's own `package.json` scripts over inventing parallel commands. `yarn run` lists them.
+
+## Layout
+
+
+| Path           | Contents                                              |
+| -------------- | ----------------------------------------------------- |
+| `contracts/`   | Smart contracts                                       |
+| `test/`        | Foundry tests                                         |
+| `deploy/`      | Deployment forge scripts, `deploy.sh`, and `config.json` |
+| `scripts/`     | Shell helpers (coverage)                              |
+| `docs/`        | Protocol documentation, whitepaper, diagrams          |
+| `audits/`      | Audit reports                                         |
+| `deployments/` | Per-network deployment artifacts                      |
+| `examples/`    | Example configs, demos, and interaction forge scripts |
+| `hooks/`       | Git pre-commit hooks                                  |
+| `lib/`         | Git submodule dependencies                            |
+
+
+Protocol documentation lives in `docs/protocol.md`; `README.md` covers what the repository is and how to build and test it. `yarn doc` runs `forge doc` into `documentation/`, which is gitignored — never commit generated HTML, and do not confuse that directory with `docs/`.
+
+## Deployments and security
+
+- Deployed addresses: [deployments.md](deployments.md), with the exceptions described below.
+- Vulnerability disclosure and bounty: [SECURITY.md](SECURITY.md). Never open a public issue or pull request for an undisclosed vulnerability.
+- Contribution process: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
+
+## Agent constraints
+
+- Do not commit secrets, private keys, mnemonics or API keys. Do not edit a file only to delete a leaked secret — report it for rotation instead.
+- Do not rewrite `SPDX-License-Identifier` headers.
+- Do not change compiler `optimizer_runs`, `via-ir` or `evm_version` unless explicitly asked — that changes bytecode. See below.
+- Keep diffs scoped: no drive-by reformatting of files you are not changing.
+- Do not use a formatter in this repository. Do not run `forge fmt`, do not add a format CI job, and do not document or require formatting in CONTRIBUTING. The `[fmt]` table in `foundry.toml` is leftover tooling, not an adopted workflow — treat the repo as having no formatter.
+- Follow existing Solidity style and NatSpec conventions; public and external functions need accurate NatSpec.
+
+
+
+## Project-specific notes
+
+
+
+### Compiler settings are load-bearing
+
+`foundry.toml` sets `via-ir = true`, `optimizer_runs = 1000000` and `evm_version = 'shanghai'`. The live factories are verified on block explorers with exactly these settings, so changing any of them breaks the match between the sources here and the deployed bytecode. Treat them as frozen.
+
+### Deployment records
+
+`deployments.md` is the source of truth for deployed addresses. It deliberately does not correspond one-to-one with the `deployments/` directory:
+
+- **Aurora, Fantom and Klaytn are no longer supported.** The leftover records under `deployments/aurora/`, `deployments/fantom/` and `deployments/klaytn/` are historical. Do not add these chains to `deployments.md`, and do not report their absence from it as an omission.
+
+### Privileged roles, and what is not upgradeable
+
+Nothing here is an upgradeable proxy. `EscrowSrc` and `EscrowDst` clones are minimal proxies over fixed implementations with immutable arguments, so there is no storage layout to preserve across releases and no upgrade path to document.
+
+`EscrowFactory` does take an `owner`, passed through `SimpleSettlement` to `FeeTaker` in limit-order-settlement. Its only privileged power is `rescueFunds`, which retrieves tokens sent directly to the factory by mistake. `ResolverExample` in `contracts/mocks/` is `Ownable` and carries `arbitraryCalls`; it is a reference implementation and not production code.
+
+### Deployment parameters
+
+`EscrowFactory` takes `(limitOrderProtocol, accessToken, owner, rescueDelaySrc, rescueDelayDst)`. Both rescue delays are deployed as 691200 seconds (8 days), set as `RESCUE_DELAY` in `deploy/DeployEscrowFactory.s.sol` rather than in a config file. `deploy/config.json` holds the remaining addresses and CREATE3 salts, and it is single-chain: the values are Ethereum mainnet's, with no chain id keying. Deploying to another network means editing that file. The other live networks in `deployments.md` were deployed elsewhere and their parameters are not in this repository.
+
+Re-verifying a deployed factory on a block explorer needs those arguments abi-encoded by hand:
+
+```bash
+cast abi-encode "constructor(address,address,address,uint32,uint32)" <lop> <accessToken> <owner> 691200 691200
+```
+
+### zkSync is a separate build
+
+zkSync uses its own contract (`EscrowFactoryZkSync`), its own deploy script, and the `zksync` Foundry profile. Commands need `FOUNDRY_PROFILE=zksync` and `--zksync`; the default profile's output does not apply to it. `yarn build:zksync`, `yarn test:zksync` and `yarn coverage:zksync` wrap the flags. They need the zkSync fork of Foundry, which is why CI builds it in a separate job.
+
+That path is now the legacy one. On zkSync Era the current deployments are ordinary EVM builds from the **default** profile: `EscrowFactory` 1.1.0 and the `ImmutablesLib` it links are byte-identical to mainnet's excluding constructor arguments, so treat the default compiler as the main route there and reach for the `zksync` profile only when a task is explicitly about `EscrowFactoryZkSync`.
+
+Two consequences worth knowing before spending time on them:
+
+- **The old zksolc deployment is not reproducible and can be ignored.** `EscrowFactory` 1.0.0 on zkSync went out as an EraVM build, and no record anywhere names the zksolc version it used — only the commit and the bytecode hash it passed to the `ContractDeployer`. Do not try to rebuild or verify it. `ERC20True` is the exception that proves the rule: its zkSync record does name zksolc 1.4.1, so that one does reproduce and is verified.
+- **Unverified on `zksync.blockscout.com` is expected, not a bug.** That instance compiles submissions through zksolc, so it cannot match an EVM build however correct the input is. Submissions for 1.1.0 and `ImmutablesLib` are accepted and then fail to match. [`deployments/provenance.md`](deployments/provenance.md#what-is-still-missing) records this as the one open verification gap.
+
+### Layout exception: `examples/`
+
+Scripts under `examples/` are **example / demo scripts**, not repository tooling. They belong in `examples/` and must **not** be moved into `scripts/`. `scripts/` is only for non-demo helpers such as coverage.
+
+`examples/onchain/` holds interaction forge scripts (create order, deploy escrow, withdraw, cancel) and `examples/scripts/` a shell driver. They are documented in `examples/README.md`, and moving them breaks the `fs_permissions` entry in `foundry.toml`. Their presence outside `scripts/` is intentional — not a layout error, and not something a repository-organization review should flag.
+
+### Secrets
+
+Deployment and demo runs read private keys and RPC URLs from `.env`, which is gitignored. `examples/config/config.json` is checked in and must stay free of keys — the `deployer` and `maker` values in it are the well-known public Anvil test accounts.
