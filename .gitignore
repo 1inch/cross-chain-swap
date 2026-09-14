@@ -7,14 +7,14 @@ build
 .coverage_contracts
 .coverage_artifacts
 .idea
-.env
-.env.deployment
+.env*
 .DS_Store
 
 # foundry
 cache_forge
 out
 broadcast
+documentation
 
 # zkSync
 zkout

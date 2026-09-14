@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: {{SECURITY_URL}}
+    about: Never use a public issue for this. SECURITY.md has the private channel and the bug bounty programmes.

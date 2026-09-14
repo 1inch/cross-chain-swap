@@ -21,6 +21,7 @@ interface IBaseEscrow {
         uint256 amount;
         uint256 safetyDeposit;
         Timelocks timelocks;
+        bytes parameters;  // For now only EscrowDst.withdraw() uses it.
     }
 
     /**

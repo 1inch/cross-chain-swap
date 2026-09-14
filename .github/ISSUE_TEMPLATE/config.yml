@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/1inch/cross-chain-swap/blob/master/SECURITY.md
+    about: Never use a public issue for this. SECURITY.md has the private channel and the bug bounty programmes.

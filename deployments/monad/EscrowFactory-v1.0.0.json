@@ -1,0 +1,33 @@
+{
+  "address": "0x9e010857ed5aaa4fca6d5404f7c7c54b1bbb8ad2",
+  "contractName": "EscrowFactory",
+  "version": "1.0.0",
+  "chainId": 143,
+  "args": [
+    "0x111111125421ca6dc452d289314280a0f8842a65",
+    "0x754704bc059f8c67012fed69bc8a327a5aafb603",
+    "0x14c635a133e51eb6a98ec98d51b37c7cf67be452",
+    "0x0bd61d605c64a857c3d94779aef7ca295702b3a2",
+    691200,
+    691200
+  ],
+  "transactionHash": "0x8e25df9adc8537d53b50847bc5eec880af33ef1f1a843cb983991a5850403267",
+  "blockNumber": 93089920,
+  "deployedAt": "2026-08-04T14:55:35Z",
+  "deployerEoa": "0x0bd61d605c64a857c3d94779aef7ca295702b3a2",
+  "createdBy": "0x84eecdf977bff88966e018c49adb46b058ecb164",
+  "compiler": {
+    "solc": "0.8.23",
+    "optimizerRuns": 1000000,
+    "evmVersion": "shanghai",
+    "viaIR": true
+  },
+  "provenance": {
+    "reconstructedFrom": "etherscan",
+    "reconstructedOn": "2026-08-14",
+    "sourceTag": "1.0.0",
+    "initCodeSha256": "398f60c0edd4a00d0e9d7ba4cf99bb080373f59c680d9f0f0bd21f1f5e9f0add",
+    "evidence": "Creation init code, excluding constructor arguments, is byte-identical to Ethereum mainnet's v1.0 factory; sha256 398f60c0edd4a00d0e9d7ba4cf99bb080373f59c680d9f0f0bd21f1f5e9f0add. The mainnet verification of that init code matches tag 1.0.0 in all 17 contracts/*.sol files.",
+    "note": "Assembled from block-explorer data, not written by a deploy run. No ABI is included; generate it from the tag named in sourceTag."
+  }
+}

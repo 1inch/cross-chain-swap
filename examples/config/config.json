@@ -1,0 +1,27 @@
+{
+    "escrowFactory": "0xa7bCb4EAc8964306F9e3764f67Db6A7af6DdF99A",
+    "limitOrderProtocol": "0x111111125421cA6dc452d289314280a0f8842A65",
+    "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "maker": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "srcToken": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "dstToken": "0x0000000000000000000000000000000000000000",
+    "resolver": "0x6c9a2f9a94770336403e69e9ea5d88c97ef3b78a",
+    "srcAmount": 100,
+    "dstAmount": 300,
+    "safetyDeposit": 1,
+    "withdrawalSrcTimelock": 300,
+    "publicWithdrawalSrcTimelock": 600,
+    "cancellationSrcTimelock": 900,
+    "publicCancellationSrcTimelock": 1200,
+    "withdrawalDstTimelock": 300,
+    "publicWithdrawalDstTimelock": 600,
+    "cancellationDstTimelock": 900,
+    "secret": "secret1",
+    "stages": [
+        "deployMocks",
+        "deployEscrowSrc",
+        "deployEscrowDst",
+        "withdrawSrc",
+        "withdrawDst"
+    ]
+}

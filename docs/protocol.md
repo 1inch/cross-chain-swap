@@ -1,0 +1,102 @@
+# Protocol design
+
+How the Fusion Atomic Swap contracts fit together, what each participant does, and the periods in which each operation is available. For the wider protocol rationale see the [whitepaper](fusion-plus-v1.pdf); for the reverting conditions of an individual function, read its NatSpec next to the code.
+
+## Contents
+
+- [Key protocol entities](#key-protocol-entities)
+- [General concept](#general-concept)
+- [Timelocks](#timelocks)
+- [Rescue funds](#rescue-funds)
+- [Partial fills](#partial-fills)
+- [Contracts deployed once for the chain](#contracts-deployed-once-for-the-chain)
+- [One-time contracts for each swap](#one-time-contracts-for-each-swap)
+- [Functions for Resolver to use](#functions-for-resolver-to-use)
+- [Security considerations](#security-considerations)
+
+## Key protocol entities
+
+- `EscrowSrc` clones hold the user's tokens and `EscrowDst` clones hold the resolver's tokens. Both allow tokens to be withdrawn to the recipient.
+- `EscrowFactory` deploys `EscrowSrc` and `EscrowDst` clones for each swap.
+
+## General concept
+
+### Set up two escrows
+
+Resolvers play a major role in the execution of transactions. The user off-chain signs an order, which the Resolver then executes on-chain via the [Limit Order Protocol](https://github.com/1inch/limit-order-protocol). As a result, an `EscrowSrc` clone is created on the source chain, where the user's tokens are stored. Then, Resolver deploys the `EscrowDst` clone to the destination chain and deposits tokens that will go to the user at the end of the swap. Also, Resolver deposits in escrow clones safety deposit in native tokens on both chains.
+
+Important aspects of deploying clone contracts:
+
+- The swap parameters used to deploy both clones must be relevant and match where applicable, otherwise the secret will not be given to the Resolver. This applies, for example, to the hash of an order or of a user's secret.
+- Unlike a regular token swap, the taking token in the order will not be the token the user wants to receive, but a token that always returns `true` instead of a transfer. This is due to the need to send real taking tokens to a user on a different chain.
+
+### Withdraw tokens
+
+Once the Resolver has received the secret, it becomes possible to use it to withdraw tokens to the user on the destination chain and to the Resolver itself on the source chain. If the Resolver fails to withdraw tokens to a user within a certain period of time, this option is open to all other Resolvers. The motivation for them to do so is the safety deposit, which is sent to the token withdrawer.
+
+### Cancel swap
+
+If none of the Resolvers wanted to withdraw tokens to the user on the destination chain, then after a certain period the Resolver can cancel the escrow and reclaim their tokens. The same possibility arises for a Resolver after some time on the source chain, but in this case the tokens will be sent back to the user. If the Resolver has not cancelled the escrow on the source chain within a certain period of time, this option is available to other Resolvers. The motivation for them is the same as for withdrawals: the safety deposit is sent to the one who cancels the escrow.
+
+## Timelocks
+
+The time periods in which certain escrow operations are available are defined by `Timelocks`. They contain the duration of the periods in seconds relative to the deployment timestamp. To get information about a particular period, including its start, the `TimelocksLib` library is used. The following image shows the periods and their mutual arrangement:
+
+![Timelocks](timelocks.png)
+*Key stages of Atomic Swap*
+
+## Rescue funds
+
+After a period set when `EscrowSrc` and `EscrowDst` contracts are deployed, Resolver has an option to withdraw assets that are accidentally stuck on a contract. The `rescueFunds` function is implemented for this purpose.
+
+## Partial fills
+
+Order can be split into a number of equal parts and can be partially filled. For `N` parts there will be generated `N + 1` secrets to be used later in escrows. Each secret is indexed and prorated to the cumulative values of all fills done. A Merkle tree is built from all secrets where the leaf is `keccak256(index, hashedSecret)`. Each Resolver has a copy of the created Merkle tree and uses it to fill part of the order. Index of the hashed secret used to create escrows corresponds to the fill percentage. The secret with index `N` should be used for final complete fill.
+
+For example, if the order is divided into four parts (25% each), the index of the required hashed secret is:
+
+- `0` for (0%, 25%] fill
+- `1` for (25%, 50%]
+- `2` for (50%, 75%]
+- `3` for (75%, 100%), `N-1`
+- `4` for 100% completion, `N`
+
+Hashlock cannot be reused, so if order part completion was unsuccessful and escrows were cancelled, other secrets should be used. Thus, the next attempt must include at least the unfilled amount from the failed attempt plus some extra tokens to result in the next index of hashed secret.
+
+## Contracts deployed once for the chain
+
+For each chain participating in the Atomic Swap mechanism, one copy of the `EscrowSrc`, `EscrowDst` and `EscrowFactory` contracts is deployed. They each contain a set of functions that need to be called to execute the swap.
+
+## One-time contracts for each swap
+
+The `EscrowSrc` or `EscrowDst` contract itself does not hold tokens for the swap. Instead, for each swap, a proxy contract is deployed on each of the chains involved in the swap. Address of the contract is determined by the swap parameters.
+
+To deploy a proxy contract on the source chain the order signed by the user must be filled. On the destination chain call the `createEscrowDst` function.
+
+## Functions for Resolver to use
+
+### Deploy Escrow clones
+
+1. `EscrowFactory.addressOfEscrowSrc` to get the future `EscrowSrc` clone contract address on the source chain. This is to send the safety deposit in native tokens before the order is filled.
+2. Limit Order Protocol [OrderMixin.sol](https://github.com/1inch/limit-order-protocol/blob/master/contracts/OrderMixin.sol):
+  - `fillOrderArgs` or `fillContractOrderArgs` to fill the Fusion order and deploy the `EscrowSrc` clone on the source chain.
+3. `EscrowFactory.createDstEscrow` on the destination chain to deploy the `EscrowDst` clone.
+
+### Withdraw tokens
+
+1. `Escrow.withdraw` to withdraw tokens.
+2. `Escrow.withdrawTo` to withdraw tokens to the specified address on the source chain.
+3. `EscrowDst.publicWithdraw` to withdraw tokens during the public withdrawal period.
+
+### Cancel escrows
+
+1. `Escrow.cancel` to cancel escrow.
+2. `EscrowSrc.publicCancel` to cancel escrow during the public cancellation period.
+
+## Security considerations
+
+The security of protocol transactions is affected by the off-chain distribution of the user's secret. It is recommended to pay proper attention to the implementation of this process.
+
+Resolvers are recommended to watch for the event emitted in `EscrowDst.publicWithdraw` function. If the secret hasn't been received, it can be retrieved from the mentioned event. This will allow the Resolver to withdraw tokens on the source chain before escrow is cancelled.
+
+The trust assumptions this design accepts, and the limitations that follow from them, are recorded in [SECURITY.md](../SECURITY.md#accepted-risks-and-known-limitations).

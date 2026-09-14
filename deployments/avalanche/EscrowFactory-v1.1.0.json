@@ -1,0 +1,26 @@
+{
+  "address": "0x03a25b3215a0e5c15cf23ac4d2e5cf86c0ff7efa",
+  "contractName": "EscrowFactory",
+  "version": "1.1.0",
+  "chainId": 43114,
+  "args": null,
+  "transactionHash": null,
+  "blockNumber": null,
+  "deployedAt": null,
+  "deployerEoa": null,
+  "createdBy": null,
+  "compiler": {
+    "solc": "0.8.23",
+    "optimizerRuns": 1000000,
+    "evmVersion": "shanghai",
+    "viaIR": true
+  },
+  "provenance": {
+    "reconstructedFrom": "etherscan",
+    "reconstructedOn": "2026-08-14",
+    "sourceTag": "1.1.0",
+    "initCodeSha256": null,
+    "evidence": "All 17 contracts/*.sol files in the Etherscan verification are byte-identical to tag 1.1.0; 9 of them differ from tag 1.0.0.",
+    "note": "Assembled from block-explorer data, not written by a deploy run. No ABI is included; generate it from the tag named in sourceTag."
+  }
+}

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ {{DEFAULT_BRANCH}} ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: {{NODE_VERSION}}
+          cache: {{PACKAGE_MANAGER}}
+      - run: {{INSTALL_COMMAND}}
+      - run: {{BUILD_COMMAND}}
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: {{NODE_VERSION}}
+          cache: {{PACKAGE_MANAGER}}
+      - run: {{INSTALL_COMMAND}}
+      - run: {{TEST_COMMAND}}
+
+{{CI_LINT_JOB}}
+{{CI_FORMAT_JOB}}

@@ -1,0 +1,48 @@
+name: Bug report
+description: File a bug report for the contracts or the tooling
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not use this form for security vulnerabilities. Report those privately
+        through the channel described in SECURITY.md — a public issue tells an
+        attacker everything it tells us.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: network
+    attributes:
+      label: Network
+      description: Mainnet, an L2, a testnet, local, or whatever applies.
+      placeholder: "e.g. Ethereum mainnet"
+    validations:
+      required: true
+  - type: input
+    id: contract
+    attributes:
+      label: Contract address
+      placeholder: "0x..."
+  - type: input
+    id: transaction
+    attributes:
+      label: Transaction hash
+      description: The failing transaction, if there is one.
+      placeholder: "0x..."
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The tag, release or commit the deployment was built from. Skip if the contract address above already identifies it.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: A failing test is the fastest way to get this fixed.
+    validations:
+      required: true
