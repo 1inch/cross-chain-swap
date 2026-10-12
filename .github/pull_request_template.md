@@ -15,7 +15,7 @@
 - [ ] Linked issue, or a detailed description above that stands on its own
 - [ ] Tests added or updated for this change, including revert paths
 - [ ] Documentation updated where it describes the changed behaviour (README, NatSpec)
-- [ ] Gas impact assessed (`forge snapshot --check`)
+- [ ] Gas impact assessed (`yarn snapshot:check`)
 - [ ] No new compiler warnings
 
 ## AI assistance

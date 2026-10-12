@@ -5,12 +5,11 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import { Address } from "solidity-utils/contracts/libraries/AddressLib.sol";
-import { Merkle } from "murky/src/Merkle.sol";
+import { Merkle, createMerkle } from "dynamic-imports/murky/src/Merkle.sol";
 
-import { FeeTaker } from "limit-order-protocol/contracts/extensions/FeeTaker.sol";
-import { EscrowDst } from "contracts/EscrowDst.sol";
-import { EscrowSrc } from "contracts/EscrowSrc.sol";
-import { BaseEscrowFactory } from "contracts/BaseEscrowFactory.sol";
+import { FeeTaker } from "dynamic-imports/@1inch/limit-order-protocol-contract/contracts/extensions/FeeTaker.sol";
+import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
+import { IEscrowSrc } from "contracts/interfaces/IEscrowSrc.sol";
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { Timelocks, TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
@@ -32,7 +31,7 @@ contract EscrowFactoryTest is BaseSetup {
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        merkle = new Merkle();
+        merkle = createMerkle();
 
         // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.
         for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
@@ -150,7 +149,7 @@ contract EscrowFactoryTest is BaseSetup {
         accessToken.mint(taker, 1);
 
         swapData.immutables.taker = Address.wrap(uint160(taker));
-        EscrowSrc srcClone = EscrowSrc(BaseEscrowFactory(payable(address(escrowFactory))).addressOfEscrowSrc(swapData.immutables));
+        IEscrowSrc srcClone = IEscrowSrc(escrowFactory.addressOfEscrowSrc(swapData.immutables));
 
         (bool success,) = address(srcClone).call{ value: SRC_SAFETY_DEPOSIT }("");
         assertEq(success, true);
@@ -204,7 +203,7 @@ contract EscrowFactoryTest is BaseSetup {
 
     function testFuzz_DeployCloneForTaker(bytes32 secret, uint56 amount) public {
         uint256 safetyDeposit = uint64(amount) * 10 / 100;
-        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, EscrowDst dstClone) = _prepareDataDstCustom(
+        (IBaseEscrow.Immutables memory immutables, uint256 srcCancellationTimestamp, IEscrowDst dstClone) = _prepareDataDstCustom(
             secret,
             amount,
             alice.addr,

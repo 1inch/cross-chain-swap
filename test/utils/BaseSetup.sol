@@ -3,22 +3,38 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 
-import { IWETH, LimitOrderProtocol } from "limit-order-protocol/contracts/LimitOrderProtocol.sol";
-import { TokenCustomDecimalsMock } from "solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
-import { TokenMock } from "solidity-utils/contracts/mocks/TokenMock.sol";
+import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { IPostInteraction } from "limit-order-protocol/contracts/interfaces/IPostInteraction.sol";
+import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IMerkleStorageInvalidator } from "../../contracts/interfaces/IMerkleStorageInvalidator.sol";
+import { createLimitOrderProtocol } from "dynamic-imports/@1inch/limit-order-protocol-contract/contracts/LimitOrderProtocol.sol";
+import {
+    TokenCustomDecimalsMock,
+    createTokenCustomDecimalsMock
+} from "dynamic-imports/@1inch/solidity-utils/contracts/mocks/TokenCustomDecimalsMock.sol";
+import { TokenMock, createTokenMock } from "dynamic-imports/@1inch/solidity-utils/contracts/mocks/TokenMock.sol";
 
-import { EscrowDst } from "../../contracts/EscrowDst.sol";
-import { EscrowSrc } from "../../contracts/EscrowSrc.sol";
-import { BaseEscrowFactory } from "../../contracts/BaseEscrowFactory.sol";
-import { EscrowFactory } from "../../contracts/EscrowFactory.sol";
+import { IEscrowDst } from "../../contracts/interfaces/IEscrowDst.sol";
+import { IEscrowSrc } from "../../contracts/interfaces/IEscrowSrc.sol";
+import { IEscrowFactory } from "../../contracts/interfaces/IEscrowFactory.sol";
 import { IBaseEscrow } from "../../contracts/interfaces/IBaseEscrow.sol";
-import { EscrowFactoryZkSync } from "../../contracts/zkSync/EscrowFactoryZkSync.sol";
+import { createEscrowFactory } from "dynamic-imports/contracts/EscrowFactory.sol";
+import { createEscrowFactoryZkSync } from "dynamic-imports/contracts/zkSync/EscrowFactoryZkSync.sol";
+
 import { Utils } from "./Utils.sol";
 import { NoReceive } from "./mocks/NoReceive.sol";
 import { CustomPostInteraction } from "./mocks/CustomPostInteraction.sol";
 import { CrossChainTestLib } from "./libraries/CrossChainTestLib.sol";
 import { Timelocks } from "./libraries/TimelocksSettersLib.sol";
 import { FeeCalcLib } from "./libraries/FeeCalcLib.sol";
+
+/// @dev Deployed via the generated shim (createEscrowFactory) but typed through the
+/// project's own interfaces so the shared IBaseEscrow/IOrderMixin structs still match.
+/// EscrowFactory also exposes postInteraction (IPostInteraction) and Rescuable.rescueFunds.
+interface ITestEscrowFactory is IEscrowFactory, IPostInteraction, ITakerInteraction, IMerkleStorageInvalidator {
+    function rescueFunds(IERC20 token, uint256 amount) external;
+}
 
 /* solhint-disable max-states-count */
 contract BaseSetup is Test, Utils {
@@ -53,10 +69,10 @@ contract BaseSetup is Test, Utils {
     TokenMock internal inch;
     TokenMock internal accessToken;
 
-    LimitOrderProtocol internal limitOrderProtocol;
-    BaseEscrowFactory internal escrowFactory;
-    EscrowSrc internal escrowSrc;
-    EscrowDst internal escrowDst;
+    IOrderMixin internal limitOrderProtocol;
+    ITestEscrowFactory internal escrowFactory;
+    IEscrowSrc internal escrowSrc;
+    IEscrowDst internal escrowDst;
 
     address[] internal resolvers;
 
@@ -94,7 +110,7 @@ contract BaseSetup is Test, Utils {
     receive() external payable {}
 
     function setUp() public virtual {
-        bytes32 profileHash = keccak256(abi.encodePacked(vm.envString("FOUNDRY_PROFILE")));
+        bytes32 profileHash = keccak256(abi.encodePacked(vm.envOr("FOUNDRY_PROFILE", string("default"))));
         if (profileHash == CrossChainTestLib.ZKSYNC_PROFILE_HASH) isZkSync = true;
         _createUsers(6);
 
@@ -137,10 +153,10 @@ contract BaseSetup is Test, Utils {
     }
 
     function _deployTokens() internal {
-        dai = new TokenMock("DAI", "DAI");
-        usdc = new TokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
-        inch = new TokenMock("1INCH", "1INCH");
-        accessToken = new TokenMock("ACCESS", "ACCESS");
+        dai = createTokenMock("DAI", "DAI");
+        usdc = createTokenCustomDecimalsMock("USDC", "USDC", 1000 ether, 6);
+        inch = createTokenMock("1INCH", "1INCH");
+        accessToken = createTokenMock("ACCESS", "ACCESS");
 
         vm.label(address(dai), "DAI");
         vm.label(address(usdc), "USDC");
@@ -149,23 +165,23 @@ contract BaseSetup is Test, Utils {
     }
 
     function _deployContracts() internal {
-        limitOrderProtocol = new LimitOrderProtocol(IWETH(address(0)));
+        limitOrderProtocol = IOrderMixin(address(createLimitOrderProtocol(address(0))));
 
         if (isZkSync) {
-            escrowFactory = new EscrowFactoryZkSync(
-                address(limitOrderProtocol), accessToken, charlie.addr,  RESCUE_DELAY, RESCUE_DELAY
-            );
+            escrowFactory = ITestEscrowFactory(address(createEscrowFactoryZkSync(
+                address(limitOrderProtocol), address(accessToken), charlie.addr, RESCUE_DELAY, RESCUE_DELAY
+            )));
         } else {
-            escrowFactory = new EscrowFactory(
+            escrowFactory = ITestEscrowFactory(address(createEscrowFactory(
                 address(limitOrderProtocol),
-                accessToken,
+                address(accessToken),
                 charlie.addr,
                 RESCUE_DELAY,
                 RESCUE_DELAY
-            );
+            )));
         }
-        escrowSrc = EscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
-        escrowDst = EscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
+        escrowSrc = IEscrowSrc(escrowFactory.ESCROW_SRC_IMPLEMENTATION());
+        escrowDst = IEscrowDst(escrowFactory.ESCROW_DST_IMPLEMENTATION());
 
         nativeTokenRejector = new NoReceive();
         customPostInteractor = new CustomPostInteraction();
@@ -254,13 +270,13 @@ contract BaseSetup is Test, Utils {
                 fakeOrder: fakeOrder,
                 allowMultipleFills: allowMultipleFills
             }),
-            payable(escrowFactory),
+            payable(address(escrowFactory)),
             limitOrderProtocol
         );
     }
 
     function _prepareDataDst(
-    ) internal view returns (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp, EscrowDst escrow) {
+    ) internal view returns (IBaseEscrow.Immutables memory escrowImmutables, uint256 srcCancellationTimestamp, IEscrowDst escrow) {
         return _prepareDataDstCustom(
             HASHED_SECRET,
             TAKING_AMOUNT,
@@ -288,7 +304,7 @@ contract BaseSetup is Test, Utils {
         uint256 integratorShares,
         uint256 whitelistDiscount,
         bool isWhitelisted
-    ) internal view returns (IBaseEscrow.Immutables memory, uint256, EscrowDst) {
+    ) internal view returns (IBaseEscrow.Immutables memory, uint256, IEscrowDst) {
         protocolFee = isWhitelisted ? protocolFee * whitelistDiscount / BASE_1E2 : protocolFee;
 
         (uint256 integratorFeeAmount, uint256 protocolFeeAmount) = FeeCalcLib.getFeeAmounts(
@@ -315,7 +331,7 @@ contract BaseSetup is Test, Utils {
             integratorFeeAmount
         );
 
-        return (escrowImmutables, srcCancellationTimestamp, EscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
+        return (escrowImmutables, srcCancellationTimestamp, IEscrowDst(escrowFactory.addressOfEscrowDst(escrowImmutables)));
     }
 }
 

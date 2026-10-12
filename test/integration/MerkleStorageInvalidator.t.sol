@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
-import { Merkle } from "murky/src/Merkle.sol";
+import { Merkle, createMerkle } from "dynamic-imports/murky/src/Merkle.sol";
 
 import { IEscrowFactory } from "contracts/interfaces/IEscrowFactory.sol";
 import { IMerkleStorageInvalidator } from "contracts/interfaces/IMerkleStorageInvalidator.sol";
@@ -23,7 +23,7 @@ contract MerkleStorageInvalidatorIntTest is BaseSetup {
     function setUp() public virtual override {
         BaseSetup.setUp();
 
-        merkle = new Merkle();
+        merkle = createMerkle();
 
         for (uint64 i = 0; i < SECRETS_AMOUNT; i++) {
             // Note: This is not production-ready code. Use cryptographically secure random to generate secrets.

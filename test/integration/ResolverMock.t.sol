@@ -6,7 +6,8 @@ import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTrait
 import { IBaseEscrow } from "contracts/interfaces/IBaseEscrow.sol";
 import { IEscrowDst } from "contracts/interfaces/IEscrowDst.sol";
 import { TimelocksLib } from "contracts/libraries/TimelocksLib.sol";
-import { IResolverExample, ResolverExample } from "contracts/mocks/ResolverExample.sol";
+import { IResolverExample } from "contracts/interfaces/IResolverExample.sol";
+import { createResolverExample } from "dynamic-imports/contracts/mocks/ResolverExample.sol";
 import { BaseSetup } from "../utils/BaseSetup.sol";
 import { CrossChainTestLib } from "../utils/libraries/CrossChainTestLib.sol";
 
@@ -16,7 +17,7 @@ contract IntegrationResolverMockTest is BaseSetup {
 
     function setUp() public virtual override {
         BaseSetup.setUp();
-        resolverMock = address(new ResolverExample(escrowFactory, limitOrderProtocol, address(this)));
+        resolverMock = address(createResolverExample(address(escrowFactory), address(limitOrderProtocol), address(this)));
         resolvers[0] = address(resolverMock);
         vm.label(resolverMock, "resolverMock");
         vm.deal(resolverMock, 100 ether);

@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.23;
 
-import { BaseEscrowFactory } from "../../../contracts/BaseEscrowFactory.sol";
-import { EscrowSrc } from "../../../contracts/EscrowSrc.sol";
+import { IEscrowFactory } from "../../../contracts/interfaces/IEscrowFactory.sol";
+import { IEscrowSrc } from "../../../contracts/interfaces/IEscrowSrc.sol";
 import { IBaseEscrow } from "../../../contracts/interfaces/IBaseEscrow.sol";
-import { ERC20True } from "../../../contracts/mocks/ERC20True.sol";
+import { createERC20True } from "dynamic-imports/contracts/mocks/ERC20True.sol";
 import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
 import { MakerTraits } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
 import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
@@ -95,7 +95,7 @@ library CrossChainTestLib {
         bytes32 orderHash;
         bytes extraData;
         bytes extension;
-        EscrowSrc srcClone;
+        IEscrowSrc srcClone;
         IBaseEscrow.Immutables immutables;
     }
 
@@ -385,7 +385,7 @@ library CrossChainTestLib {
                 orderDetails.maker,
                 orderDetails.receiver,
                 orderDetails.srcToken,
-                address(new ERC20True()),
+                address(createERC20True()),
                 orderDetails.srcAmount,
                 orderDetails.dstAmount,
                 MakerTraits.wrap(0),
@@ -410,7 +410,7 @@ library CrossChainTestLib {
             parameters: "" // Must skip params due only EscrowDst.withdraw() using it.
         });
 
-        swapData.srcClone = EscrowSrc(BaseEscrowFactory(payable(factory)).addressOfEscrowSrc(swapData.immutables));
+        swapData.srcClone = IEscrowSrc(IEscrowFactory(factory).addressOfEscrowSrc(swapData.immutables));
         swapData.extraData = abi.encodePacked(
             bytes20(address(orderDetails.integratorFeeRecipient)),
             bytes20(address(orderDetails.protocolFeeRecipient)),

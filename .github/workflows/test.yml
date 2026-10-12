@@ -13,45 +13,64 @@ jobs:
         with:
           node-version: 22
           cache: 'yarn'
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.5.1
-      - run: yarn
+      - run: yarn install --frozen-lockfile
       - run: yarn lint
 
   snapshot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
-          submodules: recursive
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.5.1
+          node-version: 22
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
       - name: Check snapshot
-        run: FOUNDRY_PROFILE=default forge snapshot --check --no-match-test "testFuzz_*"
+        run: yarn snapshot:check
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
-          submodules: recursive
+          node-version: 22
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - name: Run tests
+        run: yarn test
+      - name: Typecheck deploy scripts
+        # After the build: the deploy scripts are typed against the
+        # artifacts.d.ts declarations hardhat generates during compilation.
+        run: yarn typecheck
+
+  forge-build:
+    # The examples, the lite profile and the zkSync flows still run through stock
+    # Foundry; this job guards that build against remapping or shim breakage.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'yarn'
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.5.1
-      - name: Run tests
-        run: FOUNDRY_PROFILE=default forge test -vvv --gas-report
+      - run: yarn install --frozen-lockfile
+      - name: Build with Foundry
+        run: yarn deployers:foundry && forge build
 
   test-zksync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
-          submodules: recursive
+          node-version: 22
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
       - uses: actions/checkout@v7
         with:
           repository: matter-labs/foundry-zksync
@@ -60,18 +79,17 @@ jobs:
       - name: Install Foundry for zksync
         run: cd foundry-zksync/foundryup-zksync && ../install-foundry-zksync
       - name: Run tests
-        run: FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force
+        run: yarn test:zksync
 
   coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
-          submodules: recursive
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.5.1
+          node-version: 22
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
       - name: Run coverage
         run: yarn coverage
       - uses: codecov/codecov-action@v7
