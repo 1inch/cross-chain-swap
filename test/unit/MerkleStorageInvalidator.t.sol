@@ -134,5 +134,60 @@ contract MerkleStorageInvalidatorTest is BaseSetup {
         );
     }
 
+    function testReplayInvalidationBehavior() public {
+    uint256 secretsAmount = 8;
+    uint256 idx = 0;
+
+    bytes32[] memory hashedSecrets = new bytes32[](secretsAmount);
+    bytes32[] memory hashedPairs = new bytes32[](secretsAmount);
+
+    for (uint64 i = 0; i < secretsAmount; i++) {
+        hashedSecrets[i] = keccak256(abi.encodePacked(i));
+        hashedPairs[i] = keccak256(abi.encodePacked(i, hashedSecrets[i]));
+    }
+
+    root = merkle.getRoot(hashedPairs);
+    bytes32[] memory proof = merkle.getProof(hashedPairs, idx);
+
+    CrossChainTestLib.SwapData memory swapData = _prepareDataSrcHashlock(root, false, true);
+
+    // First call
+    vm.prank(address(limitOrderProtocol));
+    ITakerInteraction(escrowFactory).takerInteraction(
+        swapData.order,
+        swapData.extension,
+        swapData.orderHash,
+        bob.addr,
+        MAKING_AMOUNT,
+        TAKING_AMOUNT,
+        0,
+        abi.encode(proof, idx, hashedSecrets[idx])
+    );
+
+    (uint256 firstIndex, ) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
+        keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
+    );
+
+    // Second call (replay)
+    vm.prank(address(limitOrderProtocol));
+    ITakerInteraction(escrowFactory).takerInteraction(
+        swapData.order,
+        swapData.extension,
+        swapData.orderHash,
+        bob.addr,
+        MAKING_AMOUNT,
+        TAKING_AMOUNT,
+        0,
+        abi.encode(proof, idx, hashedSecrets[idx])
+    );
+
+    (uint256 secondIndex, ) = IMerkleStorageInvalidator(escrowFactory).lastValidated(
+        keccak256(abi.encodePacked(swapData.orderHash, uint240(uint256(root))))
+    );
+
+    // Assert behavior is consistent (no unexpected change)
+    assertEq(firstIndex, secondIndex);
+}
+
     /* solhint-enable func-name-mixedcase */
 }
